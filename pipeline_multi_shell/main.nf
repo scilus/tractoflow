@@ -418,16 +418,15 @@ process resample_dwi {
             --interp  $params.dwi_interpolation
         scil_resample_volume.py $mask \
             mask_resample.nii.gz \
-            --resolution $params.dwi_resolution \
+            --ref dwi_resample.nii.gz \
+            --enforce_dimensions \
             --interp nn
+        mrcalc dwi_resample.nii.gz mask_resample.nii.gz -mult ${sid}__dwi_resample.nii.gz -quiet
         """
     else
         """
         cp $dwi dwi_resample.nii.gz
         """
-    """
-        mrcalc dwi_resample.nii.gz mask_resample.nii.gz -mult ${sid}__dwi_resample.nii.gz -quiet
-    """
 }
 
 dwi_for_resample_b0
