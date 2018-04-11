@@ -119,10 +119,15 @@ process denoise_dwi {
 
     script:
     dir_id = get_dir(sid)
-    """
-    MRTRIX_NTHREADS=$task.cpus
-    dwidenoise $dwi ${sid}__dwi_denoised.nii.gz -mask $b0_mask -extent $params.extent
-    """
+    if(params.do_denoising_dwi)
+        """
+        MRTRIX_NTHREADS=$task.cpus
+        dwidenoise $dwi ${sid}__dwi_denoised.nii.gz -mask $b0_mask -extent $params.extent
+        """
+    else
+        """
+        cp $dwi ${sid}__dwi_denoised.nii.gz
+        """
 }
 
 dwi_for_eddy
