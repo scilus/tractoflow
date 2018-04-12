@@ -84,9 +84,9 @@ process bet_prelim_dwi {
     set sid, file(dwi), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
 
     output:
-    set sid, "${sid}__b0_bet_mask_dilate.nii.gz" into b0_mask_for_denoise_dwi
+    set sid, "${sid}__b0_bet_mask_dilate.nii.gz" into b0_mask_for_denoise_dwi, b0_mask_for_eddy
     file "${sid}__b0_bet.nii.gz"
-    set sid, "${sid}__b0_bet_mask.nii.gz" into b0_mask_for_eddy
+    file "${sid}__b0_bet_mask.nii.gz"
 
     script:
     dir_id = get_dir(sid)
