@@ -686,6 +686,7 @@ process fodf_metrics {
     file "${sid}__afd_total.nii.gz"
     file "${sid}__afd_sum.nii.gz"
     file "${sid}__nufo.nii.gz"
+    file "${sid}__frf.txt"
 
     script:
     dir_id = get_dir(sid)
