@@ -162,16 +162,22 @@ process eddy {
 
     script:
     dir_id = get_dir(sid)
+    if (params.eddy)
+        """
+        OMP_NUM_THREADS=$task.cpus
+        scil_prepare_eddy_command.py $dwi $bval $bvec $rev_b0 $mask --config $params.config_eddy\
+            --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
+            --encoding_direction $params.encoding_direction\
+            --dwell_time $params.dwell_time --output_script
+        sh eddy.sh
+        cp dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
+        cp dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
+        """
+    else
     """
-    OMP_NUM_THREADS=$task.cpus
-    scil_prepare_eddy_command.py $dwi $bval $bvec $rev_b0 $mask --config $params.config_eddy\
-        --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
-        --encoding_direction $params.encoding_direction\
-        --dwell_time $params.dwell_time --output_script
-    sh eddy.sh
-    cp dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
-    cp dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
-    """
+        cp $dwi ${sid}__dwi_corrected.nii.gz
+        cp $bvec ${sid}__dwi_eddy_corrected.bvec
+        """
 }
 
 dwi_for_extract_b0
@@ -451,7 +457,7 @@ process resample_b0 {
     output:
     set sid, "${sid}__b0_resample.nii.gz" into b0_for_reg
     set sid, "${sid}__b0_mask_resample.nii.gz" into b0_mask_for_dti_metrics,
-        b0_mask_for_fodf
+        b0_mask_for_fodf, b0_mask_for_rf
 
     script:
     dir_id = get_dir(sid)
@@ -531,7 +537,7 @@ process dti_metrics {
     file "${sid}__residual_residuals_stats.png"
     file "${sid}__residual_std_residuals.npy"
     set sid, "${sid}__fa.nii.gz", "${sid}__md.nii.gz" into fa_md_for_fodf
-    set sid, "${sid}__fa.nii.gz" into fa_for_reg
+    set sid, "${sid}__fa.nii.gz" into fa_for_reg, fa_for_rf
 
     script:
     dir_id = get_dir(sid)
@@ -567,7 +573,7 @@ process extract_fodf_shell {
 
     output:
     set sid, "${sid}__dwi_fodf.nii.gz", "${sid}__bval_fodf",
-        "${sid}__bvec_fodf" into dwi_and_grad_for_fodf
+        "${sid}__bvec_fodf" into dwi_and_grad_for_fodf, dwi_and_grad_for_rf
 
     script:
     dir_id = get_dir(sid)
@@ -663,11 +669,80 @@ process segment_tissues {
     """
 }
 
+dwi_and_grad_for_rf
+    .phase(b0_mask_for_rf)
+    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .phase(fa_for_rf)
+    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .set{dwi_b0_fa_for_rf}
+
+process compute_frf {
+    tag { "$sid" }
+    cpus 3
+
+    input:
+    set sid, file(dwi), file(bval), file(bvec), file(b0_mask), file(fa) from dwi_b0_fa_for_rf
+
+    output:
+    file "${sid}__unique_frf.txt" into all_frf_for_mean_frf
+    set sid, ".temp_frf.txt" into each_frf_for_mean_frf
+
+    script:
+    dir_id = get_dir(sid)
+    if (params.fix_response)
+        """
+        scil_compute_ssst_frf.py $dwi $bval $bvec frf.txt --mask $b0_mask\
+        --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
+        --roi_radius $params.roi_radius
+        scil_set_response_function.py frf.txt $params.frf .temp_frf.txt
+        cp .temp_frf.txt ${sid}__unique_frf.txt
+        """
+    else
+        """
+        scil_compute_ssst_frf.py $dwi $bval $bvec .temp_frf.txt --mask $b0_mask\
+        --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
+        --roi_radius $params.roi_radius
+        cp .temp_frf.txt ${sid}__unique_frf.txt
+        """
+}
+
+all_frf_for_mean_frf
+    .collect()
+    .set{all_frf}
+
+each_frf_for_mean_frf
+    .merge(all_frf){a, b -> tuple(*a, b)}
+    .set{unique_and_all_frf_for_mean}
+
+process mean_frf {
+    tag{ "$sid" }
+    cpus 1
+
+    input:
+    set sid, file(frf), file(all_frf) from unique_and_all_frf_for_mean
+
+    output:
+    set sid, "${sid}__mean_frf.txt" into final_frf_for_fodf
+
+    script:
+    dir_id = get_dir(sid)
+    if (params.mean_frf)
+        """
+        scil_compute_mean_frf.py $all_frf ${sid}__mean_frf.txt
+        """
+    else
+        """
+        cp $frf ${sid}__mean_frf.txt
+        """
+}
+
 dwi_and_grad_for_fodf
     .phase(b0_mask_for_fodf)
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .phase(fa_md_for_fodf)
     .map{ch1, ch2 -> [*ch1, ch2[1], ch2[2]] }
+    .phase(final_frf_for_fodf)
+    .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_b0_metrics_for_fodf}
 
 process fodf_metrics {
@@ -676,7 +751,7 @@ process fodf_metrics {
 
     input:
     set sid, file(dwi), file(bval), file(bvec), file(b0_mask), file(fa),
-        file(md) from dwi_b0_metrics_for_fodf
+        file(md), file(frf) from dwi_b0_metrics_for_fodf
 
     output:
     set sid, "${sid}__fodf.nii.gz" into fodf_for_tracking
@@ -690,12 +765,8 @@ process fodf_metrics {
 
     script:
     dir_id = get_dir(sid)
-    """
-    scil_compute_ssst_frf.py $dwi $bval $bvec ${sid}__frf.txt --mask $b0_mask\
-        --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
-        --roi_radius $params.roi_radius
-        
-    scil_compute_fodf.py $dwi $bval $bvec ${sid}__frf.txt --sh_order $params.sh_order\
+    """ 
+    scil_compute_fodf.py $dwi $bval $bvec $frf --sh_order $params.sh_order\
         --basis $params.basis --b0_threshold $params.b0_thr_extract_b0 \
         --mask $b0_mask --fodf ${sid}__fodf.nii.gz --peaks ${sid}__peaks.nii.gz\
         --peak_indices ${sid}__peak_indices.nii.gz --processes $task.cpus
@@ -709,7 +780,6 @@ process fodf_metrics {
         --mask $b0_mask --afd ${sid}__afd_max.nii.gz\
         --afd_total ${sid}__afd_total.nii.gz --afd_sum ${sid}__afd_sum.nii.gz\
         --nufo ${sid}__nufo.nii.gz -f
-
     """
 }
 
@@ -733,11 +803,11 @@ process pft_maps {
     """
 }
 
-
 wm_mask_for_seeding_mask
     .phase(interface_for_seeding_mask)
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{wm_interface_for_seeding_mask}
+    
 process seeding_mask {
     tag { "$sid" }
     cpus 1
