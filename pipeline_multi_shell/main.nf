@@ -751,7 +751,7 @@ process fodf_metrics {
 
     input:
     set sid, file(dwi), file(bval), file(bvec), file(b0_mask), file(fa),
-        file(md) from dwi_b0_metrics_for_fodf
+        file(md), file(frf) from dwi_b0_metrics_for_fodf
 
     output:
     set sid, "${sid}__fodf.nii.gz" into fodf_for_tracking
