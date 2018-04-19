@@ -751,7 +751,7 @@ process fodf_metrics {
 
     input:
     set sid, file(dwi), file(bval), file(bvec), file(b0_mask), file(fa),
-        file(md), file(frf) from dwi_b0_metrics_for_fodf
+        file(md) from dwi_b0_metrics_for_fodf
 
     output:
     set sid, "${sid}__fodf.nii.gz" into fodf_for_tracking
@@ -761,7 +761,6 @@ process fodf_metrics {
     file "${sid}__afd_total.nii.gz"
     file "${sid}__afd_sum.nii.gz"
     file "${sid}__nufo.nii.gz"
-    file "${sid}__frf.txt"
 
     script:
     dir_id = get_dir(sid)
