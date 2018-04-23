@@ -20,7 +20,7 @@ if(params.help) {
     return
 }
 
-log.info "Multi-shell pipeline"
+log.info "Human pipeline"
 log.info "================================"
 log.info ""
 log.info "Start time: $workflow.start"
