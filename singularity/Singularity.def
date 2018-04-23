@@ -12,16 +12,12 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
 	export PATH=/scilpy/scripts:$PATH
 	export PATH=/scilpy/surgery_scripts:$PATH
 	export PATH=/scilpy/dev_scripts:$PATH
-	export PATH=/scripts:$PATH
 	export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=8
 	export OPENBLAS_NUM_THREADS=1
 	export ANTSPATH=/usr/lib/ants
 	export PATH=$PATH:$ANTSPATH
 
 %setup
-	mkdir $SINGULARITY_ROOTFS/scripts
-    tar -xf rust_code.tar -C $SINGULARITY_ROOTFS/scripts
-
 	mkdir $SINGULARITY_ROOTFS/scilpy
 	tar -xf scilpy.tar -C $SINGULARITY_ROOTFS/scilpy
 
