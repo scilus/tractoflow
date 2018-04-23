@@ -1,45 +1,8 @@
-Penthera pipeline
+Human pipeline
 =================
 
-These pipelines process datasets similar to Penthera 3T. There are 2 pipelines:
-
-- _preprocess_penthera/main.nf_ : Modify strides and flip gradients. This step is not
-mandatory if the strides and flips are already correct. The input dataset must have
-the same gradient scheme.
-
-- _pipeline_penthera/main.nf_ : Do all the processing. The different steps are
-explained below.
-
-Steps
-------------
-
-######Diffusion processes
-- preliminary bet
-- denoise dwi
-- eddy
-- extract b0
-- bet dwi
-- n4 dwi
-- crop dwi
-- upsample dwi (1mm iso)
-- upsample b0 (1mm iso)
-
-######T1 processes
-- resample t1 (1mm iso)
-- bet t1
-- n4 t1
-- crop t1
-- denoise t1
-- registration on diffusion
-- tissue segmentation
-
-######Metrics processes
-- extract dti shell (b=0, 300, 1000)
-- dti metrics
-- extract fodf shell (b=0, 2000)
-- fodf metrics
-- pft maps
-- tracking (interface seeding)
+Modify strides and flip gradients. This step is not
+mandatory if the strides and flips are already correct.
 
 Singularity
 -----
@@ -65,9 +28,6 @@ Notes
 -----
 
 The _scilpy/scripts_ folder should be in your PATH environment variable.
-
-
-The _penthera-nf/scripts_ folder should be in your PATH environment variable.
 
 Usage
 -----

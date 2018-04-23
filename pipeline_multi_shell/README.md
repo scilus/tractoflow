@@ -1,28 +1,30 @@
-Multi-shell pipeline
+Human pipeline
 =================
 
-This pipeline process datasets similar to Penthera 3T.
+Do all the processing. The different steps are
+explained below. The input dataset must have
+the same gradient scheme.
 
 Steps
 ------------
 
 ######Diffusion processes
 - preliminary bet
-- denoise
+- denoise dwi
 - eddy
 - extract b0
 - bet dwi
 - n4 dwi
 - crop dwi
-- upsample dwi (1mm iso)
-- upsample b0 (1mm iso)
+- upsample dwi
+- upsample b0
 
 ######T1 processes
-- resample t1 (1mm iso)
+- resample t1
 - bet t1
-- denoise t1
 - n4 t1
 - crop t1
+- denoise t1
 - registration on diffusion
 - tissue segmentation
 
@@ -30,8 +32,11 @@ Steps
 - extract dti shell
 - dti metrics
 - extract fodf shell
+- compute frf
+- mean frf
 - fodf metrics
 - pft maps
+- seeding_mask
 - tracking
 
 Singularity
@@ -58,9 +63,6 @@ Notes
 -----
 
 The _scilpy/scripts_ folder should be in your PATH environment variable.
-
-
-The _penthera-nf/scripts_ folder should be in your PATH environment variable.
 
 Usage
 -----
