@@ -11,7 +11,7 @@ if(params.help) {
     usage = file("$baseDir/USAGE")
 
     cpu_count = Runtime.runtime.availableProcessors()
-    bindings = ["cpu_count":"$cpu_count"]
+    bindings = ["cpu_count":"$cpu_count", "topup":"$params.topup"]
 
     engine = new groovy.text.SimpleTemplateEngine()
     template = engine.createTemplate(usage.text).make(bindings)
@@ -40,34 +40,44 @@ if (params.root){
     log.info "Input: $params.root"
     root = file(params.root)
     in_data = Channel
-        .fromFilePairs("$root/**/{bval,bvec,dwi.nii.gz,rev_b0.nii.gz,t1.nii.gz}",
-                       size: 5,
+        .fromFilePairs("$root/**/{bval,bvec,dwi.nii.gz,t1.nii.gz}",
+                       size: 4,
                        maxDepth:2,
                        flat: true) { it.parent.parent.name + "_-_" + it.parent.name}
-                       }
+    Channel
+    .fromPath("$root/rev_b0.nii.gz",
+                    maxDepth:2)
+    .map{ch1 -> [ch1.parent.parent.name + "_-_" + ch1.parent.name, ch1]}
+    .into{rev_b0; check_rev_b0}
+    }
 else if (params.subject){
     log.info "Input: $params.subject"
     subject = file(params.subject)
     in_data = Channel
-        .fromFilePairs("$subject/{bval,bvec,dwi.nii.gz,rev_b0.nii.gz,t1.nii.gz}",
-                       size: 5,
+        .fromFilePairs("$subject/{bval,bvec,dwi.nii.gz,t1.nii.gz}",
+                       size: 4,
                        maxDepth:2,
                        flat: true) { it.parent.name}
-                       }
+    Channel
+    .fromPath("$subject/*rev_b0.nii.gz",
+                    maxDepth:1)
+    .map{ch1 -> [ch1.parent.name, ch1]}
+    .into{rev_b0; check_rev_b0}
+    }
 
 
-(dwi, bvals, bvecs, rev_b0, t1_for_resample) = in_data
-    .map{sid, bvals, bvecs, dwi, rev_b0, t1 -> [tuple(sid, dwi),
-                                                tuple(sid, bvals),
-                                                tuple(sid, bvecs),
-                                                tuple(sid, rev_b0),
-                                                tuple(sid, t1)]}
-    .separate(5)
+(dwi, bvals, bvecs, t1_for_resample) = in_data
+    .map{sid, bvals, bvecs, dwi, t1 -> [tuple(sid, dwi),
+                                        tuple(sid, bvals),
+                                        tuple(sid, bvecs),
+                                        tuple(sid, t1)]}
+    .separate(4)
 
+check_rev_b0.count().set{ rev_b0_counter }
 
 dwi.into{dwi_for_prelim_bet; dwi_for_denoise}
-bvecs.into{bvecs_for_prelim_bet; bvecs_for_eddy}
-bvals.into{bvals_for_prelim_bet; bvals_for_eddy; bvals_for_extract_b0; bvals_for_resample_b0; bvals_for_extract_dti_shell; bvals_for_extract_fodf_shell}
+bvecs.into{bvecs_for_prelim_bet; bvecs_for_eddy; bvecs_for_topup}
+bvals.into{bvals_for_prelim_bet; bvals_for_eddy; bvals_for_topup; bvals_for_extract_b0; bvals_for_resample_b0; bvals_for_extract_dti_shell; bvals_for_extract_fodf_shell}
 
 dwi_for_prelim_bet
     .phase(bvals_for_prelim_bet)
@@ -115,7 +125,7 @@ process denoise_dwi {
     set sid, file(dwi), file(b0_mask) from dwi_b0_mask_for_denoise
 
     output:
-    set sid, "${sid}__dwi_denoised.nii.gz" into dwi_for_eddy
+    set sid, "${sid}__dwi_denoised.nii.gz" into dwi_for_eddy, dwi_for_topup, dwi_for_skip_topup
 
     script:
     dir_id = get_dir(sid)
@@ -130,24 +140,97 @@ process denoise_dwi {
         """
 }
 
+process skip_topup {
+    tag { "$sid" }
+    cpus 3
+
+    input:
+    set sid, file(dwi) from dwi_for_skip_topup
+    val(rev_b0_count) from rev_b0_counter
+
+    output:
+    set sid, topup_computed, "${params.prefix_topup}_fieldcoef.nii.gz", "${params.prefix_topup}_movpar.txt" into\
+        topup_file_for_eddy_from_skip_topup, check_empty, lol_skip
+
+    when:
+    rev_b0_count == 0
+
+    script:
+    dir_id = get_dir(sid)
+    topup_computed=0
+    """
+    touch ${params.prefix_topup}_fieldcoef.nii.gz
+    touch ${params.prefix_topup}_movpar.txt
+    """
+}
+
+dwi_for_topup
+    .phase(bvals_for_topup)
+    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .phase(bvecs_for_topup)
+    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .phase(rev_b0)
+    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .set{dwi_gradients_rev_b0_for_topup}
+
+process topup {
+    tag { "$sid" }
+    cpus 3
+
+    input:
+    set sid, file(dwi), file(bval), file(bvec), file(rev_b0) from\
+        dwi_gradients_rev_b0_for_topup
+    val(rev_b0_count) from rev_b0_counter
+
+    output:
+    set sid, topup_computed, "${params.prefix_topup}_fieldcoef.nii.gz", "${params.prefix_topup}_movpar.txt" into\
+        topup_file_for_eddy_from_topup, test, lol_topup
+
+    when:
+    rev_b0_count == 1
+
+    script:
+    dir_id = get_dir(sid)
+    if (params.run_topup){
+        topup_computed=1
+        """
+        OMP_NUM_THREADS=$task.cpus
+        scil_prepare_topup_command.py $dwi $bval $bvec $rev_b0 --config $params.config_topup\
+            --b0_thr $params.b0_thr_extract_b0 --encoding_direction $params.encoding_direction\
+            --dwell_time $params.dwell_time --output_prefix $params.prefix_topup --output_script
+        sh topup.sh
+        """
+    }
+    else{            
+        topup_computed=0
+        """
+        touch ${params.prefix_topup}_fieldcoef.nii.gz
+        touch ${params.prefix_topup}_movpar.txt
+        """
+    }
+}
+
+concat_files = Channel.empty()
+concat_files.concat(topup_file_for_eddy_from_topup, topup_file_for_eddy_from_skip_topup).set{topup_file_for_eddy}
+
 dwi_for_eddy
     .phase(bvals_for_eddy)
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .phase(bvecs_for_eddy)
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(rev_b0)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .phase(b0_mask_for_eddy)
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .set{dwi_gradients_rev_b0_mask_for_eddy}
+    .phase(topup_file_for_eddy)
+    .map{ch1, ch2 -> [*ch1, ch2[1], ch2[2], ch2[3]] }
+    .into{dwi_gradients_mask_topup_files_for_eddy; test}
 
 process eddy {
     tag { "$sid" }
     cpus params.processes_eddy
 
     input:
-    set sid, file(dwi), file(bval), file(bvec), file(rev_b0), file(mask) from\
-        dwi_gradients_rev_b0_mask_for_eddy
+    set sid, file(dwi), file(bval), file(bvec), file(mask), val(topup_computed), file(field), file(movpar) from\
+        dwi_gradients_mask_topup_files_for_eddy
 
     output:
     set sid, "${sid}__dwi_corrected.nii.gz" into\
@@ -162,19 +245,31 @@ process eddy {
 
     script:
     dir_id = get_dir(sid)
-    if (params.eddy)
-        """
-        OMP_NUM_THREADS=$task.cpus
-        scil_prepare_eddy_command.py $dwi $bval $bvec $rev_b0 $mask --config $params.config_eddy\
-            --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
-            --encoding_direction $params.encoding_direction\
-            --dwell_time $params.dwell_time --output_script
-        sh eddy.sh
-        cp dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
-        cp dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
-        """
+    if (params.run_eddy)
+        if (topup_computed)
+            """
+            OMP_NUM_THREADS=$task.cpus
+            scil_prepare_eddy_command.py $dwi $bval $bvec $mask --topup $params.prefix_topup\
+                --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
+                --encoding_direction $params.encoding_direction\
+                --dwell_time $params.dwell_time --output_script
+            sh eddy.sh
+            cp dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
+            cp dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
+            """
+        else
+            """
+            OMP_NUM_THREADS=$task.cpus
+            scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
+                --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
+                --encoding_direction $params.encoding_direction\
+                --dwell_time $params.dwell_time --output_script
+            sh eddy.sh
+            cp dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
+            cp dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
+            """
     else
-    """
+        """
         cp $dwi ${sid}__dwi_corrected.nii.gz
         cp $bvec ${sid}__dwi_eddy_corrected.bvec
         """

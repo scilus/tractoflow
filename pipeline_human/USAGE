@@ -17,13 +17,13 @@ DESCRIPTION
                                     │   │   ├── dwi.nii.gz
                                     │   │   ├── bval
                                     │   │   ├── bvec
-                                    │   │   ├── rev_b0.nii.gz
+                                    │   │   ├── rev_b0.nii.gz (optionnal)
                                     │   │   └── t1.nii.gz
                                     │   └── A2
                                     │   │   ├── dwi.nii.gz
                                     │   │   ├── bval
                                     │   │   ├── bvec
-                                    │   │   ├── rev_b0.nii.gz
+                                    │   │   ├── rev_b0.nii.gz (optionnal)
                                     │   │   └── t1.nii.gz
                                     └── S2
                                         ├── A1
@@ -37,13 +37,15 @@ DESCRIPTION
                                     ├── dwi.nii.gz
                                     ├── bval
                                     ├── bvec
-                                    ├── rev_b0.nii.gz
+                                    ├── rev_b0.nii.gz (optionnal)
                                     └── t1.nii.gz
 
 Files should be compressed Nifti files (.nii.gz)
 
 OPTIONAL ARGUMENTS (current value)
 
+--topup                                     Compute topup ($topup).
+                                            Need a rev_b0.nii.gz file.
 --processes                                 The number of parallel processes to launch ($cpu_count).
                                             Only affects the local scheduler.
 --output_dir                                Directory where to write the final results.
