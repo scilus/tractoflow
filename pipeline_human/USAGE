@@ -44,6 +44,10 @@ Files should be compressed Nifti files (.nii.gz)
 
 OPTIONAL ARGUMENTS (current value)
 
+--dti_shells                                Shells selected to compute the dti metrics ($dti_shells).
+                                            To change them please write them between quotes e.g. (--dti_shells "0 300").
+--fodf_shells                               Shells selected to compute the fodf metrics ($fodf_shells).
+                                            To change them please write them between quotes e.g. (--fodf_shells "0 1000").
 --topup                                     Compute topup ($topup).
                                             Need a rev_b0.nii.gz file.
 --processes                                 The number of parallel processes to launch ($cpu_count).

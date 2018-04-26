@@ -11,7 +11,8 @@ if(params.help) {
     usage = file("$baseDir/USAGE")
 
     cpu_count = Runtime.runtime.availableProcessors()
-    bindings = ["cpu_count":"$cpu_count", "topup":"$params.topup"]
+    bindings = ["cpu_count":"$cpu_count", "topup":"$params.topup",
+                "dti_shells":"$params.dti_shells", "fodf_shells":"$params.fodf_shells"]
 
     engine = new groovy.text.SimpleTemplateEngine()
     template = engine.createTemplate(usage.text).make(bindings)
