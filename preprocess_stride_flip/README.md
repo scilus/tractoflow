@@ -2,15 +2,15 @@ Human pipeline
 =================
 
 Modify strides and flip gradients. This step is not
-mandatory if the strides and flips are already correct.
+mandatory if the strides of the DWI is [1 2 3 4].
 
 Singularity
 -----
 The image for singularity can be built using _singularity/Singularity.def_ with the command:
 ```singularity build image_name.img Singularity.def```. It could be used to run
-the penthera pipelines with the option ```-with-singularity image_name.img```
+the preprocess pipeline with the option ```-with-singularity image_name.img```
  of nextflow.
- 
+  To build the singularity, please run the command from the directory ```singularity/```. Otherwise, ```scilpy.tar``` is not found.
  
 Requirements
 ------------
