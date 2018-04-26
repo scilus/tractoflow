@@ -4,6 +4,8 @@ Human pipeline
 Do all the processing. The different steps are
 explained below. The input subjects must all have the same encoding scheme (gradient table).
 
+WARNING: The results could take 4 times more disk space than the input. 
+
 Steps
 ------------
 
