@@ -102,7 +102,7 @@ process bet_prelim_dwi {
     dir_id = get_dir(sid)
     """
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
-    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --b0_thr $params.b0_thr_extract_b0
+    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean --b0_thr $params.b0_thr_extract_b0
     antsBrainExtraction.sh -d 3 -a ${sid}__b0.nii.gz -e $template_dir_b0/b0_template.nii.gz\
         -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz\
         -f $template_dir_b0/b0_brain_registration_mask.nii.gz -k 1
@@ -557,7 +557,7 @@ process resample_b0 {
     script:
     dir_id = get_dir(sid)
     """
-    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0_resample.nii.gz
+    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0_resample.nii.gz --mean --b0_thr $params.b0_thr_extract_b0
     mrthreshold ${sid}__b0_resample.nii.gz ${sid}__b0_mask_resample.nii.gz\
         --abs 0.00001
     """
