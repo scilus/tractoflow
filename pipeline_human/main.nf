@@ -88,7 +88,7 @@ dwi_for_prelim_bet
 
 process bet_prelim_dwi {
     tag { "$sid" }
-    cpus params.processes_bet_dwi
+    cpus params.processes_brain_extraction_dwi
 
     input:
     set sid, file(dwi), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
@@ -107,7 +107,7 @@ process bet_prelim_dwi {
         -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz\
         -f $template_dir_b0/b0_brain_registration_mask.nii.gz -k 1
     cp bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
-    maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilate.nii.gz --npass $params.dilate_b0_mask_prelim_bet
+    maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilate.nii.gz --npass $params.dilate_b0_mask_prelim_brain_extraction
     mrcalc ${sid}__b0.nii.gz ${sid}__b0_bet_mask_dilate.nii.gz -mult ${sid}__b0_bet.nii.gz -quiet
     """
 }
@@ -129,10 +129,10 @@ process denoise_dwi {
 
     script:
     dir_id = get_dir(sid)
-    if(params.do_denoising_dwi)
+    if(params.run_dwi_denoising)
         """
         MRTRIX_NTHREADS=$task.cpus
-        dwidenoise $dwi ${sid}__dwi_denoised.nii.gz -mask $b0_mask -extent $params.extent
+        dwidenoise $dwi ${sid}__dwi_denoised.nii.gz -mask $b0_mask -extent $params.denoising_block_size
         """
     else
         """
@@ -306,7 +306,7 @@ dwi_for_bet
 
 process bet_dwi {
     tag { "$sid" }
-    cpus params.processes_bet_dwi
+    cpus params.processes_brain_extraction_dwi
 
     input:
     set sid, file(dwi), file(b0) from dwi_b0_for_bet
@@ -400,7 +400,7 @@ process resample_t1 {
 
     script:
     dir_id = get_dir(sid)
-    if(params.do_resample_t1)
+    if(params.run_resample_t1)
         """
         scil_resample_volume.py $t1 ${sid}__t1_resample.nii.gz \
             --resolution $params.t1_resolution \
@@ -414,7 +414,7 @@ process resample_t1 {
 
 process bet_t1 {
     tag { "$sid" }
-    cpus params.processes_bet_t1
+    cpus params.processes_brain_extraction_t1
 
     input:
     set sid, file(t1) from t1_for_bet
@@ -516,7 +516,7 @@ process resample_dwi {
 
     script:
     dir_id = get_dir(sid)
-    if (params.do_resample_dwi)
+    if (params.run_resample_dwi)
         """
         scil_resample_volume.py $dwi \
             dwi_resample.nii.gz \
@@ -751,7 +751,7 @@ process segment_tissues {
     script:
     dir_id = get_dir(sid)
     """
-    fast -t $params.type_of_image -n $params.number_of_tissue\
+    fast -t 1 -n $params.number_of_tissue\
          -H $params.spatial_smoothness\
          -I $params.number_of_iter_for_bias_field\
          -l $params.lowpass -g -o t1.nii.gz $t1
@@ -784,12 +784,12 @@ process compute_frf {
 
     script:
     dir_id = get_dir(sid)
-    if (params.fix_response)
+    if (params.set_frf)
         """
         scil_compute_ssst_frf.py $dwi $bval $bvec frf.txt --mask $b0_mask\
         --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
         --roi_radius $params.roi_radius
-        scil_set_response_function.py frf.txt $params.frf .temp_frf.txt
+        scil_set_response_function.py frf.txt $params.manual_frf .temp_frf.txt
         cp .temp_frf.txt ${sid}__unique_frf.txt
         """
     else
