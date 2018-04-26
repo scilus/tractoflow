@@ -2,50 +2,50 @@ Human pipeline
 =================
 
 Do all the processing. The different steps are
-explained below. The input dataset must have
-the same gradient scheme.
+explained below. The input subjects must all have the same encoding scheme (gradient table).
 
 Steps
 ------------
 
 ######Diffusion processes
-- preliminary bet
-- denoise dwi
-- eddy
-- extract b0
-- bet dwi
-- n4 dwi
-- crop dwi
-- upsample dwi
-- upsample b0
+- preliminary dwi brain extraction (ANTs)
+- denoise dwi (Mrtrix3)
+- topup (FSL)
+- eddy (FSL)
+- extract b0 (Scilpy)
+- dwi brain extraction (ANTs)
+- N4 dwi (ANTs)
+- crop dwi (Scilpy)
+- upsample dwi (Scilpy)
+- upsample b0 (Scilpy)
 
 ######T1 processes
-- resample t1
-- bet t1
-- n4 t1
-- crop t1
-- denoise t1
-- registration on diffusion
-- tissue segmentation
+- resample t1 (Scilpy)
+- t1 brain extraction (ANTs)
+- N4 t1 (ANTs)
+- crop t1 (Scilpy)
+- denoise t1 (Scilpy)
+- registration on diffusion (ANTs)
+- tissue segmentation (FSL)
 
 ######Metrics processes
-- extract dti shell
-- dti metrics
-- extract fodf shell
-- compute frf
-- mean frf
-- fodf metrics
-- pft maps
-- seeding_mask
-- tracking
+- extract dti shells (b-values < 1200) (Scilpy)
+- dti metrics (Scilpy)
+- extract fodf shells (b-values > 700) (Scilpy)
+- compute fiber response function (Scilpy)
+- mean fiber response function (Scilpy)
+- fodf metrics (Scilpy)
+- particle filter tractography maps (Scilpy)
+- seeding_mask (Scilpy)
+- particle filter tracking (Scilpy)
 
 Singularity
 -----
 The image for singularity can be built using _singularity/Singularity.def_ with the command:
 ```singularity build image_name.img Singularity.def```. It could be used to run
-the penthera pipelines with the option ```-with-singularity image_name.img```
+the human pipeline with the option ```-with-singularity image_name.img```
  of nextflow.
- 
+ To build the singularity, please run the command from the directory ```singularity/```. Otherwise, ```scilpy.tar``` is not found.
  
 Requirements
 ------------
