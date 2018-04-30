@@ -17,13 +17,13 @@ DESCRIPTION
                                     │   │   ├── dwi.nii.gz
                                     │   │   ├── bval
                                     │   │   ├── bvec
-                                    │   │   ├── rev_b0.nii.gz (optionnal)
+                                    │   │   ├── rev_b0.nii.gz (optional)
                                     │   │   └── t1.nii.gz
                                     │   └── A2
                                     │   │   ├── dwi.nii.gz
                                     │   │   ├── bval
                                     │   │   ├── bvec
-                                    │   │   ├── rev_b0.nii.gz (optionnal)
+                                    │   │   ├── rev_b0.nii.gz (optional)
                                     │   │   └── t1.nii.gz
                                     └── S2
                                         ├── A1
@@ -37,7 +37,7 @@ DESCRIPTION
                                     ├── dwi.nii.gz
                                     ├── bval
                                     ├── bvec
-                                    ├── rev_b0.nii.gz (optionnal)
+                                    ├── rev_b0.nii.gz (optional)
                                     └── t1.nii.gz
 
 Files should be compressed Nifti files (.nii.gz)
