@@ -38,44 +38,74 @@ if (params.root){
     log.info "Input: $params.root"
     root = file(params.root)
     in_data = Channel
-        .fromFilePairs("$root/**/{bval,bvec,dwi.nii.gz,rev_b0.nii.gz,t1.nii.gz}",
-                       size: 5,
+        .fromFilePairs("$root/**/{bval,bvec,dwi.nii.gz,t1.nii.gz}",
+                       size: 4,
                        maxDepth:2,
                        flat: true) { it.parent.parent.name + "_-_" + it.parent.name}
-                       }
+    Channel
+    .fromPath("$root/rev_b0.nii.gz",
+                    maxDepth:2)
+    .map{ch1 -> [ch1.parent.parent.name + "_-_" + ch1.parent.name, ch1]}
+    .into{rev_b0; check_rev_b0}
+    }
 else if (params.subject){
     log.info "Input: $params.subject"
     subject = file(params.subject)
     in_data = Channel
-        .fromFilePairs("$subject/{bval,bvec,dwi.nii.gz,rev_b0.nii.gz,t1.nii.gz}",
-                       size: 5,
+        .fromFilePairs("$subject/{bval,bvec,dwi.nii.gz,t1.nii.gz}",
+                       size: 4,
                        maxDepth:2,
                        flat: true) { it.parent.name}
-                       }
+    Channel
+    .fromPath("$subject/*rev_b0.nii.gz",
+                    maxDepth:1)
+    .map{ch1 -> [ch1.parent.name, ch1]}
+    .into{rev_b0; check_rev_b0}
+    }
 
-(dwi_rev_b0_t1_for_convert, gradients_for_flip) = in_data
-    .map{sid, bvals, bvecs, dwi, rev_b0, t1 -> [tuple(sid, dwi, rev_b0, t1),
-                                                tuple(sid, bvals, bvecs)]}
+(dwi_t1_for_convert, gradients_for_flip) = in_data
+    .map{sid, bvals, bvecs, dwi, t1 -> [tuple(sid, dwi, t1),
+                                        tuple(sid, bvals, bvecs)]}
     .separate(2)
+
+check_rev_b0.count().set{ rev_b0_counter }
 
 process correct_stride {
     tag { "$sid" }
     cpus 2
 
     input:
-    set sid, file(dwi), file(rev), file(t1) from dwi_rev_b0_t1_for_convert
+    set sid, file(dwi), file(t1) from dwi_t1_for_convert
 
     output:
     file "dwi.nii.gz"
-    file "rev_b0.nii.gz"
     file "t1.nii.gz"
 
     script:
     dir_id = get_dir(sid)
     """
     mrconvert $dwi dwi.nii.gz -stride 1,2,3,4 -force -quiet
-    mrconvert $rev rev_b0.nii.gz -stride 1,2,3,4 -force -quiet
     mrconvert $t1 t1.nii.gz -stride 1,2,3,4 -force -quiet
+    """
+}
+
+process correct_stride_rev_b0 {
+    tag { "$sid" }
+    cpus 1
+
+    input:
+    set sid, file(rev) from rev_b0
+
+    output:
+    file "rev_b0.nii.gz"
+
+    when:
+    check_rev_b0 == 1
+
+    script:
+    dir_id = get_dir(sid)
+    """
+    mrconvert $rev rev_b0.nii.gz -stride 1,2,3,4 -force -quiet
     """
 }
 
