@@ -151,7 +151,7 @@ process skip_topup {
 
     output:
     set sid, topup_computed, "${params.prefix_topup}_fieldcoef.nii.gz", "${params.prefix_topup}_movpar.txt" into\
-        topup_file_for_eddy_from_skip_topup, check_empty, lol_skip
+        topup_file_for_eddy_from_skip_topup
 
     when:
     rev_b0_count == 0
@@ -185,7 +185,7 @@ process topup {
 
     output:
     set sid, topup_computed, "${params.prefix_topup}_fieldcoef.nii.gz", "${params.prefix_topup}_movpar.txt" into\
-        topup_file_for_eddy_from_topup, test, lol_topup
+        topup_file_for_eddy_from_topup
 
     when:
     rev_b0_count == 1
@@ -223,7 +223,7 @@ dwi_for_eddy
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .phase(topup_file_for_eddy)
     .map{ch1, ch2 -> [*ch1, ch2[1], ch2[2], ch2[3]] }
-    .into{dwi_gradients_mask_topup_files_for_eddy; test}
+    .set{dwi_gradients_mask_topup_files_for_eddy}
 
 process eddy {
     tag { "$sid" }
@@ -238,11 +238,9 @@ process eddy {
         dwi_for_extract_b0, dwi_for_bet
     set sid, "${sid}__dwi_eddy_corrected.bvec" into\
         bvecs_for_extract_b0,
-        bvecs_for_denoise,
         bvecs_for_resample_b0,
         bvecs_for_dti_shell,
-        bvecs_for_fodf_shell,
-        bvecs_for_extract_shell_denoise
+        bvecs_for_fodf_shell
 
     script:
     dir_id = get_dir(sid)
@@ -313,9 +311,9 @@ process bet_dwi {
     set sid, file(dwi), file(b0) from dwi_b0_for_bet
 
     output:
-    set sid, "${sid}__b0_bet_mask.nii.gz" into b0_mask_for_n4, b0_mask_for_crop
-    set sid, "${sid}__dwi_bet.nii.gz" into dwi_for_n4
-    set sid, "${sid}__b0_bet.nii.gz" into b0_for_n4, b0_for_crop
+    set sid, "${sid}__b0_bet_mask.nii.gz" into b0_mask_for_crop
+    set sid, "${sid}__dwi_bet.nii.gz", "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask.nii.gz" into dwi_grad_b0_b0_mask_for_n4
+    set sid, "${sid}__b0_bet.nii.gz" into b0_for_crop
 
     script:
     dir_id = get_dir(sid)
@@ -328,13 +326,6 @@ process bet_dwi {
     mrcalc $b0 ${sid}__b0_bet_mask.nii.gz -mult ${sid}__b0_bet.nii.gz -quiet
     """
 }
-
-dwi_for_n4
-    .phase(b0_for_n4)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(b0_mask_for_n4)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .set{dwi_grad_b0_b0_mask_for_n4}
 
 process n4_dwi {
     tag { "$sid" }
@@ -373,8 +364,7 @@ process crop_dwi {
     set sid, file(dwi), file(b0_mask), file(b0) from dwi_and_b0_mask_b0_for_crop
 
     output:
-    set sid, "${sid}__dwi_crop.nii.gz", "${sid}__b0_mask_crop.nii.gz" into\
-        dwi_and_b0_mask_for_denoise, dwi_mask_for_resample
+    set sid, "${sid}__dwi_crop.nii.gz", "${sid}__b0_mask_crop.nii.gz" into dwi_mask_for_resample
     file "${sid}__b0_crop.nii.gz"
 
     script:
@@ -421,8 +411,8 @@ process bet_t1 {
     set sid, file(t1) from t1_for_bet
 
     output:
-    set sid, "${sid}__t1_bet.nii.gz" into t1_for_denoise
-    set sid, "${sid}__t1_bet_mask.nii.gz" into t1_mask_for_denoise, t1_mask_for_crop
+    set sid, "${sid}__t1_bet.nii.gz", "${sid}__t1_bet_mask.nii.gz" into t1_and_mask_for_denoise
+    set sid, "${sid}__t1_bet_mask.nii.gz" into t1_mask_for_crop
 
     script:
     dir_id = get_dir(sid)
@@ -435,11 +425,6 @@ process bet_t1 {
     cp bet/BrainExtractionMask.nii.gz ${sid}__t1_bet_mask.nii.gz
     """
 }
-
-t1_for_denoise
-    .phase(t1_mask_for_denoise)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .set{t1_and_mask_for_denoise}
 
 process denoise_t1 {
     tag { "$sid" }
@@ -491,8 +476,7 @@ process crop_t1 {
     set sid, file(t1), file(t1_mask) from t1_and_mask_for_crop
 
     output:
-    set sid, "${sid}__t1_bet_crop.nii.gz" into t1_for_reg
-    set sid, "${sid}__t1_bet_mask_crop.nii.gz" into t1_mask_for_reg
+    set sid, "${sid}__t1_bet_crop.nii.gz", "${sid}__t1_bet_mask_crop.nii.gz" into t1_t1_mask_for_reg
 
     script:
     dir_id = get_dir(sid)
@@ -680,9 +664,7 @@ process extract_fodf_shell {
     """
 }
 
-t1_for_reg
-    .phase(t1_mask_for_reg)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+t1_t1_mask_for_reg
     .phase(fa_for_reg)
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .phase(b0_for_reg)
