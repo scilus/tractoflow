@@ -927,7 +927,7 @@ process tracking {
 
     script:
     dir_id = get_dir(sid)
-    if (params.do_compress_streamlines)
+    if (params.compress_streamlines)
         """
         scil_compute_particle_filter_tracking.py $fodf $seed\
             $include $exclude ${sid}__tracking.trk --algo $params.algo\
