@@ -43,7 +43,7 @@ if (params.root){
                        maxDepth:2,
                        flat: true) { it.parent.parent.name + "_-_" + it.parent.name}
     Channel
-    .fromPath("$root/rev_b0.nii.gz",
+    .fromPath("$root/*rev_b0.nii.gz",
                     maxDepth:2)
     .map{ch1 -> [ch1.parent.parent.name + "_-_" + ch1.parent.name, ch1]}
     .into{rev_b0; check_rev_b0}
