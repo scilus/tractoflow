@@ -21,5 +21,3 @@ The file _singularity/Singularity.def_ contains most of the requirements command
 - Mrtrix3
 - ANTS
 - FSL with the eddy_openmp [patch](https://fsl.fmrib.ox.ac.uk/fsldownloads/patches/eddy-patch-fsl-5.0.9/centos6/)
-
-The file _singularity/Singularity.def_ contains most of the requirements commands.
