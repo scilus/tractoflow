@@ -5,13 +5,12 @@ params.subject = false
 params.help = false
 template_dir_t1="$workflow.projectDir/../data/mni_152_sym_09c/t1"
 template_dir_b0="$workflow.projectDir/../data/mni_152_sym_09c/b0"
-config_eddy="$workflow.projectDir/../data/b02b0.cnf"
 
 if(params.help) {
     usage = file("$baseDir/USAGE")
 
     cpu_count = Runtime.runtime.availableProcessors()
-    bindings = ["cpu_count":"$cpu_count", "topup":"$params.topup",
+    bindings = ["cpu_count":"$cpu_count", "topup":"$params.run_topup",
                 "dti_shells":"$params.dti_shells", "fodf_shells":"$params.fodf_shells"]
 
     engine = new groovy.text.SimpleTemplateEngine()
@@ -22,7 +21,7 @@ if(params.help) {
 }
 
 log.info "Human pipeline"
-log.info "================================"
+log.info "=============="
 log.info ""
 log.info "Start time: $workflow.start"
 log.info ""
@@ -57,7 +56,7 @@ else if (params.subject){
     in_data = Channel
         .fromFilePairs("$subject/{bval,bvec,dwi.nii.gz,t1.nii.gz}",
                        size: 4,
-                       maxDepth:2,
+                       maxDepth:1,
                        flat: true) { it.parent.name}
     Channel
     .fromPath("$subject/*rev_b0.nii.gz",
