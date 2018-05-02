@@ -76,8 +76,12 @@ else if (params.subject){
 check_rev_b0.count().set{ rev_b0_counter }
 
 dwi.into{dwi_for_prelim_bet; dwi_for_denoise}
+
 bvecs.into{bvecs_for_prelim_bet; bvecs_for_eddy; bvecs_for_topup}
-bvals.into{bvals_for_prelim_bet; bvals_for_eddy; bvals_for_topup; bvals_for_extract_b0; bvals_for_resample_b0; bvals_for_extract_dti_shell; bvals_for_extract_fodf_shell}
+
+bvals.into{bvals_for_prelim_bet; bvals_for_eddy; bvals_for_topup; 
+           bvals_for_extract_b0; bvals_for_resample_b0; 
+           bvals_for_extract_dti_shell; bvals_for_extract_fodf_shell}
 
 dwi_for_prelim_bet
     .phase(bvals_for_prelim_bet)
@@ -94,7 +98,9 @@ process bet_prelim_dwi {
     set sid, file(dwi), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
 
     output:
-    set sid, "${sid}__b0_bet_mask_dilate.nii.gz" into b0_mask_for_denoise_dwi, b0_mask_for_eddy
+    set sid, "${sid}__b0_bet_mask_dilate.nii.gz" into\
+        b0_mask_for_denoise_dwi,
+        b0_mask_for_eddy
     file "${sid}__b0_bet.nii.gz"
     file "${sid}__b0_bet_mask.nii.gz"
 
@@ -102,13 +108,17 @@ process bet_prelim_dwi {
     dir_id = get_dir(sid)
     """
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
-    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean --b0_thr $params.b0_thr_extract_b0
-    antsBrainExtraction.sh -d 3 -a ${sid}__b0.nii.gz -e $template_dir_b0/b0_template.nii.gz\
+    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean\
+        --b0_thr $params.b0_thr_extract_b0
+    antsBrainExtraction.sh -d 3 -a ${sid}__b0.nii.gz\
+        -e $template_dir_b0/b0_template.nii.gz\
         -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz\
         -f $template_dir_b0/b0_brain_registration_mask.nii.gz -k 1
     cp bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
-    maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilate.nii.gz --npass $params.dilate_b0_mask_prelim_brain_extraction
-    mrcalc ${sid}__b0.nii.gz ${sid}__b0_bet_mask_dilate.nii.gz -mult ${sid}__b0_bet.nii.gz -quiet
+    maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilate.nii.gz\
+        --npass $params.dilate_b0_mask_prelim_brain_extraction
+    mrcalc ${sid}__b0.nii.gz ${sid}__b0_bet_mask_dilate.nii.gz\
+        -mult ${sid}__b0_bet.nii.gz -quiet
     """
 }
 
@@ -125,14 +135,18 @@ process denoise_dwi {
     set sid, file(dwi), file(b0_mask) from dwi_b0_mask_for_denoise
 
     output:
-    set sid, "${sid}__dwi_denoised.nii.gz" into dwi_for_eddy, dwi_for_topup, dwi_for_skip_topup
+    set sid, "${sid}__dwi_denoised.nii.gz" into\
+        dwi_for_eddy,
+        dwi_for_topup,
+        dwi_for_skip_topup
 
     script:
     dir_id = get_dir(sid)
     if(params.run_dwi_denoising)
         """
         MRTRIX_NTHREADS=$task.cpus
-        dwidenoise $dwi ${sid}__dwi_denoised.nii.gz -mask $b0_mask -extent $params.denoising_block_size
+        dwidenoise $dwi ${sid}__dwi_denoised.nii.gz -mask $b0_mask\
+            -extent $params.denoising_block_size
         """
     else
         """
@@ -149,8 +163,9 @@ process skip_topup {
     val(rev_b0_count) from rev_b0_counter
 
     output:
-    set sid, topup_computed, "${params.prefix_topup}_fieldcoef.nii.gz", "${params.prefix_topup}_movpar.txt" into\
-        topup_file_for_eddy_from_skip_topup
+    set sid, topup_computed, "${params.prefix_topup}_fieldcoef.nii.gz", 
+        "${params.prefix_topup}_movpar.txt"\
+        into topup_file_for_eddy_from_skip_topup
 
     when:
     rev_b0_count == 0
@@ -178,13 +193,13 @@ process topup {
     cpus 3
 
     input:
-    set sid, file(dwi), file(bval), file(bvec), file(rev_b0) from\
-        dwi_gradients_rev_b0_for_topup
+    set sid, file(dwi), file(bval), file(bvec), file(rev_b0)\
+        from dwi_gradients_rev_b0_for_topup
     val(rev_b0_count) from rev_b0_counter
 
     output:
-    set sid, topup_computed, "${params.prefix_topup}_fieldcoef.nii.gz", "${params.prefix_topup}_movpar.txt" into\
-        topup_file_for_eddy_from_topup
+    set sid, topup_computed, "${params.prefix_topup}_fieldcoef.nii.gz",
+    "${params.prefix_topup}_movpar.txt" into topup_file_for_eddy_from_topup
 
     when:
     rev_b0_count == 1
@@ -195,9 +210,11 @@ process topup {
         topup_computed=1
         """
         OMP_NUM_THREADS=$task.cpus
-        scil_prepare_topup_command.py $dwi $bval $bvec $rev_b0 --config $params.config_topup\
-            --b0_thr $params.b0_thr_extract_b0 --encoding_direction $params.encoding_direction\
-            --dwell_time $params.dwell_time --output_prefix $params.prefix_topup --output_script
+        scil_prepare_topup_command.py $dwi $bval $bvec $rev_b0\
+            --config $params.config_topup --b0_thr $params.b0_thr_extract_b0\
+            --encoding_direction $params.encoding_direction\
+            --dwell_time $params.dwell_time --output_prefix $params.prefix_topup\
+            --output_script
         sh topup.sh
         """
     }
@@ -211,7 +228,11 @@ process topup {
 }
 
 concat_files = Channel.empty()
-concat_files.concat(topup_file_for_eddy_from_topup, topup_file_for_eddy_from_skip_topup).set{topup_file_for_eddy}
+
+concat_files
+.concat(topup_file_for_eddy_from_topup, 
+        topup_file_for_eddy_from_skip_topup)
+.set{topup_file_for_eddy}
 
 dwi_for_eddy
     .phase(bvals_for_eddy)
@@ -229,12 +250,14 @@ process eddy {
     cpus params.processes_eddy
 
     input:
-    set sid, file(dwi), file(bval), file(bvec), file(mask), val(topup_computed), file(field), file(movpar) from\
-        dwi_gradients_mask_topup_files_for_eddy
+    set sid, file(dwi), file(bval), file(bvec), file(mask),
+        val(topup_computed), file(field), file(movpar)\
+        from dwi_gradients_mask_topup_files_for_eddy
 
     output:
     set sid, "${sid}__dwi_corrected.nii.gz" into\
-        dwi_for_extract_b0, dwi_for_bet
+        dwi_for_extract_b0,
+        dwi_for_bet
     set sid, "${sid}__dwi_eddy_corrected.bvec" into\
         bvecs_for_extract_b0,
         bvecs_for_resample_b0,
@@ -247,8 +270,9 @@ process eddy {
         if (topup_computed)
             """
             OMP_NUM_THREADS=$task.cpus
-            scil_prepare_eddy_command.py $dwi $bval $bvec $mask --topup $params.prefix_topup\
-                --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
+            scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
+                --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
+                --b0_thr $params.b0_thr_extract_b0\
                 --encoding_direction $params.encoding_direction\
                 --dwell_time $params.dwell_time --output_script
             sh eddy.sh
@@ -293,7 +317,8 @@ process extract_b0 {
     script:
     dir_id = get_dir(sid)
     """
-    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean --b0_thr $params.b0_thr_extract_b0
+    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean\
+        --b0_thr $params.b0_thr_extract_b0
     """
 }
 
@@ -311,7 +336,8 @@ process bet_dwi {
 
     output:
     set sid, "${sid}__b0_bet_mask.nii.gz" into b0_mask_for_crop
-    set sid, "${sid}__dwi_bet.nii.gz", "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask.nii.gz" into dwi_grad_b0_b0_mask_for_n4
+    set sid, "${sid}__dwi_bet.nii.gz", "${sid}__b0_bet.nii.gz", 
+        "${sid}__b0_bet_mask.nii.gz" into dwi_grad_b0_b0_mask_for_n4
     set sid, "${sid}__b0_bet.nii.gz" into b0_for_crop
 
     script:
@@ -363,7 +389,8 @@ process crop_dwi {
     set sid, file(dwi), file(b0_mask), file(b0) from dwi_and_b0_mask_b0_for_crop
 
     output:
-    set sid, "${sid}__dwi_crop.nii.gz", "${sid}__b0_mask_crop.nii.gz" into dwi_mask_for_resample
+    set sid, "${sid}__dwi_crop.nii.gz",
+        "${sid}__b0_mask_crop.nii.gz" into dwi_mask_for_resample
     file "${sid}__b0_crop.nii.gz"
 
     script:
@@ -447,7 +474,8 @@ process bet_t1 {
     set sid, file(t1) from t1_for_bet
 
     output:
-    set sid, "${sid}__t1_bet.nii.gz", "${sid}__t1_bet_mask.nii.gz" into t1_and_mask_for_crop
+    set sid, "${sid}__t1_bet.nii.gz", "${sid}__t1_bet_mask.nii.gz"\
+        into t1_and_mask_for_crop
 
     script:
     dir_id = get_dir(sid)
@@ -469,7 +497,8 @@ process crop_t1 {
     set sid, file(t1), file(t1_mask) from t1_and_mask_for_crop
 
     output:
-    set sid, "${sid}__t1_bet_crop.nii.gz", "${sid}__t1_bet_mask_crop.nii.gz" into t1_t1_mask_for_reg
+    set sid, "${sid}__t1_bet_crop.nii.gz", "${sid}__t1_bet_mask_crop.nii.gz"\
+        into t1_t1_mask_for_reg
 
     script:
     dir_id = get_dir(sid)
@@ -489,8 +518,10 @@ process resample_dwi {
     set sid, file(dwi), file(mask) from dwi_mask_for_resample
 
     output:
-    set sid, "${sid}__dwi_resample.nii.gz" into dwi_for_resample_b0,
-        dwi_for_extract_dti_shell, dwi_for_extract_fodf_shell
+    set sid, "${sid}__dwi_resample.nii.gz" into\
+        dwi_for_resample_b0,
+        dwi_for_extract_dti_shell,
+        dwi_for_extract_fodf_shell
 
     script:
     dir_id = get_dir(sid)
@@ -505,7 +536,8 @@ process resample_dwi {
             --ref dwi_resample.nii.gz \
             --enforce_dimensions \
             --interp nn
-        mrcalc dwi_resample.nii.gz mask_resample.nii.gz -mult ${sid}__dwi_resample.nii.gz -quiet
+        mrcalc dwi_resample.nii.gz mask_resample.nii.gz\
+            -mult ${sid}__dwi_resample.nii.gz -quiet
         """
     else
         """
@@ -529,13 +561,16 @@ process resample_b0 {
 
     output:
     set sid, "${sid}__b0_resample.nii.gz" into b0_for_reg
-    set sid, "${sid}__b0_mask_resample.nii.gz" into b0_mask_for_dti_metrics,
-        b0_mask_for_fodf, b0_mask_for_rf
+    set sid, "${sid}__b0_mask_resample.nii.gz" into\
+        b0_mask_for_dti_metrics,
+        b0_mask_for_fodf,
+        b0_mask_for_rf
 
     script:
     dir_id = get_dir(sid)
     """
-    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0_resample.nii.gz --mean --b0_thr $params.b0_thr_extract_b0
+    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0_resample.nii.gz --mean\
+        --b0_thr $params.b0_thr_extract_b0
     mrthreshold ${sid}__b0_resample.nii.gz ${sid}__b0_mask_resample.nii.gz\
         --abs 0.00001
     """
@@ -553,8 +588,8 @@ process extract_dti_shell {
     cpus 3
 
     input:
-    set sid, file(dwi), file(bval), file(bvec) from\
-        dwi_and_grad_for_extract_dti_shell
+    set sid, file(dwi), file(bval), file(bvec)\
+        from dwi_and_grad_for_extract_dti_shell
 
     output:
     set sid, "${sid}__dwi_dti.nii.gz", "${sid}__bval_dti",
@@ -579,8 +614,8 @@ process dti_metrics {
     cpus 3
 
     input:
-    set sid, file(dwi), file(bval), file(bvec), file(b0_mask) from\
-        dwi_and_grad_for_dti_metrics
+    set sid, file(dwi), file(bval), file(bvec), file(b0_mask)\
+        from dwi_and_grad_for_dti_metrics
 
     output:
     file "${sid}__ad.nii.gz"
@@ -610,7 +645,9 @@ process dti_metrics {
     file "${sid}__residual_residuals_stats.png"
     file "${sid}__residual_std_residuals.npy"
     set sid, "${sid}__fa.nii.gz", "${sid}__md.nii.gz" into fa_md_for_fodf
-    set sid, "${sid}__fa.nii.gz" into fa_for_reg, fa_for_rf
+    set sid, "${sid}__fa.nii.gz" into\
+        fa_for_reg,
+        fa_for_rf
 
     script:
     dir_id = get_dir(sid)
@@ -641,12 +678,14 @@ process extract_fodf_shell {
     cpus 3
 
     input:
-    set sid, file(dwi), file(bval), file(bvec) from\
-        dwi_and_grad_for_extract_fodf_shell
+    set sid, file(dwi), file(bval), file(bvec)\
+        from dwi_and_grad_for_extract_fodf_shell
 
     output:
     set sid, "${sid}__dwi_fodf.nii.gz", "${sid}__bval_fodf",
-        "${sid}__bvec_fodf" into dwi_and_grad_for_fodf, dwi_and_grad_for_rf
+        "${sid}__bvec_fodf" into\
+        dwi_and_grad_for_fodf,
+        dwi_and_grad_for_rf
 
     script:
     dir_id = get_dir(sid)
@@ -752,7 +791,8 @@ process compute_frf {
     cpus 3
 
     input:
-    set sid, file(dwi), file(bval), file(bvec), file(b0_mask), file(fa) from dwi_b0_fa_for_rf
+    set sid, file(dwi), file(bval), file(bvec), file(b0_mask), file(fa)\
+        from dwi_b0_fa_for_rf
 
     output:
     file "${sid}__unique_frf.txt" into all_frf_for_mean_frf
@@ -861,7 +901,8 @@ process pft_maps {
     set sid, file(wm), file(gm), file(csf) from map_wm_gm_csf_for_pft_maps
 
     output:
-    set sid, "${sid}__map_include.nii.gz", "${sid}__map_exclude.nii.gz" into pft_maps_for_tracking
+    set sid, "${sid}__map_include.nii.gz",
+        "${sid}__map_exclude.nii.gz" into pft_maps_for_tracking
     set sid, "${sid}__interface.nii.gz" into interface_for_seeding_mask
 
     script:
@@ -912,8 +953,8 @@ process tracking {
     cpus params.processes_tracking
 
     input:
-    set sid, file(fodf), file(include), file(exclude), file(seed) from\
-        fodf_maps_for_tracking
+    set sid, file(fodf), file(include), file(exclude), file(seed)\
+        from fodf_maps_for_tracking
 
     output:
     file "${sid}__tracking.trk"
@@ -924,23 +965,27 @@ process tracking {
         """
         scil_compute_particle_filter_tracking.py $fodf $seed\
             $include $exclude ${sid}__tracking.trk --algo $params.algo\
-            --$params.seeding $params.nbr_seeds --random $params.random --step $params.step\
-            --rk_order $params.rk_order --theta $params.theta --maxL_no_dir $params.maxL_no_dir\
-            --sfthres $params.sfthres --sfthres_init $params.sfthres_init --minL $params.minL\
-            --maxL $params.maxL --sh_interp $params.sh_interp --mask_interp $params.mask_interp\
-            --particles $params.particles --back $params.back --front $params.front\
-            --pft_theta $params.pft_theta --processes $task.cpus --compress $params.compress_value
+            --$params.seeding $params.nbr_seeds --random $params.random\
+            --step $params.step --rk_order $params.rk_order --theta $params.theta\
+            --maxL_no_dir $params.maxL_no_dir --sfthres $params.sfthres\
+            --sfthres_init $params.sfthres_init --minL $params.minL\
+            --maxL $params.maxL --sh_interp $params.sh_interp\
+            --mask_interp $params.mask_interp --particles $params.particles\
+            --back $params.back --front $params.front --pft_theta $params.pft_theta\
+            --processes $task.cpus --compress $params.compress_value
         """
     else
         """
         scil_compute_particle_filter_tracking.py $fodf $seed\
             $include $exclude ${sid}__tracking.trk --algo $params.algo\
-            --$params.seeding $params.nbr_seeds --random $params.random --step $params.step\
-            --rk_order $params.rk_order --theta $params.theta --maxL_no_dir $params.maxL_no_dir\
-            --sfthres $params.sfthres --sfthres_init $params.sfthres_init --minL $params.minL\
-            --maxL $params.maxL --sh_interp $params.sh_interp --mask_interp $params.mask_interp\
-            --particles $params.particles --back $params.back --front $params.front\
-            --pft_theta $params.pft_theta --processes $task.cpus
+            --$params.seeding $params.nbr_seeds --random $params.random\
+            --step $params.step --rk_order $params.rk_order --theta $params.theta\
+            --maxL_no_dir $params.maxL_no_dir --sfthres $params.sfthres\
+            --sfthres_init $params.sfthres_init --minL $params.minL\
+            --maxL $params.maxL --sh_interp $params.sh_interp\
+            --mask_interp $params.mask_interp --particles $params.particles\
+            --back $params.back --front $params.front --pft_theta $params.pft_theta\
+            --processes $task.cpus
         """
 }
 
