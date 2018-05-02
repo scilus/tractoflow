@@ -91,7 +91,6 @@ dwi_for_prelim_bet
     .set{dwi_gradient_for_prelim_bet}
 
 process bet_prelim_dwi {
-    tag { "$sid" }
     cpus params.processes_brain_extraction_dwi
 
     input:
@@ -128,7 +127,6 @@ dwi_for_denoise
     .set{dwi_b0_mask_for_denoise}
 
 process denoise_dwi {
-    tag { "$sid" }
     cpus params.processes_denoise_dwi
 
     input:
@@ -155,7 +153,6 @@ process denoise_dwi {
 }
 
 process skip_topup {
-    tag { "$sid" }
     cpus 3
 
     input:
@@ -189,7 +186,6 @@ dwi_for_topup
     .set{dwi_gradients_rev_b0_for_topup}
 
 process topup {
-    tag { "$sid" }
     cpus 3
 
     input:
@@ -246,7 +242,6 @@ dwi_for_eddy
     .set{dwi_gradients_mask_topup_files_for_eddy}
 
 process eddy {
-    tag { "$sid" }
     cpus params.processes_eddy
 
     input:
@@ -305,7 +300,6 @@ dwi_for_extract_b0
     .set{dwi_gradients_for_extract_b0}
 
 process extract_b0 {
-    tag { "$sid" }
     cpus 2
 
     input:
@@ -328,7 +322,6 @@ dwi_for_bet
     .set{dwi_b0_for_bet}
 
 process bet_dwi {
-    tag { "$sid" }
     cpus params.processes_brain_extraction_dwi
 
     input:
@@ -353,7 +346,6 @@ process bet_dwi {
 }
 
 process n4_dwi {
-    tag { "$sid" }
     cpus 1
 
     input:
@@ -382,7 +374,6 @@ dwi_for_crop
     .set{dwi_and_b0_mask_b0_for_crop}
 
 process crop_dwi {
-    tag { "$sid" }
     cpus 1
 
     input:
@@ -406,7 +397,6 @@ process crop_dwi {
 }
 
 process denoise_t1 {
-    tag { "$sid" }
     cpus params.processes_denoise_t1
 
     input:
@@ -424,7 +414,6 @@ process denoise_t1 {
 }
 
 process n4_t1 {
-    tag { "$sid" }
     cpus 1
 
     input:
@@ -443,7 +432,6 @@ process n4_t1 {
 }
 
 process resample_t1 {
-    tag { "$sid" }
     cpus 1
 
     input:
@@ -467,7 +455,6 @@ process resample_t1 {
 }
 
 process bet_t1 {
-    tag { "$sid" }
     cpus params.processes_brain_extraction_t1
 
     input:
@@ -490,7 +477,6 @@ process bet_t1 {
 }
 
 process crop_t1 {
-    tag { "$sid" }
     cpus 1
 
     input:
@@ -511,7 +497,6 @@ process crop_t1 {
 }
 
 process resample_dwi {
-    tag { "$sid" }
     cpus 2
 
     input:
@@ -553,7 +538,6 @@ dwi_for_resample_b0
     .set{dwi_and_grad_for_resample_b0}
 
 process resample_b0 {
-    tag { "$sid" }
     cpus 2
 
     input:
@@ -584,7 +568,6 @@ dwi_for_extract_dti_shell
     .set{dwi_and_grad_for_extract_dti_shell}
 
 process extract_dti_shell {
-    tag { "$sid" }
     cpus 3
 
     input:
@@ -610,7 +593,6 @@ dwi_and_grad_for_dti_metrics
     .set{dwi_and_grad_for_dti_metrics}
 
 process dti_metrics {
-    tag { "$sid" }
     cpus 3
 
     input:
@@ -674,7 +656,6 @@ dwi_for_extract_fodf_shell
     .set{dwi_and_grad_for_extract_fodf_shell}
 
 process extract_fodf_shell {
-    tag { "$sid" }
     cpus 3
 
     input:
@@ -704,7 +685,6 @@ t1_t1_mask_for_reg
     .set{t1_fa_b0_for_reg}
 
 process register_t1 {
-    tag { "$sid" }
     cpus params.processes_registration
 
     input:
@@ -750,7 +730,6 @@ process register_t1 {
 }
 
 process segment_tissues {
-    tag { "$sid" }
     cpus 1
 
     input:
@@ -787,7 +766,6 @@ dwi_and_grad_for_rf
     .set{dwi_b0_fa_for_rf}
 
 process compute_frf {
-    tag { "$sid" }
     cpus 3
 
     input:
@@ -826,7 +804,6 @@ each_frf_for_mean_frf
     .set{unique_and_all_frf_for_mean}
 
 process mean_frf {
-    tag{ "$sid" }
     cpus 1
 
     input:
@@ -857,7 +834,6 @@ dwi_and_grad_for_fodf
     .set{dwi_b0_metrics_for_fodf}
 
 process fodf_metrics {
-    tag { "$sid" }
     cpus params.processes_fodf
 
     input:
@@ -894,7 +870,6 @@ process fodf_metrics {
 }
 
 process pft_maps {
-    tag { "$sid" }
     cpus 1
 
     input:
@@ -920,7 +895,6 @@ wm_mask_for_seeding_mask
     .set{wm_interface_for_seeding_mask}
     
 process seeding_mask {
-    tag { "$sid" }
     cpus 1
 
     input:
@@ -949,7 +923,6 @@ fodf_for_tracking
     .set{fodf_maps_for_tracking}
 
 process tracking {
-    tag { "$sid" }
     cpus params.processes_tracking
 
     input:
