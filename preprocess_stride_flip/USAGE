@@ -56,12 +56,12 @@ OPTIONAL ARGUMENTS (current value)
 
 NOTES
 
-The `scilpy/scripts` folder should be in your PATH environment variable
+The 'scilpy/scripts' folder should be in your PATH environment variable
 
-The intermediate working directory is, by default, set to "./work".
+The intermediate working directory is, by default, set to './work'.
 To change it, use the '-w WORK_DIR' argument.
 
 The default config file is preprocess_stride_flip/nextflow.config.
-Use `-C config_file.config` to specify a non-default configuration file.
-The `-C config_file.config` must be insert after the nextflow call 
-like `nextflow -C config_file.config run ...`.
+Use '-C config_file.config' to specify a non-default configuration file.
+The '-C config_file.config' must be insert after the nextflow call
+like 'nextflow -C config_file.config run ...'.
