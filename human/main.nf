@@ -66,7 +66,7 @@ else if (params.subject){
     }
 
 
-(dwi, bvals, bvecs, t1_for_resample) = in_data
+(dwi, bvals, bvecs, t1_for_denoise) = in_data
     .map{sid, bvals, bvecs, dwi, t1 -> [tuple(sid, dwi),
                                         tuple(sid, bvals),
                                         tuple(sid, bvecs),
@@ -378,6 +378,43 @@ process crop_dwi {
     """
 }
 
+process denoise_t1 {
+    tag { "$sid" }
+    cpus params.processes_denoise_t1
+
+    input:
+    set sid, file(t1) from t1_for_denoise
+
+    output:
+    set sid, "${sid}__t1_denoised.nii.gz" into t1_for_n4
+
+    script:
+    dir_id = get_dir(sid)
+    """
+    scil_run_nlmeans.py $t1 ${sid}__t1_denoised.nii.gz 1 \
+        --noise_est basic --processes $task.cpus -f
+    """
+}
+
+process n4_t1 {
+    tag { "$sid" }
+    cpus 1
+
+    input:
+    set sid, file(t1) from t1_for_n4
+
+    output:
+    set sid, "${sid}__t1_n4.nii.gz" into t1_for_resample
+
+    script:
+    dir_id = get_dir(sid)
+    """
+    N4BiasFieldCorrection -i $t1\
+        -o [${sid}__t1_n4.nii.gz, bias_field_t1.nii.gz]\
+        -c [300x150x75x50, 1e-6] -v 1
+    """
+}
+
 process resample_t1 {
     tag { "$sid" }
     cpus 1
@@ -410,8 +447,7 @@ process bet_t1 {
     set sid, file(t1) from t1_for_bet
 
     output:
-    set sid, "${sid}__t1_bet.nii.gz", "${sid}__t1_bet_mask.nii.gz" into t1_and_mask_for_denoise
-    set sid, "${sid}__t1_bet_mask.nii.gz" into t1_mask_for_crop
+    set sid, "${sid}__t1_bet.nii.gz", "${sid}__t1_bet_mask.nii.gz" into t1_and_mask_for_crop
 
     script:
     dir_id = get_dir(sid)
@@ -420,52 +456,10 @@ process bet_t1 {
     antsBrainExtraction.sh -d 3 -a $t1 -e $template_dir_t1/t1_template.nii.gz\
         -o bet/ -m $template_dir_t1/t1_brain_probability_map.nii.gz \
         -f $template_dir_t1/t1_brain_registration_mask.nii.gz
-    cp bet/BrainExtractionBrain.nii.gz ${sid}__t1_bet.nii.gz
+    mrcalc $t1 bet/BrainExtractionMask.nii.gz -mult ${sid}__t1_bet.nii.gz
     cp bet/BrainExtractionMask.nii.gz ${sid}__t1_bet_mask.nii.gz
     """
 }
-
-process denoise_t1 {
-    tag { "$sid" }
-    cpus params.processes_denoise_t1
-
-    input:
-    set sid, file(t1), file(t1_mask) from t1_and_mask_for_denoise
-
-    output:
-    set sid, "${sid}__t1_denoised.nii.gz" into t1_for_n4
-
-    script:
-    dir_id = get_dir(sid)
-    """
-    scil_run_nlmeans.py $t1 ${sid}__t1_denoised.nii.gz 1 \
-	    --mask $t1_mask --noise_est basic --processes $task.cpus -f
-    """
-}
-
-process n4_t1 {
-    tag { "$sid" }
-    cpus 1
-
-    input:
-    set sid, file(t1) from t1_for_n4
-
-    output:
-    set sid, "${sid}__t1_n4.nii.gz" into t1_for_crop
-
-    script:
-    dir_id = get_dir(sid)
-    """
-    N4BiasFieldCorrection -i $t1\
-        -o [${sid}__t1_n4.nii.gz, bias_field_t1.nii.gz]\
-        -c [300x150x75x50, 1e-6] -v 1
-    """
-}
-
-t1_for_crop
-    .phase(t1_mask_for_crop)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .set{t1_and_mask_for_crop}
 
 process crop_t1 {
     tag { "$sid" }
