@@ -97,7 +97,7 @@ process bet_prelim_dwi {
     set sid, file(dwi), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
 
     output:
-    set sid, "${sid}__b0_bet_mask_dilate.nii.gz" into\
+    set sid, "${sid}__b0_bet_mask_dilated.nii.gz" into\
         b0_mask_for_denoise_dwi,
         b0_mask_for_eddy
     file "${sid}__b0_bet.nii.gz"
@@ -114,9 +114,9 @@ process bet_prelim_dwi {
         -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz\
         -f $template_dir_b0/b0_brain_registration_mask.nii.gz -k 1
     cp bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
-    maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilate.nii.gz\
+    maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz\
         --npass $params.dilate_b0_mask_prelim_brain_extraction
-    mrcalc ${sid}__b0.nii.gz ${sid}__b0_bet_mask_dilate.nii.gz\
+    mrcalc ${sid}__b0.nii.gz ${sid}__b0_bet_mask_dilated.nii.gz\
         -mult ${sid}__b0_bet.nii.gz -quiet
     """
 }
