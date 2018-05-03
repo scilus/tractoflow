@@ -22,11 +22,11 @@ Steps
 - upsample B0 (Scilpy)
 
 ######T1 processes
+- denoise T1 (Scilpy)
+- N4 T1 (ANTs)
 - resample T1 (Scilpy)
 - T1 brain extraction (ANTs)
-- N4 T1 (ANTs)
 - crop T1 (Scilpy)
-- denoise T1 (Scilpy)
 - registration on diffusion (ANTs)
 - tissue segmentation (FSL)
 
