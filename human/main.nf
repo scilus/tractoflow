@@ -380,18 +380,18 @@ process crop_dwi {
     set sid, file(dwi), file(b0_mask), file(b0) from dwi_and_b0_mask_b0_for_crop
 
     output:
-    set sid, "${sid}__dwi_crop.nii.gz",
-        "${sid}__b0_mask_crop.nii.gz" into dwi_mask_for_resample
-    file "${sid}__b0_crop.nii.gz"
+    set sid, "${sid}__dwi_cropped.nii.gz",
+        "${sid}__b0_mask_cropped.nii.gz" into dwi_mask_for_resample
+    file "${sid}__b0_cropped.nii.gz"
 
     script:
     dir_id = get_dir(sid)
     """
-    scil_crop_volume.py $dwi ${sid}__dwi_crop.nii.gz -f\
+    scil_crop_volume.py $dwi ${sid}__dwi_cropped.nii.gz -f\
         --output_bbox dwi_boundingBox.pkl -f
-    scil_crop_volume.py $b0 ${sid}__b0_crop.nii.gz\
+    scil_crop_volume.py $b0 ${sid}__b0_cropped.nii.gz\
         --output_bbox b0_boundingBox.pkl -f
-    scil_crop_volume.py $b0_mask ${sid}__b0_mask_crop.nii.gz\
+    scil_crop_volume.py $b0_mask ${sid}__b0_mask_cropped.nii.gz\
         --input_bbox b0_boundingBox.pkl -f
     """
 }
@@ -438,19 +438,19 @@ process resample_t1 {
     set sid, file(t1) from t1_for_resample
 
     output:
-    set sid, "${sid}__t1_resample.nii.gz" into t1_for_bet
+    set sid, "${sid}__t1_resampled.nii.gz" into t1_for_bet
 
     script:
     dir_id = get_dir(sid)
     if(params.run_resample_t1)
         """
-        scil_resample_volume.py $t1 ${sid}__t1_resample.nii.gz \
+        scil_resample_volume.py $t1 ${sid}__t1_resampled.nii.gz \
             --resolution $params.t1_resolution \
             --interp  $params.t1_interpolation
         """
     else
         """
-        cp $t1 ${sid}__t1_resample.nii.gz
+        cp $t1 ${sid}__t1_resampled.nii.gz
         """
 }
 
@@ -483,15 +483,15 @@ process crop_t1 {
     set sid, file(t1), file(t1_mask) from t1_and_mask_for_crop
 
     output:
-    set sid, "${sid}__t1_bet_crop.nii.gz", "${sid}__t1_bet_mask_crop.nii.gz"\
+    set sid, "${sid}__t1_bet_cropped.nii.gz", "${sid}__t1_bet_mask_cropped.nii.gz"\
         into t1_t1_mask_for_reg
 
     script:
     dir_id = get_dir(sid)
     """
-    scil_crop_volume.py $t1 ${sid}__t1_bet_crop.nii.gz\
+    scil_crop_volume.py $t1 ${sid}__t1_bet_cropped.nii.gz\
         --output_bbox t1_boundingBox.pkl -f
-    scil_crop_volume.py $t1 ${sid}__t1_bet_mask_crop.nii.gz\
+    scil_crop_volume.py $t1 ${sid}__t1_bet_mask_cropped.nii.gz\
         --input_bbox t1_boundingBox.pkl -f
     """
 }
@@ -503,7 +503,7 @@ process resample_dwi {
     set sid, file(dwi), file(mask) from dwi_mask_for_resample
 
     output:
-    set sid, "${sid}__dwi_resample.nii.gz" into\
+    set sid, "${sid}__dwi_resampled.nii.gz" into\
         dwi_for_resample_b0,
         dwi_for_extract_dti_shell,
         dwi_for_extract_fodf_shell
@@ -522,11 +522,11 @@ process resample_dwi {
             --enforce_dimensions \
             --interp nn
         mrcalc dwi_resample.nii.gz mask_resample.nii.gz\
-            -mult ${sid}__dwi_resample.nii.gz -quiet
+            -mult ${sid}__dwi_resampled.nii.gz -quiet
         """
     else
         """
-        cp $dwi dwi_resample.nii.gz
+        cp $dwi dwi_resampled.nii.gz
         """
 }
 
@@ -544,8 +544,8 @@ process resample_b0 {
     set sid, file(dwi), file(bval), file(bvec) from dwi_and_grad_for_resample_b0
 
     output:
-    set sid, "${sid}__b0_resample.nii.gz" into b0_for_reg
-    set sid, "${sid}__b0_mask_resample.nii.gz" into\
+    set sid, "${sid}__b0_resampled.nii.gz" into b0_for_reg
+    set sid, "${sid}__b0_mask_resampled.nii.gz" into\
         b0_mask_for_dti_metrics,
         b0_mask_for_fodf,
         b0_mask_for_rf
@@ -553,9 +553,9 @@ process resample_b0 {
     script:
     dir_id = get_dir(sid)
     """
-    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0_resample.nii.gz --mean\
+    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0_resampled.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0
-    mrthreshold ${sid}__b0_resample.nii.gz ${sid}__b0_mask_resample.nii.gz\
+    mrthreshold ${sid}__b0_resampled.nii.gz ${sid}__b0_mask_resampled.nii.gz\
         --abs 0.00001
     """
 }
@@ -691,11 +691,11 @@ process register_t1 {
     set sid, file(t1), file(t1_mask), file(fa), file(b0) from t1_fa_b0_for_reg
 
     output:
-    set sid, "${sid}__t1_warp.nii.gz" into t1_for_seg
+    set sid, "${sid}__t1_warpped.nii.gz" into t1_for_seg
     file "${sid}__output0GenericAffine.mat"
     file "${sid}__output1InverseWarp.nii.gz"
     file "${sid}__output1Warp.nii.gz"
-    file "${sid}__t1_mask_warp.nii.gz"
+    file "${sid}__t1_mask_warpped.nii.gz"
 
     script:
     dir_id = get_dir(sid)
@@ -719,12 +719,12 @@ process register_t1 {
         --metric CC[$fa,$t1,1,4]\
         --convergence [50x25x10,1e-6,10] --shrink-factors 4x2x1\
         --smoothing-sigmas 3x2x1
-    cp outputWarped.nii.gz ${sid}__t1_warp.nii.gz
+    cp outputWarped.nii.gz ${sid}__t1_warpped.nii.gz
     cp output0GenericAffine.mat ${sid}__output0GenericAffine.mat
     cp output1InverseWarp.nii.gz ${sid}__output1InverseWarp.nii.gz
     cp output1Warp.nii.gz ${sid}__output1Warp.nii.gz
-    antsApplyTransforms -d 3 -i $t1_mask -r ${sid}__t1_warp.nii.gz \
-        -o ${sid}__t1_mask_warp.nii.gz -n NearestNeighbor \
+    antsApplyTransforms -d 3 -i $t1_mask -r ${sid}__t1_warpped.nii.gz \
+        -o ${sid}__t1_mask_warpped.nii.gz -n NearestNeighbor \
         -t ${sid}__output1Warp.nii.gz ${sid}__output0GenericAffine.mat
     """
 }
