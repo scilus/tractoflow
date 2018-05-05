@@ -71,7 +71,6 @@ else if (params.subject){
 check_rev_b0.count().set{ rev_b0_counter }
 
 process correct_stride {
-    tag { "$sid" }
     cpus 2
 
     input:
@@ -90,17 +89,17 @@ process correct_stride {
 }
 
 process correct_stride_rev_b0 {
-    tag { "$sid" }
     cpus 1
 
     input:
     set sid, file(rev) from rev_b0
+    val(rev_b0_count) from rev_b0_counter
 
     output:
     file "rev_b0.nii.gz"
 
     when:
-    check_rev_b0 == 1
+    rev_b0_count == 1
 
     script:
     dir_id = get_dir(sid)
@@ -110,9 +109,7 @@ process correct_stride_rev_b0 {
 }
 
 process flip_gradients {
-    tag { "$sid" }
     cpus 1
-    echo true
 
     input:
     set sid, file(bval_in), file(bvec_in) from gradients_for_flip
