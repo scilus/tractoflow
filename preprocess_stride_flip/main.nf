@@ -43,7 +43,7 @@ if (params.root){
                        maxDepth:2,
                        flat: true) { it.parent.parent.name + "_-_" + it.parent.name}
     Channel
-    .fromPath("$root/*rev_b0.nii.gz",
+    .fromPath("$root/**/*rev_b0.nii.gz",
                     maxDepth:2)
     .map{ch1 -> [ch1.parent.parent.name + "_-_" + ch1.parent.name, ch1]}
     .into{rev_b0; check_rev_b0}
@@ -99,7 +99,7 @@ process correct_stride_rev_b0 {
     file "rev_b0.nii.gz"
 
     when:
-    rev_b0_count == 1
+    rev_b0_count > 0
 
     script:
     dir_id = get_dir(sid)
