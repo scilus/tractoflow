@@ -19,7 +19,7 @@ if(params.help) {
 }
 
 log.info "Preprocess pipeline"
-log.info "================================"
+log.info "==================="
 log.info ""
 log.info "Start time: $workflow.start"
 log.info ""
@@ -70,7 +70,7 @@ else if (params.subject){
 
 check_rev_b0.count().set{ rev_b0_counter }
 
-process correct_stride {
+process Correct_stride {
     cpus 2
 
     input:
@@ -88,7 +88,7 @@ process correct_stride {
     """
 }
 
-process correct_stride_rev_b0 {
+process Correct_stride_rev_b0 {
     cpus 1
 
     input:
@@ -108,7 +108,7 @@ process correct_stride_rev_b0 {
     """
 }
 
-process flip_gradients {
+process Flip_gradients {
     cpus 1
 
     input:
