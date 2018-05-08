@@ -90,7 +90,7 @@ dwi_for_prelim_bet
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_gradient_for_prelim_bet}
 
-process Bet_prelim_dwi {
+process Bet_Prelim_DWI {
     cpus params.processes_brain_extraction_dwi
 
     input:
@@ -126,7 +126,7 @@ dwi_for_denoise
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_b0_mask_for_denoise}
 
-process Denoise_dwi {
+process Denoise_DWI {
     cpus params.processes_denoise_dwi
 
     input:
@@ -152,7 +152,7 @@ process Denoise_dwi {
         """
 }
 
-process Skip_topup {
+process Skip_Topup {
     cpus 1
 
     input:
@@ -299,7 +299,7 @@ dwi_for_extract_b0
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_gradients_for_extract_b0}
 
-process Extract_b0 {
+process Extract_B0 {
     cpus 2
 
     input:
@@ -321,7 +321,7 @@ dwi_for_bet
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_b0_for_bet}
 
-process Bet_dwi {
+process Bet_DWI {
     cpus params.processes_brain_extraction_dwi
 
     input:
@@ -345,7 +345,7 @@ process Bet_dwi {
     """
 }
 
-process N4_dwi {
+process N4_DWI {
     cpus 1
 
     input:
@@ -373,7 +373,7 @@ dwi_for_crop
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_and_b0_mask_b0_for_crop}
 
-process Crop_dwi {
+process Crop_DWI {
     cpus 1
 
     input:
@@ -396,7 +396,7 @@ process Crop_dwi {
     """
 }
 
-process Denoise_t1 {
+process Denoise_T1 {
     cpus params.processes_denoise_t1
 
     input:
@@ -413,7 +413,7 @@ process Denoise_t1 {
     """
 }
 
-process N4_t1 {
+process N4_T1 {
     cpus 1
 
     input:
@@ -431,7 +431,7 @@ process N4_t1 {
     """
 }
 
-process Resample_t1 {
+process Resample_T1 {
     cpus 1
 
     input:
@@ -454,7 +454,7 @@ process Resample_t1 {
         """
 }
 
-process Bet_t1 {
+process Bet_T1 {
     cpus params.processes_brain_extraction_t1
 
     input:
@@ -476,7 +476,7 @@ process Bet_t1 {
     """
 }
 
-process Crop_t1 {
+process Crop_T1 {
     cpus 1
 
     input:
@@ -496,7 +496,7 @@ process Crop_t1 {
     """
 }
 
-process Resample_dwi {
+process Resample_DWI {
     cpus 2
 
     input:
@@ -537,7 +537,7 @@ dwi_for_resample_b0
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_and_grad_for_resample_b0}
 
-process Resample_b0 {
+process Resample_B0 {
     cpus 2
 
     input:
@@ -567,7 +567,7 @@ dwi_for_extract_dti_shell
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_and_grad_for_extract_dti_shell}
 
-process Extract_dti_shell {
+process Extract_DTI_Shell {
     cpus 3
 
     input:
@@ -592,7 +592,7 @@ dwi_and_grad_for_dti_metrics
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_and_grad_for_dti_metrics}
 
-process Dti_metrics {
+process DTI_Metrics {
     cpus 3
 
     input:
@@ -655,7 +655,7 @@ dwi_for_extract_fodf_shell
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_and_grad_for_extract_fodf_shell}
 
-process Extract_fodf_shell {
+process Extract_FODF_Shell {
     cpus 3
 
     input:
@@ -684,7 +684,7 @@ t1_t1_mask_for_reg
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{t1_fa_b0_for_reg}
 
-process Register_t1 {
+process Register_T1 {
     cpus params.processes_registration
 
     input:
@@ -729,7 +729,7 @@ process Register_t1 {
     """
 }
 
-process Segment_tissues {
+process Segment_Tissues {
     cpus 1
 
     input:
@@ -765,7 +765,7 @@ dwi_and_grad_for_rf
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_b0_fa_for_rf}
 
-process Compute_frf {
+process Compute_FRF {
     cpus 3
 
     input:
@@ -803,7 +803,7 @@ each_frf_for_mean_frf
     .merge(all_frf){a, b -> tuple(*a, b)}
     .set{unique_and_all_frf_for_mean}
 
-process Mean_frf {
+process Mean_FRF {
     cpus 1
 
     input:
@@ -833,7 +833,7 @@ dwi_and_grad_for_fodf
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_b0_metrics_for_fodf}
 
-process Fodf_metrics {
+process FODF_Metrics {
     cpus params.processes_fodf
 
     input:
@@ -869,7 +869,7 @@ process Fodf_metrics {
     """
 }
 
-process Pft_maps {
+process Pft_Maps {
     cpus 1
 
     input:
@@ -894,7 +894,7 @@ wm_mask_for_seeding_mask
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{wm_interface_for_seeding_mask}
     
-process Seeding_mask {
+process Seeding_Mask {
     cpus 1
 
     input:

@@ -70,7 +70,7 @@ else if (params.subject){
 
 check_rev_b0.count().set{ rev_b0_counter }
 
-process Correct_stride {
+process Correct_Stride {
     cpus 2
 
     input:
@@ -88,7 +88,7 @@ process Correct_stride {
     """
 }
 
-process Correct_stride_rev_b0 {
+process Correct_Stride_Rev_B0 {
     cpus 1
 
     input:
@@ -108,7 +108,7 @@ process Correct_stride_rev_b0 {
     """
 }
 
-process Flip_gradients {
+process Flip_Gradients {
     cpus 1
 
     input:
