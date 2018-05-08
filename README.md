@@ -16,6 +16,7 @@ Requirements
 - [Nextflow](https://www.nextflow.io)
 
 The file _singularity/Singularity.def_ contains most of the requirements commands.
+
 - Scilpy
 - Dipy
 - Mrtrix3
