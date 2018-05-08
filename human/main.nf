@@ -153,7 +153,7 @@ process Denoise_dwi {
 }
 
 process Skip_topup {
-    cpus 3
+    cpus 1
 
     input:
     set sid, file(dwi) from dwi_for_skip_topup
@@ -186,7 +186,7 @@ dwi_for_topup
     .set{dwi_gradients_rev_b0_for_topup}
 
 process Topup {
-    cpus 3
+    cpus 2
 
     input:
     set sid, file(dwi), file(bval), file(bvec), file(rev_b0)\
