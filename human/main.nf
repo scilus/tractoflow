@@ -66,28 +66,22 @@ else if (params.subject){
     }
 
 
-(dwi, bvals, bvecs, t1_for_denoise) = in_data
+(dwi, gradients, t1_for_denoise) = in_data
     .map{sid, bvals, bvecs, dwi, t1 -> [tuple(sid, dwi),
-                                        tuple(sid, bvals),
-                                        tuple(sid, bvecs),
+                                        tuple(sid, bvals, bvecs),
                                         tuple(sid, t1)]}
-    .separate(4)
+    .separate(3)
 
 check_rev_b0.count().set{ rev_b0_counter }
 
 dwi.into{dwi_for_prelim_bet; dwi_for_denoise}
 
-bvecs.into{bvecs_for_prelim_bet; bvecs_for_eddy; bvecs_for_topup}
-
-bvals.into{bvals_for_prelim_bet; bvals_for_eddy; bvals_for_topup; 
-           bvals_for_extract_b0; bvals_for_resample_b0; 
-           bvals_for_extract_dti_shell; bvals_for_extract_fodf_shell}
+gradients
+    .into{gradients_for_prelim_bet; gradients_for_eddy; gradients_for_topup}
 
 dwi_for_prelim_bet
-    .phase(bvals_for_prelim_bet)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(bvecs_for_prelim_bet)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .phase(gradients_for_prelim_bet)
+    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
     .set{dwi_gradient_for_prelim_bet}
 
 process Bet_Prelim_DWI {
@@ -169,7 +163,7 @@ process Skip_Topup {
 
     script:
     dir_id = get_dir(sid)
-    topup_computed=0
+    topup_computed=false
     """
     touch ${params.prefix_topup}_fieldcoef.nii.gz
     touch ${params.prefix_topup}_movpar.txt
@@ -177,10 +171,8 @@ process Skip_Topup {
 }
 
 dwi_for_topup
-    .phase(bvals_for_topup)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(bvecs_for_topup)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .phase(gradients_for_topup)
+    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
     .phase(rev_b0)
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_gradients_rev_b0_for_topup}
@@ -203,7 +195,7 @@ process Topup {
     script:
     dir_id = get_dir(sid)
     if (params.run_topup){
-        topup_computed=1
+        topup_computed=true
         """
         OMP_NUM_THREADS=$task.cpus
         scil_prepare_topup_command.py $dwi $bval $bvec $rev_b0\
@@ -215,7 +207,7 @@ process Topup {
         """
     }
     else{            
-        topup_computed=0
+        topup_computed=false
         """
         touch ${params.prefix_topup}_fieldcoef.nii.gz
         touch ${params.prefix_topup}_movpar.txt
@@ -231,14 +223,12 @@ concat_files
 .set{topup_file_for_eddy}
 
 dwi_for_eddy
-    .phase(bvals_for_eddy)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(bvecs_for_eddy)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .phase(gradients_for_eddy)
+    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
     .phase(b0_mask_for_eddy)
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .phase(topup_file_for_eddy)
-    .map{ch1, ch2 -> [*ch1, ch2[1], ch2[2], ch2[3]] }
+    .map{ch1, ch2 -> [*ch1, *ch2[1..3]] }
     .set{dwi_gradients_mask_topup_files_for_eddy}
 
 process Eddy {
@@ -253,11 +243,11 @@ process Eddy {
     set sid, "${sid}__dwi_corrected.nii.gz" into\
         dwi_for_extract_b0,
         dwi_for_bet
-    set sid, "${sid}__dwi_eddy_corrected.bvec" into\
-        bvecs_for_extract_b0,
-        bvecs_for_resample_b0,
-        bvecs_for_dti_shell,
-        bvecs_for_fodf_shell
+    set sid, "${sid}__bval", "${sid}__dwi_eddy_corrected.bvec" into\
+        gradients_for_extract_b0,
+        gradients_for_resample_b0,
+        gradients_for_dti_shell,
+        gradients_for_fodf_shell
 
     script:
     dir_id = get_dir(sid)
@@ -273,6 +263,7 @@ process Eddy {
             sh eddy.sh
             cp dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
             cp dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
+            cp $bval ${sid}__bval
             """
         else
             """
@@ -284,19 +275,19 @@ process Eddy {
             sh eddy.sh
             cp dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
             cp dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
+            cp $bval ${sid}__bval
             """
     else
         """
         cp $dwi ${sid}__dwi_corrected.nii.gz
         cp $bvec ${sid}__dwi_eddy_corrected.bvec
+        cp $bval ${sid}__bval
         """
 }
 
 dwi_for_extract_b0
-    .phase(bvals_for_extract_b0)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(bvecs_for_extract_b0)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .phase(gradients_for_extract_b0)
+    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
     .set{dwi_gradients_for_extract_b0}
 
 process Extract_B0 {
@@ -531,10 +522,8 @@ process Resample_DWI {
 }
 
 dwi_for_resample_b0
-    .phase(bvals_for_resample_b0)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(bvecs_for_resample_b0)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .phase(gradients_for_resample_b0)
+    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
     .set{dwi_and_grad_for_resample_b0}
 
 process Resample_B0 {
@@ -561,10 +550,8 @@ process Resample_B0 {
 }
 
 dwi_for_extract_dti_shell
-    .phase(bvals_for_extract_dti_shell)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(bvecs_for_dti_shell)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .phase(gradients_for_dti_shell)
+    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
     .set{dwi_and_grad_for_extract_dti_shell}
 
 process Extract_DTI_Shell {
@@ -649,10 +636,8 @@ process DTI_Metrics {
 }
 
 dwi_for_extract_fodf_shell
-    .phase(bvals_for_extract_fodf_shell)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(bvecs_for_fodf_shell)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .phase(gradients_for_fodf_shell)
+    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
     .set{dwi_and_grad_for_extract_fodf_shell}
 
 process Extract_FODF_Shell {
@@ -828,7 +813,7 @@ dwi_and_grad_for_fodf
     .phase(b0_mask_for_fodf)
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .phase(fa_md_for_fodf)
-    .map{ch1, ch2 -> [*ch1, ch2[1], ch2[2]] }
+    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
     .phase(final_frf_for_fodf)
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{dwi_b0_metrics_for_fodf}
@@ -917,7 +902,7 @@ process Seeding_Mask {
 
 fodf_for_tracking
     .phase(pft_maps_for_tracking)
-    .map{ch1, ch2 -> [*ch1, ch2[1], ch2[2]] }
+    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
     .phase(seeding_mask_for_tracking)
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .set{fodf_maps_for_tracking}
