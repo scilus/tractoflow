@@ -144,7 +144,7 @@ process Denoise_DWI {
         """
         MRTRIX_NTHREADS=$task.cpus
         dwidenoise $dwi ${sid}__dwi_denoised.nii.gz -mask $b0_mask\
-            -extent $params.denoising_block_size
+            -extent $params.extent
         """
     else
         """
