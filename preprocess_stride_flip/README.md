@@ -27,7 +27,7 @@ The file _singularity/Singularity.def_ contains most of the requirements command
 Notes
 -----
 
-The _scilpy/scripts_ folder should be in your PATH environment variable.
+The _scilpy/scripts_ folder should be in your PATH environment variable if Singularity is not used.
 
 Usage
 -----
