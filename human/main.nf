@@ -240,11 +240,12 @@ process Eddy {
         from dwi_gradients_mask_topup_files_for_eddy
 
     output:
+    set sid, "${sid}__dwi_corrected.nii.gz", "${sid}__bval",
+        "${sid}__dwi_eddy_corrected.bvec" into\
+        dwi_gradients_for_extract_b0
     set sid, "${sid}__dwi_corrected.nii.gz" into\
-        dwi_for_extract_b0,
         dwi_for_bet
     set sid, "${sid}__bval", "${sid}__dwi_eddy_corrected.bvec" into\
-        gradients_for_extract_b0,
         gradients_for_resample_b0,
         gradients_for_dti_shell,
         gradients_for_fodf_shell
@@ -285,11 +286,6 @@ process Eddy {
         """
 }
 
-dwi_for_extract_b0
-    .phase(gradients_for_extract_b0)
-    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
-    .set{dwi_gradients_for_extract_b0}
-
 process Extract_B0 {
     cpus 2
 
@@ -319,10 +315,10 @@ process Bet_DWI {
     set sid, file(dwi), file(b0) from dwi_b0_for_bet
 
     output:
-    set sid, "${sid}__b0_bet_mask.nii.gz" into b0_mask_for_crop
+    set sid, "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask.nii.gz" into\
+        b0_and_mask_for_crop
     set sid, "${sid}__dwi_bet.nii.gz", "${sid}__b0_bet.nii.gz", 
         "${sid}__b0_bet_mask.nii.gz" into dwi_grad_b0_b0_mask_for_n4
-    set sid, "${sid}__b0_bet.nii.gz" into b0_for_crop
 
     script:
     dir_id = get_dir(sid)
@@ -358,17 +354,15 @@ process N4_DWI {
 }
 
 dwi_for_crop
-    .phase(b0_mask_for_crop)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(b0_for_crop)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .phase(b0_and_mask_for_crop)
+    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
     .set{dwi_and_b0_mask_b0_for_crop}
 
 process Crop_DWI {
     cpus 1
 
     input:
-    set sid, file(dwi), file(b0_mask), file(b0) from dwi_and_b0_mask_b0_for_crop
+    set sid, file(dwi), file(b0), file(b0_mask) from dwi_and_b0_mask_b0_for_crop
 
     output:
     set sid, "${sid}__dwi_cropped.nii.gz",
@@ -475,7 +469,7 @@ process Crop_T1 {
 
     output:
     set sid, "${sid}__t1_bet_cropped.nii.gz", "${sid}__t1_bet_mask_cropped.nii.gz"\
-        into t1_t1_mask_for_reg
+        into t1_and_mask_for_reg
 
     script:
     dir_id = get_dir(sid)
@@ -662,7 +656,7 @@ process Extract_FODF_Shell {
     """
 }
 
-t1_t1_mask_for_reg
+t1_and_mask_for_reg
     .phase(fa_for_reg)
     .map{ch1, ch2 -> [*ch1, ch2[1]] }
     .phase(b0_for_reg)
@@ -676,11 +670,11 @@ process Register_T1 {
     set sid, file(t1), file(t1_mask), file(fa), file(b0) from t1_fa_b0_for_reg
 
     output:
-    set sid, "${sid}__t1_warpped.nii.gz" into t1_for_seg
+    set sid, "${sid}__t1_warped.nii.gz" into t1_for_seg
     file "${sid}__output0GenericAffine.mat"
     file "${sid}__output1InverseWarp.nii.gz"
     file "${sid}__output1Warp.nii.gz"
-    file "${sid}__t1_mask_warpped.nii.gz"
+    file "${sid}__t1_mask_warped.nii.gz"
 
     script:
     dir_id = get_dir(sid)
@@ -704,12 +698,12 @@ process Register_T1 {
         --metric CC[$fa,$t1,1,4]\
         --convergence [50x25x10,1e-6,10] --shrink-factors 4x2x1\
         --smoothing-sigmas 3x2x1
-    cp outputWarped.nii.gz ${sid}__t1_warpped.nii.gz
+    cp outputWarped.nii.gz ${sid}__t1_warped.nii.gz
     cp output0GenericAffine.mat ${sid}__output0GenericAffine.mat
     cp output1InverseWarp.nii.gz ${sid}__output1InverseWarp.nii.gz
     cp output1Warp.nii.gz ${sid}__output1Warp.nii.gz
-    antsApplyTransforms -d 3 -i $t1_mask -r ${sid}__t1_warpped.nii.gz \
-        -o ${sid}__t1_mask_warpped.nii.gz -n NearestNeighbor \
+    antsApplyTransforms -d 3 -i $t1_mask -r ${sid}__t1_warped.nii.gz \
+        -o ${sid}__t1_mask_warped.nii.gz -n NearestNeighbor \
         -t ${sid}__output1Warp.nii.gz ${sid}__output0GenericAffine.mat
     """
 }
@@ -731,9 +725,7 @@ process Segment_Tissues {
     dir_id = get_dir(sid)
     """
     fast -t 1 -n $params.number_of_tissue\
-         -H $params.spatial_smoothness\
-         -I $params.number_of_iter_for_bias_field\
-         -l $params.lowpass -g -o t1.nii.gz $t1
+         -H 0.1 -I 4 -l 20.0 -g -o t1.nii.gz $t1
     cp t1_seg_2.nii.gz ${sid}__mask_wm.nii.gz
     cp t1_seg_1.nii.gz ${sid}__mask_gm.nii.gz
     cp t1_seg_0.nii.gz ${sid}__mask_csf.nii.gz
@@ -768,15 +760,15 @@ process Compute_FRF {
         scil_compute_ssst_frf.py $dwi $bval $bvec frf.txt --mask $b0_mask\
         --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
         --roi_radius $params.roi_radius
-        scil_set_response_function.py frf.txt $params.manual_frf .temp_frf.txt
-        cp .temp_frf.txt ${sid}__unique_frf.txt
+        scil_set_response_function.py frf.txt $params.manual_frf ${sid}__unique_frf.txt
+        cp ${sid}__unique_frf.txt .temp_frf.txt
         """
     else
         """
-        scil_compute_ssst_frf.py $dwi $bval $bvec .temp_frf.txt --mask $b0_mask\
+        scil_compute_ssst_frf.py $dwi $bval $bvec ${sid}__unique_frf.txt --mask $b0_mask\
         --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
         --roi_radius $params.roi_radius
-        cp .temp_frf.txt ${sid}__unique_frf.txt
+        cp ${sid}__unique_frf.txt .temp_frf.txt
         """
 }
 
