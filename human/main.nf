@@ -105,8 +105,7 @@ process Bet_Prelim_DWI {
         --b0_thr $params.b0_thr_extract_b0
     antsBrainExtraction.sh -d 3 -a ${sid}__b0.nii.gz\
         -e $template_dir_b0/b0_template.nii.gz\
-        -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz\
-        -f $template_dir_b0/b0_brain_registration_mask.nii.gz -k 1
+        -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz -k 1
     cp bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
     maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz\
         --npass $params.dilate_b0_mask_prelim_brain_extraction
@@ -324,8 +323,7 @@ process Bet_DWI {
     dir_id = get_dir(sid)
     """
     antsBrainExtraction.sh -d 3 -a $b0 -e $template_dir_b0/b0_template.nii.gz\
-        -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz\
-        -f $template_dir_b0/b0_brain_registration_mask.nii.gz -k 1
+        -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz -k 1
     cp bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
     mrcalc $dwi ${sid}__b0_bet_mask.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet
     mrcalc $b0 ${sid}__b0_bet_mask.nii.gz -mult ${sid}__b0_bet.nii.gz -quiet
@@ -454,8 +452,7 @@ process Bet_T1 {
     """
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     antsBrainExtraction.sh -d 3 -a $t1 -e $template_dir_t1/t1_template.nii.gz\
-        -o bet/ -m $template_dir_t1/t1_brain_probability_map.nii.gz \
-        -f $template_dir_t1/t1_brain_registration_mask.nii.gz
+        -o bet/ -m $template_dir_t1/t1_brain_probability_map.nii.gz
     mrcalc $t1 bet/BrainExtractionMask.nii.gz -mult ${sid}__t1_bet.nii.gz
     cp bet/BrainExtractionMask.nii.gz ${sid}__t1_bet_mask.nii.gz
     """
