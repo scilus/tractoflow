@@ -318,7 +318,7 @@ process Bet_DWI {
     set sid, "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask.nii.gz" into\
         b0_and_mask_for_crop
     set sid, "${sid}__dwi_bet.nii.gz", "${sid}__b0_bet.nii.gz", 
-        "${sid}__b0_bet_mask.nii.gz" into dwi_grad_b0_b0_mask_for_n4
+        "${sid}__b0_bet_mask.nii.gz" into dwi_b0_b0_mask_for_n4
 
     script:
     dir_id = get_dir(sid)
@@ -337,7 +337,7 @@ process N4_DWI {
 
     input:
     set sid, file(dwi), file(b0), file(b0_mask)\
-        from dwi_grad_b0_b0_mask_for_n4
+        from dwi_b0_b0_mask_for_n4
 
     output:
     set sid, "${sid}__dwi_n4.nii.gz" into dwi_for_crop
@@ -846,7 +846,7 @@ process FODF_Metrics {
     """
 }
 
-process Pft_Maps {
+process PFT_Maps {
     cpus 1
 
     input:
