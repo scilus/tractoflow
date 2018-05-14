@@ -105,7 +105,8 @@ process Bet_Prelim_DWI {
         --b0_thr $params.b0_thr_extract_b0
     antsBrainExtraction.sh -d 3 -a ${sid}__b0.nii.gz\
         -e $template_dir_b0/b0_template.nii.gz\
-        -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz -k 1
+        -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz\
+        -f $template_dir_b0/b0_brain_registration_mask.nii.gz -k 1
     cp bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
     maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz\
         --npass $params.dilate_b0_mask_prelim_brain_extraction
@@ -314,19 +315,22 @@ process Bet_DWI {
     set sid, file(dwi), file(b0) from dwi_b0_for_bet
 
     output:
-    set sid, "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask.nii.gz" into\
+    set sid, "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask_dilated.nii.gz" into\
         b0_and_mask_for_crop
     set sid, "${sid}__dwi_bet.nii.gz", "${sid}__b0_bet.nii.gz", 
-        "${sid}__b0_bet_mask.nii.gz" into dwi_b0_b0_mask_for_n4
+        "${sid}__b0_bet_mask_dilated.nii.gz" into dwi_b0_b0_mask_for_n4
+    file "${sid}__b0_bet_mask.nii.gz"
 
     script:
     dir_id = get_dir(sid)
     """
     antsBrainExtraction.sh -d 3 -a $b0 -e $template_dir_b0/b0_template.nii.gz\
-        -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz -k 1
+        -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz\
+        -f $template_dir_b0/b0_brain_registration_mask.nii.gz -k 1
     cp bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
-    mrcalc $dwi ${sid}__b0_bet_mask.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet
-    mrcalc $b0 ${sid}__b0_bet_mask.nii.gz -mult ${sid}__b0_bet.nii.gz -quiet
+    maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz
+    mrcalc $dwi ${sid}__b0_bet_mask_dilated.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet
+    mrcalc $b0 ${sid}__b0_bet_mask_dilated.nii.gz -mult ${sid}__b0_bet.nii.gz -quiet
     """
 }
 
