@@ -92,7 +92,6 @@ process Bet_Prelim_DWI {
 
     output:
     set sid, "${sid}__b0_bet_mask_dilated.nii.gz" into\
-        b0_mask_for_denoise_dwi,
         b0_mask_for_eddy
     file "${sid}__b0_bet.nii.gz"
     file "${sid}__b0_bet_mask.nii.gz"
@@ -115,16 +114,11 @@ process Bet_Prelim_DWI {
     """
 }
 
-dwi_for_denoise
-    .phase(b0_mask_for_denoise_dwi)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .set{dwi_b0_mask_for_denoise}
-
 process Denoise_DWI {
     cpus params.processes_denoise_dwi
 
     input:
-    set sid, file(dwi), file(b0_mask) from dwi_b0_mask_for_denoise
+    set sid, file(dwi) from dwi_for_denoise
 
     output:
     set sid, "${sid}__dwi_denoised.nii.gz" into\
@@ -137,8 +131,7 @@ process Denoise_DWI {
     if(params.run_dwi_denoising)
         """
         MRTRIX_NTHREADS=$task.cpus
-        dwidenoise $dwi ${sid}__dwi_denoised.nii.gz -mask $b0_mask\
-            -extent $params.extent
+        dwidenoise $dwi ${sid}__dwi_denoised.nii.gz -extent $params.extent
         """
     else
         """
