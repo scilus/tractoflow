@@ -370,9 +370,9 @@ process Crop_DWI {
     scil_crop_volume.py $dwi ${sid}__dwi_cropped.nii.gz -f\
         --output_bbox dwi_boundingBox.pkl -f
     scil_crop_volume.py $b0 ${sid}__b0_cropped.nii.gz\
-        --output_bbox b0_boundingBox.pkl -f
+        --input_bbox dwi_boundingBox.pkl -f
     scil_crop_volume.py $b0_mask ${sid}__b0_mask_cropped.nii.gz\
-        --input_bbox b0_boundingBox.pkl -f
+        --input_bbox dwi_boundingBox.pkl -f
     """
 }
 
