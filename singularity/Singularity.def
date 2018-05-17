@@ -59,6 +59,8 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
 	cd /
 	git clone https://github.com/MRtrix3/mrtrix3.git
 	cd mrtrix3
+	git fetch --tags
+	git checkout tags/3.0_RC3 -b 3.0_RC3
 	./configure
 	./build
 
