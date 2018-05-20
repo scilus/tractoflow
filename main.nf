@@ -208,12 +208,9 @@ process Topup {
     }
 }
 
-concat_files = Channel.empty()
-
-concat_files
-.concat(topup_file_for_eddy_from_topup, 
-        topup_file_for_eddy_from_skip_topup)
-.set{topup_file_for_eddy}
+topup_file_for_eddy_from_topup
+    .mix(topup_file_for_eddy_from_skip_topup)
+    .set{topup_file_for_eddy}
 
 dwi_for_eddy
     .join(gradients_for_eddy)
