@@ -47,31 +47,30 @@ if (params.root){
     log.info "Input: $params.root"
     root = file(params.root)
     in_data = Channel
-        .fromFilePairs("$root/**/{bval,bvec,dwi.nii.gz,t1.nii.gz}",
+        .fromFilePairs("$root/**/*{bval,bvec,dwi.nii.gz,t1.nii.gz}",
                        size: 4,
-                       maxDepth:2,
-                       flat: true) { it.parent.parent.name + "_-_" + it.parent.name}
+                       maxDepth:1,
+                       flat: true) {it.parent.name}
     Channel
     .fromPath("$root/**/*rev_b0.nii.gz",
-                    maxDepth:2)
-    .map{ch1 -> [ch1.parent.parent.name + "_-_" + ch1.parent.name, ch1]}
+                    maxDepth:1)
+    .map{[it.parent.name, it]}
     .into{rev_b0; check_rev_b0}
     }
 else if (params.subject){
     log.info "Input: $params.subject"
     subject = file(params.subject)
     in_data = Channel
-        .fromFilePairs("$subject/{bval,bvec,dwi.nii.gz,t1.nii.gz}",
+        .fromFilePairs("$subject/*{bval,bvec,dwi.nii.gz,t1.nii.gz}",
                        size: 4,
                        maxDepth:1,
-                       flat: true) { it.parent.name}
+                       flat: true) {it.parent.name}
     Channel
     .fromPath("$subject/*rev_b0.nii.gz",
                     maxDepth:1)
-    .map{ch1 -> [ch1.parent.name, ch1]}
+    .map{[it.parent.name, it]}
     .into{rev_b0; check_rev_b0}
     }
-
 
 (dwi, gradients, t1_for_denoise) = in_data
     .map{sid, bvals, bvecs, dwi, t1 -> [tuple(sid, dwi),
@@ -105,7 +104,6 @@ process Bet_Prelim_DWI {
     file "${sid}__b0_bet_mask.nii.gz"
 
     script:
-    dir_id = get_dir(sid)
     """
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean\
@@ -135,7 +133,6 @@ process Denoise_DWI {
         dwi_for_skip_topup
 
     script:
-    dir_id = get_dir(sid)
     if(params.run_dwi_denoising)
         """
         MRTRIX_NTHREADS=$task.cpus
@@ -163,7 +160,6 @@ process Skip_Topup {
     rev_b0_count == 0
 
     script:
-    dir_id = get_dir(sid)
     topup_computed=false
     """
     touch ${params.prefix_topup}_fieldcoef.nii.gz
@@ -194,7 +190,6 @@ process Topup {
     rev_b0_count > 0
 
     script:
-    dir_id = get_dir(sid)
     if (params.run_topup){
         topup_computed=true
         """
@@ -252,7 +247,6 @@ process Eddy {
         gradients_for_fodf_shell
 
     script:
-    dir_id = get_dir(sid)
     if (params.run_eddy)
         if (topup_computed)
             """
@@ -297,7 +291,6 @@ process Extract_B0 {
     set sid, "${sid}__b0.nii.gz" into b0_for_bet
 
     script:
-    dir_id = get_dir(sid)
     """
     scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0
@@ -324,7 +317,6 @@ process Bet_DWI {
     file "${sid}__b0_bet_mask.nii.gz"
 
     script:
-    dir_id = get_dir(sid)
     """
     antsBrainExtraction.sh -d 3 -a $b0 -e $template_dir/b0_template.nii.gz\
         -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
@@ -347,7 +339,6 @@ process N4_DWI {
     set sid, "${sid}__dwi_n4.nii.gz" into dwi_for_crop
 
     script:
-    dir_id = get_dir(sid)
     """
     N4BiasFieldCorrection -i $b0\
         -o [${sid}__b0_n4.nii.gz, bias_field_b0.nii.gz]\
@@ -374,7 +365,6 @@ process Crop_DWI {
     file "${sid}__b0_cropped.nii.gz"
 
     script:
-    dir_id = get_dir(sid)
     """
     scil_crop_volume.py $dwi ${sid}__dwi_cropped.nii.gz -f\
         --output_bbox dwi_boundingBox.pkl -f
@@ -395,7 +385,6 @@ process Denoise_T1 {
     set sid, "${sid}__t1_denoised.nii.gz" into t1_for_n4
 
     script:
-    dir_id = get_dir(sid)
     """
     scil_run_nlmeans.py $t1 ${sid}__t1_denoised.nii.gz 1 \
         --noise_est basic --processes $task.cpus -f
@@ -412,7 +401,6 @@ process N4_T1 {
     set sid, "${sid}__t1_n4.nii.gz" into t1_for_resample
 
     script:
-    dir_id = get_dir(sid)
     """
     N4BiasFieldCorrection -i $t1\
         -o [${sid}__t1_n4.nii.gz, bias_field_t1.nii.gz]\
@@ -430,7 +418,6 @@ process Resample_T1 {
     set sid, "${sid}__t1_resampled.nii.gz" into t1_for_bet
 
     script:
-    dir_id = get_dir(sid)
     if(params.run_resample_t1)
         """
         scil_resample_volume.py $t1 ${sid}__t1_resampled.nii.gz \
@@ -455,7 +442,6 @@ process Bet_T1 {
         into t1_and_mask_for_crop
 
     script:
-    dir_id = get_dir(sid)
     """
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     antsBrainExtraction.sh -d 3 -a $t1 -e $template_dir/t1_template.nii.gz\
@@ -476,7 +462,6 @@ process Crop_T1 {
         into t1_and_mask_for_reg
 
     script:
-    dir_id = get_dir(sid)
     """
     scil_crop_volume.py $t1 ${sid}__t1_bet_cropped.nii.gz\
         --output_bbox t1_boundingBox.pkl -f
@@ -498,7 +483,6 @@ process Resample_DWI {
         dwi_for_extract_fodf_shell
 
     script:
-    dir_id = get_dir(sid)
     if (params.run_resample_dwi)
         """
         scil_resample_volume.py $dwi \
@@ -538,7 +522,6 @@ process Resample_B0 {
         b0_mask_for_rf
 
     script:
-    dir_id = get_dir(sid)
     """
     scil_extract_b0.py $dwi $bval $bvec ${sid}__b0_resampled.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0
@@ -564,7 +547,6 @@ process Extract_DTI_Shell {
         "${sid}__bvec_dti" into dwi_and_grad_for_dti_metrics
 
     script:
-    dir_id = get_dir(sid)
     """
     scil_extract_dwi_shell.py $dwi \
         $bval $bvec $params.dti_shells ${sid}__dwi_dti.nii.gz \
@@ -617,7 +599,6 @@ process DTI_Metrics {
         fa_for_rf
 
     script:
-    dir_id = get_dir(sid)
     """
     scil_compute_dti_metrics.py $dwi $bval $bvec --mask $b0_mask\
         --ad ${sid}__ad.nii.gz --evecs ${sid}__evecs.nii.gz\
@@ -652,7 +633,6 @@ process Extract_FODF_Shell {
         dwi_and_grad_for_rf
 
     script:
-    dir_id = get_dir(sid)
     """
     scil_extract_dwi_shell.py $dwi \
         $bval $bvec $params.fodf_shells ${sid}__dwi_fodf.nii.gz \
@@ -681,7 +661,6 @@ process Register_T1 {
     file "${sid}__t1_mask_warped.nii.gz"
 
     script:
-    dir_id = get_dir(sid)
     """
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     antsRegistration --dimensionality 3 --float 0\
@@ -726,7 +705,6 @@ process Segment_Tissues {
     file "${sid}__mask_csf.nii.gz"
 
     script:
-    dir_id = get_dir(sid)
     """
     fast -t 1 -n $params.number_of_tissue\
          -H 0.1 -I 4 -l 20.0 -g -o t1.nii.gz $t1
@@ -758,7 +736,6 @@ process Compute_FRF {
     set sid, ".temp_frf.txt" into each_frf_for_mean_frf
 
     script:
-    dir_id = get_dir(sid)
     if (params.set_frf)
         """
         scil_compute_ssst_frf.py $dwi $bval $bvec frf.txt --mask $b0_mask\
@@ -794,7 +771,6 @@ process Mean_FRF {
     set sid, "${sid}__mean_frf.txt" into final_frf_for_fodf
 
     script:
-    dir_id = get_dir(sid)
     if (params.mean_frf)
         """
         scil_compute_mean_frf.py $all_frf ${sid}__mean_frf.txt
@@ -831,7 +807,6 @@ process FODF_Metrics {
     file "${sid}__nufo.nii.gz"
 
     script:
-    dir_id = get_dir(sid)
     """ 
     scil_compute_fodf.py $dwi $bval $bvec $frf --sh_order $params.sh_order\
         --basis $params.basis --b0_threshold $params.b0_thr_extract_b0 \
@@ -862,7 +837,6 @@ process PFT_Maps {
     set sid, "${sid}__interface.nii.gz" into interface_for_seeding_mask
 
     script:
-    dir_id = get_dir(sid)
     """
     scil_compute_maps_for_particle_filter_tracking.py $wm $gm $csf \
     --include ${sid}__map_include.nii.gz --exclude ${sid}__map_exclude.nii.gz\
@@ -885,7 +859,6 @@ process Seeding_Mask {
     set sid, "${sid}__seeding_mask.nii.gz" into seeding_mask_for_tracking
 
     script:
-    dir_id = get_dir(sid)
     if (params.wm_seeding)
         """
         scil_mask_math.py union $wm $interface_mask ${sid}__seeding_mask.nii.gz
@@ -914,7 +887,6 @@ process Tracking {
     file "${sid}__tracking.trk"
 
     script:
-    dir_id = get_dir(sid)
     if (params.compress_streamlines)
         """
         scil_compute_particle_filter_tracking.py $fodf $seed\
@@ -941,9 +913,4 @@ process Tracking {
             --back $params.back --front $params.front --pft_theta $params.pft_theta\
             --processes $task.cpus
         """
-}
-
-def get_dir(sid) {
-    String my_new_str = sid.replaceAll("_-_", "/")
-    return my_new_str
 }
