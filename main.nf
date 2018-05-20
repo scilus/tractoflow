@@ -308,6 +308,7 @@ process Bet_DWI {
 
     script:
     """
+    ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     antsBrainExtraction.sh -d 3 -a $b0 -e $template_dir/b0_template.nii.gz\
         -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
         -f $template_dir/b0_brain_registration_mask.nii.gz -k 1
@@ -330,6 +331,7 @@ process N4_DWI {
 
     script:
     """
+    ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     N4BiasFieldCorrection -i $b0\
         -o [${sid}__b0_n4.nii.gz, bias_field_b0.nii.gz]\
         -c [300x150x75x50, 1e-6] -v 1
@@ -391,6 +393,7 @@ process N4_T1 {
 
     script:
     """
+    ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     N4BiasFieldCorrection -i $t1\
         -o [${sid}__t1_n4.nii.gz, bias_field_t1.nii.gz]\
         -c [300x150x75x50, 1e-6] -v 1
