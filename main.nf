@@ -3,8 +3,6 @@
 params.root = false
 params.subject = false
 params.help = false
-template_dir_t1="$workflow.projectDir/../data/mni_152_sym_09c/t1"
-template_dir_b0="$workflow.projectDir/../data/mni_152_sym_09c/b0"
 
 if(params.help) {
     usage = file("$baseDir/USAGE")
@@ -35,6 +33,15 @@ workflow.onComplete {
     log.info "Execution status: ${ workflow.success ? 'OK' : 'failed' }"
     log.info "Execution duration: $workflow.duration"
 }
+
+Channel
+    .fromPath("$params.template_t1", type:'dir')
+    .set{template_dir_t1}
+
+Channel
+    .fromPath("$params.template_b0", type:'dir')
+    .into{template_dir_b0_for_prelim_bet;
+          template_dir_b0_for_bet}
 
 if (params.root){
     log.info "Input: $params.root"
@@ -89,6 +96,7 @@ process Bet_Prelim_DWI {
 
     input:
     set sid, file(dwi), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
+    file template_dir from template_dir_b0_for_prelim_bet.first()
 
     output:
     set sid, "${sid}__b0_bet_mask_dilated.nii.gz" into\
@@ -103,9 +111,9 @@ process Bet_Prelim_DWI {
     scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0
     antsBrainExtraction.sh -d 3 -a ${sid}__b0.nii.gz\
-        -e $template_dir_b0/b0_template.nii.gz\
-        -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz\
-        -f $template_dir_b0/b0_brain_registration_mask.nii.gz -k 1
+        -e $template_dir/b0_template.nii.gz\
+        -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
+        -f $template_dir/b0_brain_registration_mask.nii.gz -k 1
     cp bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
     maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz\
         --npass $params.dilate_b0_mask_prelim_brain_extraction
@@ -306,6 +314,7 @@ process Bet_DWI {
 
     input:
     set sid, file(dwi), file(b0) from dwi_b0_for_bet
+    file template_dir from template_dir_b0_for_bet.first()
 
     output:
     set sid, "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask_dilated.nii.gz" into\
@@ -317,9 +326,9 @@ process Bet_DWI {
     script:
     dir_id = get_dir(sid)
     """
-    antsBrainExtraction.sh -d 3 -a $b0 -e $template_dir_b0/b0_template.nii.gz\
-        -o bet/ -m $template_dir_b0/b0_brain_probability_map.nii.gz\
-        -f $template_dir_b0/b0_brain_registration_mask.nii.gz -k 1
+    antsBrainExtraction.sh -d 3 -a $b0 -e $template_dir/b0_template.nii.gz\
+        -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
+        -f $template_dir/b0_brain_registration_mask.nii.gz -k 1
     cp bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
     maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz
     mrcalc $dwi ${sid}__b0_bet_mask_dilated.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet
@@ -439,6 +448,7 @@ process Bet_T1 {
 
     input:
     set sid, file(t1) from t1_for_bet
+    file template_dir from template_dir_t1.first()
 
     output:
     set sid, "${sid}__t1_bet.nii.gz", "${sid}__t1_bet_mask.nii.gz"\
@@ -448,8 +458,8 @@ process Bet_T1 {
     dir_id = get_dir(sid)
     """
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
-    antsBrainExtraction.sh -d 3 -a $t1 -e $template_dir_t1/t1_template.nii.gz\
-        -o bet/ -m $template_dir_t1/t1_brain_probability_map.nii.gz
+    antsBrainExtraction.sh -d 3 -a $t1 -e $template_dir/t1_template.nii.gz\
+        -o bet/ -m $template_dir/t1_brain_probability_map.nii.gz
     mrcalc $t1 bet/BrainExtractionMask.nii.gz -mult ${sid}__t1_bet.nii.gz
     cp bet/BrainExtractionMask.nii.gz ${sid}__t1_bet_mask.nii.gz
     """
