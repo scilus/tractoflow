@@ -112,7 +112,7 @@ process Bet_Prelim_DWI {
         -e $template_dir/b0_template.nii.gz\
         -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
         -f $template_dir/b0_brain_registration_mask.nii.gz -k 1
-    cp bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
+    mv bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
     maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz\
         --npass $params.dilate_b0_mask_prelim_brain_extraction
     mrcalc ${sid}__b0.nii.gz ${sid}__b0_bet_mask_dilated.nii.gz\
@@ -140,7 +140,7 @@ process Denoise_DWI {
         """
     else
         """
-        cp $dwi ${sid}__dwi_denoised.nii.gz
+        mv $dwi ${sid}__dwi_denoised.nii.gz
         """
 }
 
@@ -257,9 +257,9 @@ process Eddy {
                 --encoding_direction $params.encoding_direction\
                 --dwell_time $params.dwell_time --output_script
             sh eddy.sh
-            cp dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
-            cp dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
-            cp $bval ${sid}__bval
+            mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
+            mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
+            mv $bval ${sid}__bval
             """
         else
             """
@@ -269,15 +269,15 @@ process Eddy {
                 --encoding_direction $params.encoding_direction\
                 --dwell_time $params.dwell_time --output_script
             sh eddy.sh
-            cp dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
-            cp dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
-            cp $bval ${sid}__bval
+            mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
+            mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
+            mv $bval ${sid}__bval
             """
     else
         """
-        cp $dwi ${sid}__dwi_corrected.nii.gz
-        cp $bvec ${sid}__dwi_eddy_corrected.bvec
-        cp $bval ${sid}__bval
+        mv $dwi ${sid}__dwi_corrected.nii.gz
+        mv $bvec ${sid}__dwi_eddy_corrected.bvec
+        mv $bval ${sid}__bval
         """
 }
 
@@ -321,7 +321,7 @@ process Bet_DWI {
     antsBrainExtraction.sh -d 3 -a $b0 -e $template_dir/b0_template.nii.gz\
         -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
         -f $template_dir/b0_brain_registration_mask.nii.gz -k 1
-    cp bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
+    mv bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
     maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz
     mrcalc $dwi ${sid}__b0_bet_mask_dilated.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet
     mrcalc $b0 ${sid}__b0_bet_mask_dilated.nii.gz -mult ${sid}__b0_bet.nii.gz -quiet
@@ -426,7 +426,7 @@ process Resample_T1 {
         """
     else
         """
-        cp $t1 ${sid}__t1_resampled.nii.gz
+        mv $t1 ${sid}__t1_resampled.nii.gz
         """
 }
 
@@ -447,7 +447,7 @@ process Bet_T1 {
     antsBrainExtraction.sh -d 3 -a $t1 -e $template_dir/t1_template.nii.gz\
         -o bet/ -m $template_dir/t1_brain_probability_map.nii.gz
     mrcalc $t1 bet/BrainExtractionMask.nii.gz -mult ${sid}__t1_bet.nii.gz
-    cp bet/BrainExtractionMask.nii.gz ${sid}__t1_bet_mask.nii.gz
+    mv bet/BrainExtractionMask.nii.gz ${sid}__t1_bet_mask.nii.gz
     """
 }
 
@@ -499,7 +499,7 @@ process Resample_DWI {
         """
     else
         """
-        cp $dwi dwi_resampled.nii.gz
+        mv $dwi dwi_resampled.nii.gz
         """
 }
 
@@ -681,10 +681,10 @@ process Register_T1 {
         --metric CC[$fa,$t1,1,4]\
         --convergence [50x25x10,1e-6,10] --shrink-factors 4x2x1\
         --smoothing-sigmas 3x2x1
-    cp outputWarped.nii.gz ${sid}__t1_warped.nii.gz
-    cp output0GenericAffine.mat ${sid}__output0GenericAffine.mat
-    cp output1InverseWarp.nii.gz ${sid}__output1InverseWarp.nii.gz
-    cp output1Warp.nii.gz ${sid}__output1Warp.nii.gz
+    mv outputWarped.nii.gz ${sid}__t1_warped.nii.gz
+    mv output0GenericAffine.mat ${sid}__output0GenericAffine.mat
+    mv output1InverseWarp.nii.gz ${sid}__output1InverseWarp.nii.gz
+    mv output1Warp.nii.gz ${sid}__output1Warp.nii.gz
     antsApplyTransforms -d 3 -i $t1_mask -r ${sid}__t1_warped.nii.gz \
         -o ${sid}__t1_mask_warped.nii.gz -n NearestNeighbor \
         -t ${sid}__output1Warp.nii.gz ${sid}__output0GenericAffine.mat
@@ -708,12 +708,12 @@ process Segment_Tissues {
     """
     fast -t 1 -n $params.number_of_tissue\
          -H 0.1 -I 4 -l 20.0 -g -o t1.nii.gz $t1
-    cp t1_seg_2.nii.gz ${sid}__mask_wm.nii.gz
-    cp t1_seg_1.nii.gz ${sid}__mask_gm.nii.gz
-    cp t1_seg_0.nii.gz ${sid}__mask_csf.nii.gz
-    cp t1_pve_2.nii.gz ${sid}__map_wm.nii.gz
-    cp t1_pve_1.nii.gz ${sid}__map_gm.nii.gz
-    cp t1_pve_0.nii.gz ${sid}__map_csf.nii.gz
+    mv t1_seg_2.nii.gz ${sid}__mask_wm.nii.gz
+    mv t1_seg_1.nii.gz ${sid}__mask_gm.nii.gz
+    mv t1_seg_0.nii.gz ${sid}__mask_csf.nii.gz
+    mv t1_pve_2.nii.gz ${sid}__map_wm.nii.gz
+    mv t1_pve_1.nii.gz ${sid}__map_gm.nii.gz
+    mv t1_pve_0.nii.gz ${sid}__map_csf.nii.gz
     """
 }
 
@@ -742,14 +742,14 @@ process Compute_FRF {
         --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
         --roi_radius $params.roi_radius
         scil_set_response_function.py frf.txt $params.manual_frf ${sid}__unique_frf.txt
-        cp ${sid}__unique_frf.txt .temp_frf.txt
+        mv ${sid}__unique_frf.txt .temp_frf.txt
         """
     else
         """
         scil_compute_ssst_frf.py $dwi $bval $bvec ${sid}__unique_frf.txt --mask $b0_mask\
         --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
         --roi_radius $params.roi_radius
-        cp ${sid}__unique_frf.txt .temp_frf.txt
+        mv ${sid}__unique_frf.txt .temp_frf.txt
         """
 }
 
@@ -777,7 +777,7 @@ process Mean_FRF {
         """
     else
         """
-        cp $frf ${sid}__mean_frf.txt
+        mv $frf ${sid}__mean_frf.txt
         """
 }
 
@@ -865,7 +865,7 @@ process Seeding_Mask {
         """
     else
         """
-        cp $interface_mask ${sid}__seeding_mask.nii.gz
+        mv $interface_mask ${sid}__seeding_mask.nii.gz
         """
 }
 
