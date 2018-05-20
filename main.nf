@@ -86,8 +86,7 @@ gradients
     .into{gradients_for_prelim_bet; gradients_for_eddy; gradients_for_topup}
 
 dwi_for_prelim_bet
-    .phase(gradients_for_prelim_bet)
-    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
+    .join(gradients_for_prelim_bet)
     .set{dwi_gradient_for_prelim_bet}
 
 process Bet_Prelim_DWI {
@@ -168,10 +167,8 @@ process Skip_Topup {
 }
 
 dwi_for_topup
-    .phase(gradients_for_topup)
-    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
-    .phase(rev_b0)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .join(gradients_for_topup)
+    .join(rev_b0)
     .set{dwi_gradients_rev_b0_for_topup}
 
 process Topup {
@@ -219,12 +216,9 @@ concat_files
 .set{topup_file_for_eddy}
 
 dwi_for_eddy
-    .phase(gradients_for_eddy)
-    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
-    .phase(b0_mask_for_eddy)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(topup_file_for_eddy)
-    .map{ch1, ch2 -> [*ch1, *ch2[1..3]] }
+    .join(gradients_for_eddy)
+    .join(b0_mask_for_eddy)
+    .join(topup_file_for_eddy)
     .set{dwi_gradients_mask_topup_files_for_eddy}
 
 process Eddy {
@@ -298,8 +292,7 @@ process Extract_B0 {
 }
 
 dwi_for_bet
-    .phase(b0_for_bet)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .join(b0_for_bet)
     .set{dwi_b0_for_bet}
 
 process Bet_DWI {
@@ -349,8 +342,7 @@ process N4_DWI {
 }
 
 dwi_for_crop
-    .phase(b0_and_mask_for_crop)
-    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
+    .join(b0_and_mask_for_crop)
     .set{dwi_and_b0_mask_b0_for_crop}
 
 process Crop_DWI {
@@ -504,8 +496,7 @@ process Resample_DWI {
 }
 
 dwi_for_resample_b0
-    .phase(gradients_for_resample_b0)
-    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
+    .join(gradients_for_resample_b0)
     .set{dwi_and_grad_for_resample_b0}
 
 process Resample_B0 {
@@ -531,8 +522,7 @@ process Resample_B0 {
 }
 
 dwi_for_extract_dti_shell
-    .phase(gradients_for_dti_shell)
-    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
+    .join(gradients_for_dti_shell)
     .set{dwi_and_grad_for_extract_dti_shell}
 
 process Extract_DTI_Shell {
@@ -555,8 +545,7 @@ process Extract_DTI_Shell {
 }
 
 dwi_and_grad_for_dti_metrics
-    .phase(b0_mask_for_dti_metrics)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .join(b0_mask_for_dti_metrics)
     .set{dwi_and_grad_for_dti_metrics}
 
 process DTI_Metrics {
@@ -615,8 +604,7 @@ process DTI_Metrics {
 }
 
 dwi_for_extract_fodf_shell
-    .phase(gradients_for_fodf_shell)
-    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
+    .join(gradients_for_fodf_shell)
     .set{dwi_and_grad_for_extract_fodf_shell}
 
 process Extract_FODF_Shell {
@@ -641,10 +629,8 @@ process Extract_FODF_Shell {
 }
 
 t1_and_mask_for_reg
-    .phase(fa_for_reg)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(b0_for_reg)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .join(fa_for_reg)
+    .join(b0_for_reg)
     .set{t1_fa_b0_for_reg}
 
 process Register_T1 {
@@ -718,10 +704,8 @@ process Segment_Tissues {
 }
 
 dwi_and_grad_for_rf
-    .phase(b0_mask_for_rf)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(fa_for_rf)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .join(b0_mask_for_rf)
+    .join(fa_for_rf)
     .set{dwi_b0_fa_for_rf}
 
 process Compute_FRF {
@@ -782,12 +766,9 @@ process Mean_FRF {
 }
 
 dwi_and_grad_for_fodf
-    .phase(b0_mask_for_fodf)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
-    .phase(fa_md_for_fodf)
-    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
-    .phase(final_frf_for_fodf)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .join(b0_mask_for_fodf)
+    .join(fa_md_for_fodf)
+    .join(final_frf_for_fodf)
     .set{dwi_b0_metrics_for_fodf}
 
 process FODF_Metrics {
@@ -845,8 +826,7 @@ process PFT_Maps {
 }
 
 wm_mask_for_seeding_mask
-    .phase(interface_for_seeding_mask)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .join(interface_for_seeding_mask)
     .set{wm_interface_for_seeding_mask}
     
 process Seeding_Mask {
@@ -870,10 +850,8 @@ process Seeding_Mask {
 }
 
 fodf_for_tracking
-    .phase(pft_maps_for_tracking)
-    .map{ch1, ch2 -> [*ch1, *ch2[1..2]] }
-    .phase(seeding_mask_for_tracking)
-    .map{ch1, ch2 -> [*ch1, ch2[1]] }
+    .join(pft_maps_for_tracking)
+    .join(seeding_mask_for_tracking)
     .set{fodf_maps_for_tracking}
 
 process Tracking {
