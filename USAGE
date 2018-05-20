@@ -13,23 +13,17 @@ DESCRIPTION
 
                                     [root]
                                     ├── S1
-                                    │   ├── A1
-                                    │   │   ├── dwi.nii.gz
-                                    │   │   ├── bval
-                                    │   │   ├── bvec
-                                    │   │   ├── rev_b0.nii.gz (optional)
-                                    │   │   └── t1.nii.gz
-                                    │   └── A2
-                                    │   │   ├── dwi.nii.gz
-                                    │   │   ├── bval
-                                    │   │   ├── bvec
-                                    │   │   ├── rev_b0.nii.gz (optional)
-                                    │   │   └── t1.nii.gz
+                                    │   ├── dwi.nii.gz
+                                    │   ├── bval
+                                    │   ├── bvec
+                                    │   ├── rev_b0.nii.gz  (optionnal)
+                                    │   └── t1.nii.gz
                                     └── S2
-                                        ├── A1
-                                        │   └── *.nii.gz
-                                        └── A2
-                                            └── *.nii.gz
+                                        ├── dwi.nii.gz
+                                        ├── bval
+                                        ├── bvec
+                                        ├── rev_b0.nii.gz  (optionnal)
+                                        └── t1.nii.gz
 
 --subject=/path/to/[subject]        Subject folder containing:
 
@@ -50,12 +44,13 @@ OPTIONAL ARGUMENTS (current value)
                                             To change them please write them between quotes e.g. (--fodf_shells "0 1000").
 --topup                                     Compute topup ($topup).
                                             Need a rev_b0.nii.gz file.
---processes                                 The number of parallel processes to launch ($cpu_count).
-                                            Only affects the local scheduler.
 --output_dir                                Directory where to write the final results.
                                             By default, will be in "./results"
 
 NOTES
+
+To set the number of parallel processes to launch, please use:
+'nextflow run -qs {nb_processes}'.
 
 The 'scilpy/scripts' folder should be in your PATH environment variable. Not necessary if the
 Singularity container is used.
