@@ -28,6 +28,10 @@ log.debug "[Command-line]"
 log.debug "$workflow.commandLine"
 log.debug ""
 
+log.info "[Git Info]"
+log.info "$workflow.repository - $workflow.revision [$workflow.commitId]"
+log.info ""
+
 workflow.onComplete {
     log.info "Pipeline completed at: $workflow.complete"
     log.info "Execution status: ${ workflow.success ? 'OK' : 'failed' }"
