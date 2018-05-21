@@ -227,12 +227,12 @@ process Eddy {
         from dwi_gradients_mask_topup_files_for_eddy
 
     output:
-    set sid, "${sid}__dwi_corrected.nii.gz", "${sid}__bval",
+    set sid, "${sid}__dwi_corrected.nii.gz", "${sid}__bval_eddy",
         "${sid}__dwi_eddy_corrected.bvec" into\
         dwi_gradients_for_extract_b0
     set sid, "${sid}__dwi_corrected.nii.gz" into\
         dwi_for_bet
-    set sid, "${sid}__bval", "${sid}__dwi_eddy_corrected.bvec" into\
+    set sid, "${sid}__bval_eddy", "${sid}__dwi_eddy_corrected.bvec" into\
         gradients_for_resample_b0,
         gradients_for_dti_shell,
         gradients_for_fodf_shell
@@ -250,7 +250,7 @@ process Eddy {
             sh eddy.sh
             mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
             mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
-            mv $bval ${sid}__bval
+            mv $bval ${sid}__bval_eddy
             """
         else
             """
@@ -262,13 +262,13 @@ process Eddy {
             sh eddy.sh
             mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
             mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
-            mv $bval ${sid}__bval
+            mv $bval ${sid}__bval_eddy
             """
     else
         """
         mv $dwi ${sid}__dwi_corrected.nii.gz
         mv $bvec ${sid}__dwi_eddy_corrected.bvec
-        mv $bval ${sid}__bval
+        mv $bval ${sid}__bval_eddy
         """
 }
 
@@ -726,14 +726,14 @@ process Compute_FRF {
         --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
         --roi_radius $params.roi_radius
         scil_set_response_function.py frf.txt $params.manual_frf ${sid}__unique_frf.txt
-        mv ${sid}__unique_frf.txt .temp_frf.txt
+        cp ${sid}__unique_frf.txt .temp_frf.txt
         """
     else
         """
         scil_compute_ssst_frf.py $dwi $bval $bvec ${sid}__unique_frf.txt --mask $b0_mask\
         --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
         --roi_radius $params.roi_radius
-        mv ${sid}__unique_frf.txt .temp_frf.txt
+        cp ${sid}__unique_frf.txt .temp_frf.txt
         """
 }
 
@@ -790,8 +790,8 @@ process FODF_Metrics {
     script:
     """ 
     scil_compute_fodf.py $dwi $bval $bvec $frf --sh_order $params.sh_order\
-        --basis $params.basis --b0_threshold $params.b0_thr_extract_b0 \
-        --mask $b0_mask --fodf ${sid}__fodf.nii.gz --peaks ${sid}__peaks.nii.gz\
+        --basis $params.basis --force_b0_threshold --mask $b0_mask\
+        --fodf ${sid}__fodf.nii.gz --peaks ${sid}__peaks.nii.gz\
         --peak_indices ${sid}__peak_indices.nii.gz --processes $task.cpus
 
     scil_compute_fodf_max_in_ventricles.py ${sid}__fodf.nii.gz $fa $md\
@@ -865,7 +865,8 @@ process Tracking {
     file "${sid}__tracking.trk"
 
     script:
-    if (params.compress_streamlines)
+    compress =\
+        params.compress_streamlines ? '--compress ' + params.compress_value : ''
         """
         scil_compute_particle_filter_tracking.py $fodf $seed\
             $include $exclude ${sid}__tracking.trk --algo $params.algo\
@@ -876,19 +877,6 @@ process Tracking {
             --maxL $params.maxL --sh_interp $params.sh_interp\
             --mask_interp $params.mask_interp --particles $params.particles\
             --back $params.back --front $params.front --pft_theta $params.pft_theta\
-            --processes $task.cpus --compress $params.compress_value
-        """
-    else
-        """
-        scil_compute_particle_filter_tracking.py $fodf $seed\
-            $include $exclude ${sid}__tracking.trk --algo $params.algo\
-            --$params.seeding $params.nbr_seeds --random $params.random\
-            --step $params.step --rk_order $params.rk_order --theta $params.theta\
-            --maxL_no_dir $params.maxL_no_dir --sfthres $params.sfthres\
-            --sfthres_init $params.sfthres_init --minL $params.minL\
-            --maxL $params.maxL --sh_interp $params.sh_interp\
-            --mask_interp $params.mask_interp --particles $params.particles\
-            --back $params.back --front $params.front --pft_theta $params.pft_theta\
-            --processes $task.cpus
+            --processes $task.cpus $compress
         """
 }
