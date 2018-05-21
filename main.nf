@@ -8,8 +8,43 @@ if(params.help) {
     usage = file("$baseDir/USAGE")
 
     cpu_count = Runtime.runtime.availableProcessors()
-    bindings = ["cpu_count":"$cpu_count", "topup":"$params.run_topup",
-                "dti_shells":"$params.dti_shells", "fodf_shells":"$params.fodf_shells"]
+    bindings = ["b0_thr_extract_b0":"$params.b0_thr_extract_b0",
+                "dwi_shell_tolerance":"$params.dwi_shell_tolerance",
+                "dilate_b0_mask_prelim_brain_extraction":"$params.dilate_b0_mask_prelim_brain_extraction",
+                "run_dwi_denoising":"$params.run_dwi_denoising",
+                "extent":"$params.extent",
+                "run_topup":"$params.run_topup",
+                "encoding_direction":"$params.encoding_direction",
+                "dwell_time":"$params.dwell_time",
+                "run_eddy":"$params.run_eddy",
+                "eddy_cmd":"$params.eddy_cmd",
+                "run_resample_dwi":"$params.run_resample_dwi",
+                "dwi_resolution":"$params.dwi_resolution",
+                "dwi_interpolation":"$params.dwi_interpolation",
+                "dti_shells":"$params.dti_shells",
+                "fodf_shells":"$params.fodf_shells",
+                "number_of_tissues":"$params.number_of_tissues",
+                "fa":"$params.fa",
+                "min_fa":"$params.min_fa",
+                "roi_radius":"$params.roi_radius",
+                "set_frf":"$params.set_frf",
+                "manual_frf":"$params.manual_frf",
+                "mean_frf":"$params.mean_frf",
+                "sh_order":"$params.sh_order",
+                "basis":"$params.basis",
+                "fodf_metrics_a_factor":"$params.fodf_metrics_a_factor",
+                "wm_seeding":"$params.wm_seeding",
+                "algo":"$params.algo",
+                "seeding":"$params.seeding",
+                "nbr_seeds":"$params.nbr_seeds",
+                "random":"$params.random",
+                "step":"$params.step",
+                "rk_order":"$params.rk_order",
+                "theta":"$params.theta",
+                "minL":"$params.minL",
+                "maxL":"$params.maxL",
+                "compress_streamlines":"$params.compress_streamlines",
+                "compress_value":"$params.compress_value"]
 
     engine = new groovy.text.SimpleTemplateEngine()
     template = engine.createTemplate(usage.text).make(bindings)
@@ -723,7 +758,7 @@ process Segment_Tissues {
 
     script:
     """
-    fast -t 1 -n $params.number_of_tissue\
+    fast -t 1 -n $params.number_of_tissues\
          -H 0.1 -I 4 -l 20.0 -g -o t1.nii.gz $t1
     mv t1_seg_2.nii.gz ${sid}__mask_wm.nii.gz
     mv t1_seg_1.nii.gz ${sid}__mask_gm.nii.gz
