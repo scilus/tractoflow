@@ -685,8 +685,8 @@ process Compute_FRF {
         from dwi_b0_fa_for_rf
 
     output:
-    file "${sid}__unique_frf.txt" into all_frf_for_mean_frf
-    set sid, ".temp_frf.txt" into each_frf_for_mean_frf
+    set sid, "${sid}__frf.txt" into unique_frf, unique_frf_for_mean
+    file "${sid}__frf.txt" into all_frf_to_collect
 
     script:
     if (params.set_frf)
@@ -694,58 +694,60 @@ process Compute_FRF {
         scil_compute_ssst_frf.py $dwi $bval $bvec frf.txt --mask $b0_mask\
         --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
         --roi_radius $params.roi_radius
-        scil_set_response_function.py frf.txt $params.manual_frf ${sid}__unique_frf.txt
-        cp ${sid}__unique_frf.txt .temp_frf.txt
+        scil_set_response_function.py frf.txt $params.manual_frf ${sid}__frf.txt
         """
     else
         """
-        scil_compute_ssst_frf.py $dwi $bval $bvec ${sid}__unique_frf.txt --mask $b0_mask\
+        scil_compute_ssst_frf.py $dwi $bval $bvec ${sid}__frf.txt --mask $b0_mask\
         --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
         --roi_radius $params.roi_radius
-        cp ${sid}__unique_frf.txt .temp_frf.txt
         """
 }
 
-all_frf_for_mean_frf
+all_frf_to_collect
     .collect()
-    .set{all_frf}
-
-each_frf_for_mean_frf
-    .merge(all_frf){a, b -> tuple(*a, b)}
-    .set{unique_and_all_frf_for_mean}
+    .set{all_frf_for_mean_frf}
 
 process Mean_FRF {
     cpus 1
+    publishDir = params.MeanFRFPublishDir
+    tag = {"All_FRF"}
 
     input:
-    set sid, file(frf), file(all_frf) from unique_and_all_frf_for_mean
+    file(all_frf) from all_frf_for_mean_frf
 
     output:
-    set sid, "${sid}__mean_frf.txt" into final_frf_for_fodf
+    file "mean_frf.txt" into mean_frf
+
+    when:
+    params.mean_frf
 
     script:
-    if (params.mean_frf)
-        """
-        scil_compute_mean_frf.py $all_frf ${sid}__mean_frf.txt
-        """
-    else
-        """
-        mv $frf ${sid}__mean_frf.txt
-        """
+    """
+    scil_compute_mean_frf.py $all_frf mean_frf.txt
+    """
+}
+
+frf_for_fodf = unique_frf
+
+if (params.mean_frf) {
+    frf_for_fodf = unique_frf_for_mean
+                   .merge(mean_frf)
+                   .map{it -> [it[0], it[2]]}
 }
 
 dwi_and_grad_for_fodf
     .join(b0_mask_for_fodf)
     .join(fa_md_for_fodf)
-    .join(final_frf_for_fodf)
-    .set{dwi_b0_metrics_for_fodf}
+    .join(frf_for_fodf)
+    .set{dwi_b0_metrics_frf_for_fodf}
 
 process FODF_Metrics {
     cpus params.processes_fodf
 
     input:
     set sid, file(dwi), file(bval), file(bvec), file(b0_mask), file(fa),
-        file(md), file(frf) from dwi_b0_metrics_for_fodf
+        file(md), file(frf) from dwi_b0_metrics_frf_for_fodf
 
     output:
     set sid, "${sid}__fodf.nii.gz" into fodf_for_tracking
