@@ -128,8 +128,7 @@ process Denoise_DWI {
     output:
     set sid, "${sid}__dwi_denoised.nii.gz" into\
         dwi_for_eddy,
-        dwi_for_topup,
-        dwi_for_skip_topup
+        dwi_for_topup
 
     script:
     if(params.run_dwi_denoising)
@@ -141,29 +140,6 @@ process Denoise_DWI {
         """
         mv $dwi ${sid}__dwi_denoised.nii.gz
         """
-}
-
-process Skip_Topup {
-    cpus 1
-
-    input:
-    set sid, file(dwi) from dwi_for_skip_topup
-    val(rev_b0_count) from rev_b0_counter
-
-    output:
-    set sid, topup_computed, "${params.prefix_topup}_fieldcoef.nii.gz", 
-        "${params.prefix_topup}_movpar.txt"\
-        into topup_file_for_eddy_from_skip_topup
-
-    when:
-    rev_b0_count == 0
-
-    script:
-    topup_computed=false
-    """
-    touch ${params.prefix_topup}_fieldcoef.nii.gz
-    touch ${params.prefix_topup}_movpar.txt
-    """
 }
 
 dwi_for_topup
@@ -181,13 +157,10 @@ process Topup {
 
     output:
     set sid, topup_computed, "${params.prefix_topup}_fieldcoef.nii.gz",
-    "${params.prefix_topup}_movpar.txt" into topup_file_for_eddy_from_topup
-
-    when:
-    rev_b0_count > 0
+    "${params.prefix_topup}_movpar.txt" into topup_files_for_eddy
 
     script:
-    if (params.run_topup){
+    if (params.run_topup && rev_b0_count > 0){
         topup_computed=true
         """
         OMP_NUM_THREADS=$task.cpus
@@ -203,19 +176,15 @@ process Topup {
         topup_computed=false
         """
         touch ${params.prefix_topup}_fieldcoef.nii.gz
-        touch ${params.prefix_topup}_movpar.txt
+        echo "No Topup Computed" > ${params.prefix_topup}_movpar.txt
         """
     }
 }
 
-topup_file_for_eddy_from_topup
-    .mix(topup_file_for_eddy_from_skip_topup)
-    .set{topup_file_for_eddy}
-
 dwi_for_eddy
     .join(gradients_for_eddy)
     .join(b0_mask_for_eddy)
-    .join(topup_file_for_eddy)
+    .join(topup_files_for_eddy)
     .set{dwi_gradients_mask_topup_files_for_eddy}
 
 process Eddy {
