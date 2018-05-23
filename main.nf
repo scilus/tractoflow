@@ -180,7 +180,8 @@ check_rev_b0.count().set{ rev_b0_counter }
 dwi.into{dwi_for_prelim_bet; dwi_for_denoise}
 
 gradients
-    .into{gradients_for_prelim_bet; gradients_for_eddy; gradients_for_topup}
+    .into{gradients_for_prelim_bet; gradients_for_eddy; gradients_for_topup;
+          gradients_for_eddy_topup}
 
 dwi_for_prelim_bet
     .join(gradients_for_prelim_bet)
@@ -195,7 +196,7 @@ process Bet_Prelim_DWI {
 
     output:
     set sid, "${sid}__b0_bet_mask_dilated.nii.gz" into\
-        b0_mask_for_eddy
+        b0_mask_for_eddy, b0_mask_for_eddy_topup
     file "${sid}__b0_bet.nii.gz"
     file "${sid}__b0_bet_mask.nii.gz"
 
@@ -225,7 +226,8 @@ process Denoise_DWI {
     output:
     set sid, "${sid}__dwi_denoised.nii.gz" into\
         dwi_for_eddy,
-        dwi_for_topup
+        dwi_for_topup,
+        dwi_for_eddy_topup
 
     script:
     if(params.run_dwi_denoising)
@@ -250,15 +252,13 @@ process Topup {
     input:
     set sid, file(dwi), file(bval), file(bvec), file(rev_b0)\
         from dwi_gradients_rev_b0_for_topup
-    val(rev_b0_count) from rev_b0_counter
 
     output:
-    set sid, topup_computed, "${params.prefix_topup}_fieldcoef.nii.gz",
-    "${params.prefix_topup}_movpar.txt" into topup_files_for_eddy
+    set sid, "${params.prefix_topup}_fieldcoef.nii.gz",
+    "${params.prefix_topup}_movpar.txt" into topup_files_for_eddy_topup
 
     script:
-    if (params.run_topup && rev_b0_count > 0){
-        topup_computed=true
+    if (params.run_topup){
         """
         OMP_NUM_THREADS=$task.cpus
         scil_prepare_topup_command.py $dwi $bval $bvec $rev_b0\
@@ -269,9 +269,8 @@ process Topup {
         sh topup.sh
         """
     }
-    else{            
-        topup_computed=false
-        """
+    else{
+        """    
         touch ${params.prefix_topup}_fieldcoef.nii.gz
         echo "No Topup Computed" > ${params.prefix_topup}_movpar.txt
         """
@@ -281,55 +280,41 @@ process Topup {
 dwi_for_eddy
     .join(gradients_for_eddy)
     .join(b0_mask_for_eddy)
-    .join(topup_files_for_eddy)
     .set{dwi_gradients_mask_topup_files_for_eddy}
 
 process Eddy {
     cpus params.processes_eddy
 
     input:
-    set sid, file(dwi), file(bval), file(bvec), file(mask),
-        val(topup_computed), file(field), file(movpar)\
+    set sid, file(dwi), file(bval), file(bvec), file(mask)\
         from dwi_gradients_mask_topup_files_for_eddy
+    val(rev_b0_count) from rev_b0_counter
 
     output:
     set sid, "${sid}__dwi_corrected.nii.gz", "${sid}__bval_eddy",
         "${sid}__dwi_eddy_corrected.bvec" into\
-        dwi_gradients_for_extract_b0
+        dwi_gradients_from_eddy
     set sid, "${sid}__dwi_corrected.nii.gz" into\
-        dwi_for_bet
+        dwi_from_eddy
     set sid, "${sid}__bval_eddy", "${sid}__dwi_eddy_corrected.bvec" into\
-        gradients_for_resample_b0,
-        gradients_for_dti_shell,
-        gradients_for_fodf_shell
+        gradients_from_eddy
+
+    when:
+    rev_b0_count == 0 || !params.run_topup
 
     script:
     if (params.run_eddy)
-        if (topup_computed)
-            """
-            OMP_NUM_THREADS=$task.cpus
-            scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
-                --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
-                --b0_thr $params.b0_thr_extract_b0\
-                --encoding_direction $params.encoding_direction\
-                --dwell_time $params.dwell_time --output_script
-            sh eddy.sh
-            mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
-            mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
-            mv $bval ${sid}__bval_eddy
-            """
-        else
-            """
-            OMP_NUM_THREADS=$task.cpus
-            scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
-                --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
-                --encoding_direction $params.encoding_direction\
-                --dwell_time $params.dwell_time --output_script
-            sh eddy.sh
-            mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
-            mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
-            mv $bval ${sid}__bval_eddy
-            """
+        """
+        OMP_NUM_THREADS=$task.cpus
+        scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
+            --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
+            --encoding_direction $params.encoding_direction\
+            --dwell_time $params.dwell_time --output_script
+        sh eddy.sh
+        mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
+        mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
+        mv $bval ${sid}__bval_eddy
+        """
     else
         """
         mv $dwi ${sid}__dwi_corrected.nii.gz
@@ -337,6 +322,69 @@ process Eddy {
         mv $bval ${sid}__bval_eddy
         """
 }
+
+dwi_for_eddy_topup
+    .join(gradients_for_eddy_topup)
+    .join(b0_mask_for_eddy_topup)
+    .join(topup_files_for_eddy_topup)
+    .set{dwi_gradients_mask_topup_files_for_eddy_topup}
+
+process Eddy_Topup {
+    cpus params.processes_eddy
+
+    input:
+    set sid, file(dwi), file(bval), file(bvec), file(mask),
+        file(field), file(movpar)\
+        from dwi_gradients_mask_topup_files_for_eddy_topup
+    val(rev_b0_count) from rev_b0_counter
+
+    output:
+    set sid, "${sid}__dwi_corrected.nii.gz", "${sid}__bval_eddy",
+        "${sid}__dwi_eddy_corrected.bvec" into\
+        dwi_gradients_from_eddy_topup
+    set sid, "${sid}__dwi_corrected.nii.gz" into\
+        dwi_from_eddy_topup
+    set sid, "${sid}__bval_eddy", "${sid}__dwi_eddy_corrected.bvec" into\
+        gradients_from_eddy_topup
+
+    when:
+    rev_b0_count > 0 & params.run_topup
+
+    script:
+    if (params.run_eddy)
+        """
+        OMP_NUM_THREADS=$task.cpus
+        scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
+            --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
+            --b0_thr $params.b0_thr_extract_b0\
+            --encoding_direction $params.encoding_direction\
+            --dwell_time $params.dwell_time --output_script
+        sh eddy.sh
+        mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
+        mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
+        mv $bval ${sid}__bval_eddy
+        """
+    else
+        """
+        mv $dwi ${sid}__dwi_corrected.nii.gz
+        mv $bvec ${sid}__dwi_eddy_corrected.bvec
+        mv $bval ${sid}__bval_eddy
+        """
+}
+
+dwi_gradients_from_eddy
+    .mix(dwi_gradients_from_eddy_topup)
+    .set{dwi_gradients_for_extract_b0}
+
+dwi_from_eddy
+    .mix(dwi_from_eddy_topup)
+    .set{dwi_for_bet}
+
+gradients_from_eddy
+    .mix(gradients_from_eddy_topup)
+    .into{gradients_for_resample_b0;
+          gradients_for_dti_shell;
+          gradients_for_fodf_shell}
 
 process Extract_B0 {
     cpus 2
