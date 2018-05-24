@@ -257,24 +257,19 @@ process Topup {
     set sid, "${params.prefix_topup}_fieldcoef.nii.gz",
     "${params.prefix_topup}_movpar.txt" into topup_files_for_eddy_topup
 
+    when:
+    params.run_topup
+
     script:
-    if (params.run_topup){
-        """
-        OMP_NUM_THREADS=$task.cpus
-        scil_prepare_topup_command.py $dwi $bval $bvec $rev_b0\
-            --config $params.config_topup --b0_thr $params.b0_thr_extract_b0\
-            --encoding_direction $params.encoding_direction\
-            --dwell_time $params.dwell_time --output_prefix $params.prefix_topup\
-            --output_script
-        sh topup.sh
-        """
-    }
-    else{
-        """    
-        touch ${params.prefix_topup}_fieldcoef.nii.gz
-        echo "No Topup Computed" > ${params.prefix_topup}_movpar.txt
-        """
-    }
+    """
+    OMP_NUM_THREADS=$task.cpus
+    scil_prepare_topup_command.py $dwi $bval $bvec $rev_b0\
+        --config $params.config_topup --b0_thr $params.b0_thr_extract_b0\
+        --encoding_direction $params.encoding_direction\
+        --dwell_time $params.dwell_time --output_prefix $params.prefix_topup\
+        --output_script
+    sh topup.sh
+    """
 }
 
 dwi_for_eddy
@@ -348,7 +343,7 @@ process Eddy_Topup {
         gradients_from_eddy_topup
 
     when:
-    rev_b0_count > 0 & params.run_topup
+    rev_b0_count > 0 && params.run_topup
 
     script:
     if (params.run_eddy)
