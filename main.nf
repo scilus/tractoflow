@@ -258,7 +258,7 @@ process Topup {
     "${params.prefix_topup}_movpar.txt" into topup_files_for_eddy_topup
 
     when:
-    params.run_topup
+    params.run_topup && params.run_eddy
 
     script:
     """
