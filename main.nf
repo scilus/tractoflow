@@ -295,7 +295,7 @@ process Eddy {
         gradients_from_eddy
 
     when:
-    rev_b0_count == 0 || !params.run_topup
+    rev_b0_count == 0 || !params.run_topup || (!params.run_eddy && params.run_topup)
 
     script:
     if (params.run_eddy)
