@@ -34,8 +34,8 @@ DESCRIPTION
                                         ├── rev_b0.nii.gz (optional)
                                         └── t1.nii.gz
 
-    --template_t1=path/to/[template_t1] Template T1 for antsBrainExtraction
-    --template_b0=path/to/[template_b0] Template B0 for antsBrainExtraction
+    --template_t1=path/to/[template_t1] Template T1 for antsBrainExtraction (i.e. mni_152_sym_09c/t1)
+    --template_b0=path/to/[template_b0] Template B0 for antsBrainExtraction (i.e. mni_152_sym_09c/b0)
 
 Files should be compressed Nifti files (.nii.gz)
 
@@ -74,7 +74,7 @@ OPTIONAL ARGUMENTS (current value)
 --min_fa                                    Minimum FA threshold to compute the frf ($min_fa).
 --roi_radius                                Region of interest radius to compute the frf ($roi_radius).
 --set_frf                                   Set manually the frf ($set_frf).
---manual_frf                                FRF setted manually ($manual_frf).
+--manual_frf                                FRF set manually ($manual_frf).
 
 --mean_frf                                  Mean the frf of all subjects ($mean_frf).
                                             USE ONLY IF ALL OF SUBJECTS COME FROM THE SAME SCANNER
@@ -99,7 +99,7 @@ OPTIONAL ARGUMENTS (current value)
 --minL                                      Minimum length ($minL).
 --maxL                                      Maximum length ($maxL).
 --compress_streamlines                      Compress streamlines ($compress_streamlines).
---compress_value                            Compressing value ($compress_value).
+--compress_value                            Compression error threshold ($compress_value).
 
 --output_dir                                Directory where to write the final results.
                                             By default, will be in "./results"
