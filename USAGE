@@ -1,0 +1,121 @@
+SCIL dMRI pipeline
+==================
+
+Run human pipeline
+
+USAGE
+
+nextflow run main.nf [OPTIONAL_ARGUMENTS] (--root or --subject, template_t1, template_b0)
+
+DESCRIPTION
+
+    --root=/path/to/[root]              Root folder containing multiple subjects
+
+                                        [root]
+                                        ├── S1
+                                        │   ├── dwi.nii.gz
+                                        │   ├── bval
+                                        │   ├── bvec
+                                        │   ├── rev_b0.nii.gz  (optionnal)
+                                        │   └── t1.nii.gz
+                                        └── S2
+                                            ├── dwi.nii.gz
+                                            ├── bval
+                                            ├── bvec
+                                            ├── rev_b0.nii.gz  (optionnal)
+                                            └── t1.nii.gz
+
+    --subject=/path/to/[subject]        Subject folder containing:
+
+                                        [subject]
+                                        ├── dwi.nii.gz
+                                        ├── bval
+                                        ├── bvec
+                                        ├── rev_b0.nii.gz (optional)
+                                        └── t1.nii.gz
+
+    --template_t1=path/to/[template_t1] Template T1 for antsBrainExtraction (i.e. mni_152_sym_09c/t1)
+    --template_b0=path/to/[template_b0] Template B0 for antsBrainExtraction (i.e. mni_152_sym_09c/b0)
+
+Files should be compressed Nifti files (.nii.gz)
+
+OPTIONAL ARGUMENTS (current value)
+
+--b0_thr_extract_b0                         All b-values below b0_thr_extract_b0 are considered b=0 images ($b0_thr_extract_b0).
+--dwi_shell_tolerance                       All b-values to +-dwi_shell_tolerance are considered as the same b-value ($dwi_shell_tolerance).
+
+--dilate_b0_mask_prelim_brain_extraction    Dilation factor to keep the whole brain.
+                                            Not the final extraction ($dilate_b0_mask_prelim_brain_extraction).
+
+--run_dwi_denoising                         Run dwi denoising ($run_dwi_denoising).
+--extent                                    Denoising block size ($extent).
+                                            Rule: extent^3 >= number of directions.
+
+--run_topup                                 Run Topup ($run_topup).
+--encoding_direction                        Encoding direction of the DWI [x, y, z] ($encoding_direction).
+--dwell_time                                Dwell-time ($dwell_time).
+
+--run_eddy                                  Run Eddy ($run_eddy).
+--eddy_cmd                                  Eddy command to use [eddy, eddy_openmp, eddy_cuda] ($eddy_cmd).
+
+--run_resample_dwi                          Run resample DWI ($run_resample_dwi).
+--dwi_resolution                            DWI resolution ($dwi_resolution).
+--dwi_interpolation                         Interpolation method [nn, lin, quad, cubic] ($dwi_interpolation).
+
+--dti_shells                                Shells selected to compute the dti metrics (generally b < 1200) ($dti_shells).
+                                            To change them please write them between quotes e.g. (--dti_shells "0 300").
+
+--fodf_shells                               Shells selected to compute the fodf metrics (generally b > 700) ($fodf_shells).
+                                            To change them please write them between quotes e.g. (--fodf_shells "0 1000").
+
+--number_of_tissues                         Number of tissue classes ($number_of_tissues).
+
+--fa                                        Initial FA threshold to compute the frf ($fa).
+--min_fa                                    Minimum FA threshold to compute the frf ($min_fa).
+--roi_radius                                Region of interest radius to compute the frf ($roi_radius).
+--set_frf                                   Set manually the frf ($set_frf).
+--manual_frf                                FRF set manually ($manual_frf).
+
+--mean_frf                                  Mean the frf of all subjects ($mean_frf).
+                                            USE ONLY IF ALL OF SUBJECTS COME FROM THE SAME SCANNER
+                                            AND HAVE THE SAME ACQUISITION.
+
+--sh_order                                  Spherical harmonics order ($sh_order).
+                                            Rules :-sh_order=8 for 45 directions
+                                                   -sh_order=6 for 28 directions
+--basis                                     fODF basis [fibernav, mrtrix] ($basis)
+--fodf_metrics_a_factor                     Multiplicative factor for AFD max in ventricles ($fodf_metrics_a_factor).
+
+--wm_seeding                                If 'wm_seeding=true', use the WM-GM interface and the WM mask as seeding mask,
+                                            else use the WM-GM interface as seeding mask ($wm_seeding).
+
+--algo                                      Tracking algorithm [prob, det] ($algo).
+--seeding                                   Seeding type [npv, nt, ns] ($seeding).
+--nbr_seeds                                 Number of seeds related to the seeding type param ($nbr_seeds).
+--random                                    Random seed ($random).
+--step                                      Step size ($step).
+--rk_order                                  Runge-Kutta order ($rk_order).
+--theta                                     Maximum angle between 2 steps ($theta).
+--minL                                      Minimum length ($minL).
+--maxL                                      Maximum length ($maxL).
+--compress_streamlines                      Compress streamlines ($compress_streamlines).
+--compress_value                            Compression error threshold ($compress_value).
+
+--output_dir                                Directory where to write the final results.
+                                            By default, will be in "./results"
+
+NOTES
+
+To set the number of parallel processes to launch, please use:
+'nextflow run -qs {nb_processes}'.
+
+The 'scilpy/scripts' folder should be in your PATH environment variable. Not necessary if the
+Singularity container is used.
+
+The intermediate working directory is, by default, set to './work'.
+To change it, use the '-w WORK_DIR' argument.
+
+The default config file is pipeline_human/nextflow.config.
+Use '-C config_file.config' to specify a non-default configuration file.
+The '-C config_file.config' must be inserted after the nextflow call
+like 'nextflow -C config_file.config run ...'.
