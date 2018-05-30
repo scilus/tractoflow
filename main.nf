@@ -643,7 +643,9 @@ process Extract_DTI_Shell {
 
     output:
     set sid, "${sid}__dwi_dti.nii.gz", "${sid}__bval_dti",
-        "${sid}__bvec_dti" into dwi_and_grad_for_dti_metrics
+        "${sid}__bvec_dti" into \
+        dwi_and_grad_for_dti_metrics, \
+        dwi_and_grad_for_rf
 
     script:
     """
@@ -726,8 +728,7 @@ process Extract_FODF_Shell {
     output:
     set sid, "${sid}__dwi_fodf.nii.gz", "${sid}__bval_fodf",
         "${sid}__bvec_fodf" into\
-        dwi_and_grad_for_fodf,
-        dwi_and_grad_for_rf
+        dwi_and_grad_for_fodf
 
     script:
     """
