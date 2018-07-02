@@ -196,7 +196,7 @@ process Bet_Prelim_DWI {
 
     output:
     set sid, "${sid}__b0_bet_mask_dilated.nii.gz" into\
-        b0_mask_for_eddy, b0_mask_for_eddy_topup
+        b0_mask_for_eddy
     file "${sid}__b0_bet.nii.gz"
     file "${sid}__b0_bet_mask.nii.gz"
 
@@ -254,7 +254,7 @@ process Topup {
         from dwi_gradients_rev_b0_for_topup
 
     output:
-    set sid, "${params.prefix_topup}_fieldcoef.nii.gz",
+    set sid, "${sid}__corrected_b0s.nii.gz", "${params.prefix_topup}_fieldcoef.nii.gz",
     "${params.prefix_topup}_movpar.txt" into topup_files_for_eddy_topup
 
     when:
@@ -269,6 +269,7 @@ process Topup {
         --dwell_time $params.dwell_time --output_prefix $params.prefix_topup\
         --output_script
     sh topup.sh
+    cp corrected_b0s.nii.gz ${sid}__corrected_b0s.nii.gz
     """
 }
 
@@ -320,7 +321,6 @@ process Eddy {
 
 dwi_for_eddy_topup
     .join(gradients_for_eddy_topup)
-    .join(b0_mask_for_eddy_topup)
     .join(topup_files_for_eddy_topup)
     .set{dwi_gradients_mask_topup_files_for_eddy_topup}
 
@@ -328,10 +328,11 @@ process Eddy_Topup {
     cpus params.processes_eddy
 
     input:
-    set sid, file(dwi), file(bval), file(bvec), file(mask),
+    set sid, file(dwi), file(bval), file(bvec), file(b0_corrected),
         file(field), file(movpar)\
         from dwi_gradients_mask_topup_files_for_eddy_topup
     val(rev_b0_count) from rev_b0_counter
+    file template_dir from template_dir_b0_for_prelim_bet.first()
 
     output:
     set sid, "${sid}__dwi_corrected.nii.gz", "${sid}__bval_eddy",
@@ -349,7 +350,13 @@ process Eddy_Topup {
     if (params.run_eddy)
         """
         OMP_NUM_THREADS=$task.cpus
-        scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
+        ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
+        antsBrainExtraction.sh -d 3 -a $b0_corrected\
+        -e $template_dir/b0_template.nii.gz\
+        -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
+        -f $template_dir/b0_brain_registration_mask.nii.gz -k 1
+        mv bet/BrainExtractionPriorWarped.nii.gz b0_bet_mask.nii.gz
+        scil_prepare_eddy_command.py $dwi $bval $bvec b0_bet_mask.nii.gz\
             --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
             --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $params.encoding_direction\
