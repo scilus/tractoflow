@@ -210,7 +210,7 @@ process Bet_Prelim_DWI {
         -e $template_dir/b0_template.nii.gz\
         -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
         -f $template_dir/b0_brain_registration_mask.nii.gz -k 1 -u 0
-    mv bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
+    mv bet/BrainExtractionMask.nii.gz ${sid}__b0_bet_mask.nii.gz
     maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz\
         --npass $params.dilate_b0_mask_prelim_brain_extraction
     mrcalc ${sid}__b0.nii.gz ${sid}__b0_bet_mask_dilated.nii.gz\
@@ -431,7 +431,7 @@ process Bet_DWI {
     antsBrainExtraction.sh -d 3 -a $b0 -e $template_dir/b0_template.nii.gz\
         -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
         -f $template_dir/b0_brain_registration_mask.nii.gz -k 1 -u 0
-    mv bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
+    mv bet/BrainExtractionMask.nii.gz ${sid}__b0_bet_mask.nii.gz
     maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz
     mrcalc $dwi ${sid}__b0_bet_mask_dilated.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet
     mrcalc $b0 ${sid}__b0_bet_mask_dilated.nii.gz -mult ${sid}__b0_bet.nii.gz -quiet
