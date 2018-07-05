@@ -234,7 +234,8 @@ process Denoise_DWI {
     if(params.run_dwi_denoising)
         """
         MRTRIX_NTHREADS=$task.cpus
-        dwidenoise $dwi ${sid}__dwi_denoised.nii.gz -extent $params.extent
+        dwidenoise $dwi dwi_denoised.nii.gz -extent $params.extent
+        fslmaths dwi_denoised.nii.gz -thr 0 ${sid}__dwi_denoised.nii.gz
         """
     else
         """
