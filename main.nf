@@ -583,7 +583,7 @@ process Crop_T1 {
 }
 
 process Resample_DWI {
-    cpus 2
+    cpus 3
 
     input:
     set sid, file(dwi), file(mask) from dwi_mask_for_resample
@@ -620,7 +620,7 @@ dwi_for_resample_b0
     .set{dwi_and_grad_for_resample_b0}
 
 process Resample_B0 {
-    cpus 2
+    cpus 3
 
     input:
     set sid, file(dwi), file(bval), file(bvec) from dwi_and_grad_for_resample_b0
