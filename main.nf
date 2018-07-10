@@ -206,15 +206,11 @@ process Bet_Prelim_DWI {
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0
-    antsBrainExtraction.sh -d 3 -a ${sid}__b0.nii.gz\
-        -e $template_dir/b0_template.nii.gz\
-        -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
-        -k 1 -u 0
-    mv bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
+    bet ${sid}__b0.nii.gz ${sid}__b0_bet.nii.gz -m -R -f 0.16
     maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz\
         --npass $params.dilate_b0_mask_prelim_brain_extraction
     mrcalc ${sid}__b0.nii.gz ${sid}__b0_bet_mask_dilated.nii.gz\
-        -mult ${sid}__b0_bet.nii.gz -quiet
+        -mult ${sid}__b0_bet.nii.gz -quiet -force
     """
 }
 
@@ -355,11 +351,7 @@ process Eddy_Topup {
         OMP_NUM_THREADS=$task.cpus
         ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
         mrconvert $b0s_corrected b0_corrected.nii.gz -coord 3 0 -axes 0,1,2
-        antsBrainExtraction.sh -d 3 -a b0_corrected.nii.gz\
-        -e $template_dir/b0_template.nii.gz\
-        -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
-        -k 1 -u 0
-        mv bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
+        bet b0_corrected.nii.gz ${sid}__b0_bet.nii.gz -m -R -f 0.16
         scil_prepare_eddy_command.py $dwi $bval $bvec ${sid}__b0_bet_mask.nii.gz\
             --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
             --b0_thr $params.b0_thr_extract_b0\
@@ -420,22 +412,16 @@ process Bet_DWI {
     file template_dir from template_dir_b0_for_bet.first()
 
     output:
-    set sid, "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask_dilated.nii.gz" into\
+    set sid, "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask.nii.gz" into\
         b0_and_mask_for_crop
     set sid, "${sid}__dwi_bet.nii.gz", "${sid}__b0_bet.nii.gz", 
-        "${sid}__b0_bet_mask_dilated.nii.gz" into dwi_b0_b0_mask_for_n4
-    file "${sid}__b0_bet_mask.nii.gz"
+        "${sid}__b0_bet_mask.nii.gz" into dwi_b0_b0_mask_for_n4
 
     script:
     """
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
-    antsBrainExtraction.sh -d 3 -a $b0 -e $template_dir/b0_template.nii.gz\
-        -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
-        -k 1 -u 0
-    mv bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
-    maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz
-    mrcalc $dwi ${sid}__b0_bet_mask_dilated.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet
-    mrcalc $b0 ${sid}__b0_bet_mask_dilated.nii.gz -mult ${sid}__b0_bet.nii.gz -quiet
+    bet ${sid}__b0.nii.gz ${sid}__b0_bet.nii.gz -m -R -f 0.16
+    mrcalc $dwi ${sid}__b0_bet_mask.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet
     """
 }
 
