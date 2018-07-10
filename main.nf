@@ -303,7 +303,7 @@ process Eddy {
         scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
             --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $params.encoding_direction\
-            --dwell_time $params.dwell_time --output_script
+            --dwell_time $params.dwell_time --output_script --fix_seed
         sh eddy.sh
         mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
@@ -356,7 +356,7 @@ process Eddy_Topup {
             --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
             --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $params.encoding_direction\
-            --dwell_time $params.dwell_time --output_script
+            --dwell_time $params.dwell_time --output_script --fix_seed
         sh eddy.sh
         mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
