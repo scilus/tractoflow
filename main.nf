@@ -692,8 +692,7 @@ process DTI_Metrics {
     file "${sid}__residual_std_residuals.npy"
     set sid, "${sid}__fa.nii.gz", "${sid}__md.nii.gz" into fa_md_for_fodf
     set sid, "${sid}__fa.nii.gz" into\
-        fa_for_reg,
-        fa_for_rf
+        fa_for_reg
 
     script:
     """
@@ -812,15 +811,14 @@ process Segment_Tissues {
 
 dwi_and_grad_for_rf
     .join(b0_mask_for_rf)
-    .join(fa_for_rf)
-    .set{dwi_b0_fa_for_rf}
+    .set{dwi_b0_for_rf}
 
 process Compute_FRF {
     cpus 3
 
     input:
-    set sid, file(dwi), file(bval), file(bvec), file(b0_mask), file(fa)\
-        from dwi_b0_fa_for_rf
+    set sid, file(dwi), file(bval), file(bvec), file(b0_mask)\
+        from dwi_b0_for_rf
 
     output:
     set sid, "${sid}__frf.txt" into unique_frf, unique_frf_for_mean
