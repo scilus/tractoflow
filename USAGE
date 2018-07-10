@@ -56,7 +56,7 @@ OPTIONAL ARGUMENTS (current value)
 --dwell_time                                Dwell-time ($dwell_time).
 
 --run_eddy                                  Run Eddy ($run_eddy).
---eddy_cmd                                  Eddy command to use [eddy, eddy_openmp, eddy_cuda] ($eddy_cmd).
+--eddy_cmd                                  Eddy command to use [eddy_openmp, eddy_cuda] ($eddy_cmd).
 
 --run_resample_dwi                          Run resample DWI ($run_resample_dwi).
 --dwi_resolution                            DWI resolution ($dwi_resolution).
