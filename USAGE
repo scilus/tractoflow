@@ -35,7 +35,6 @@ DESCRIPTION
                                         └── t1.nii.gz
 
     --template_t1=path/to/[template_t1] Template T1 for antsBrainExtraction (i.e. mni_152_sym_09c/t1)
-    --template_b0=path/to/[template_b0] Template B0 for antsBrainExtraction (i.e. mni_152_sym_09c/b0)
 
 Files should be compressed Nifti files (.nii.gz)
 

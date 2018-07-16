@@ -135,12 +135,6 @@ Channel
     .fromPath("$params.template_t1", type:'dir')
     .set{template_dir_t1}
 
-Channel
-    .fromPath("$params.template_b0", type:'dir')
-    .into{template_dir_b0_for_prelim_bet;
-          template_dir_b0_for_bet;
-          template_dir_b0_for_eddy_topup}
-
 if (params.root){
     log.info "Input: $params.root"
     root = file(params.root)
@@ -193,7 +187,6 @@ process Bet_Prelim_DWI {
 
     input:
     set sid, file(dwi), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
-    file template_dir from template_dir_b0_for_prelim_bet.first()
 
     output:
     set sid, "${sid}__b0_bet_mask_dilated.nii.gz" into\
@@ -330,7 +323,6 @@ process Eddy_Topup {
         file(field), file(movpar)\
         from dwi_gradients_mask_topup_files_for_eddy_topup
     val(rev_b0_count) from rev_b0_counter
-    file template_dir from template_dir_b0_for_eddy_topup.first()
 
     output:
     set sid, "${sid}__dwi_corrected.nii.gz", "${sid}__bval_eddy",
@@ -409,7 +401,6 @@ process Bet_DWI {
 
     input:
     set sid, file(dwi), file(b0) from dwi_b0_for_bet
-    file template_dir from template_dir_b0_for_bet.first()
 
     output:
     set sid, "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask.nii.gz" into\
