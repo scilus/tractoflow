@@ -135,12 +135,6 @@ Channel
     .fromPath("$params.template_t1", type:'dir')
     .set{template_dir_t1}
 
-Channel
-    .fromPath("$params.template_b0", type:'dir')
-    .into{template_dir_b0_for_prelim_bet;
-          template_dir_b0_for_bet;
-          template_dir_b0_for_eddy_topup}
-
 if (params.root){
     log.info "Input: $params.root"
     root = file(params.root)
@@ -193,7 +187,6 @@ process Bet_Prelim_DWI {
 
     input:
     set sid, file(dwi), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
-    file template_dir from template_dir_b0_for_prelim_bet.first()
 
     output:
     set sid, "${sid}__b0_bet_mask_dilated.nii.gz" into\
@@ -206,15 +199,11 @@ process Bet_Prelim_DWI {
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0
-    antsBrainExtraction.sh -d 3 -a ${sid}__b0.nii.gz\
-        -e $template_dir/b0_template.nii.gz\
-        -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
-        -f $template_dir/b0_brain_registration_mask.nii.gz -k 1
-    mv bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
+    bet ${sid}__b0.nii.gz ${sid}__b0_bet.nii.gz -m -R -f 0.16
     maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz\
         --npass $params.dilate_b0_mask_prelim_brain_extraction
     mrcalc ${sid}__b0.nii.gz ${sid}__b0_bet_mask_dilated.nii.gz\
-        -mult ${sid}__b0_bet.nii.gz -quiet
+        -mult ${sid}__b0_bet.nii.gz -quiet -force
     """
 }
 
@@ -234,7 +223,8 @@ process Denoise_DWI {
     if(params.run_dwi_denoising)
         """
         MRTRIX_NTHREADS=$task.cpus
-        dwidenoise $dwi ${sid}__dwi_denoised.nii.gz -extent $params.extent
+        dwidenoise $dwi dwi_denoised.nii.gz -extent $params.extent
+        fslmaths dwi_denoised.nii.gz -thr 0 ${sid}__dwi_denoised.nii.gz
         """
     else
         """
@@ -306,7 +296,7 @@ process Eddy {
         scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
             --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $params.encoding_direction\
-            --dwell_time $params.dwell_time --output_script
+            --dwell_time $params.dwell_time --output_script --fix_seed
         sh eddy.sh
         mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
@@ -333,7 +323,6 @@ process Eddy_Topup {
         file(field), file(movpar)\
         from dwi_gradients_mask_topup_files_for_eddy_topup
     val(rev_b0_count) from rev_b0_counter
-    file template_dir from template_dir_b0_for_eddy_topup.first()
 
     output:
     set sid, "${sid}__dwi_corrected.nii.gz", "${sid}__bval_eddy",
@@ -354,16 +343,12 @@ process Eddy_Topup {
         OMP_NUM_THREADS=$task.cpus
         ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
         mrconvert $b0s_corrected b0_corrected.nii.gz -coord 3 0 -axes 0,1,2
-        antsBrainExtraction.sh -d 3 -a b0_corrected.nii.gz\
-        -e $template_dir/b0_template.nii.gz\
-        -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
-        -f $template_dir/b0_brain_registration_mask.nii.gz -k 1
-        mv bet/BrainExtractionMask.nii.gz ${sid}__b0_bet_mask.nii.gz
+        bet b0_corrected.nii.gz ${sid}__b0_bet.nii.gz -m -R -f 0.16
         scil_prepare_eddy_command.py $dwi $bval $bvec ${sid}__b0_bet_mask.nii.gz\
             --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
             --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $params.encoding_direction\
-            --dwell_time $params.dwell_time --output_script
+            --dwell_time $params.dwell_time --output_script --fix_seed
         sh eddy.sh
         mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
@@ -416,25 +401,18 @@ process Bet_DWI {
 
     input:
     set sid, file(dwi), file(b0) from dwi_b0_for_bet
-    file template_dir from template_dir_b0_for_bet.first()
 
     output:
-    set sid, "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask_dilated.nii.gz" into\
+    set sid, "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask.nii.gz" into\
         b0_and_mask_for_crop
     set sid, "${sid}__dwi_bet.nii.gz", "${sid}__b0_bet.nii.gz", 
-        "${sid}__b0_bet_mask_dilated.nii.gz" into dwi_b0_b0_mask_for_n4
-    file "${sid}__b0_bet_mask.nii.gz"
+        "${sid}__b0_bet_mask.nii.gz" into dwi_b0_b0_mask_for_n4
 
     script:
     """
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
-    antsBrainExtraction.sh -d 3 -a $b0 -e $template_dir/b0_template.nii.gz\
-        -o bet/ -m $template_dir/b0_brain_probability_map.nii.gz\
-        -f $template_dir/b0_brain_registration_mask.nii.gz -k 1
-    mv bet/BrainExtractionPriorWarped.nii.gz ${sid}__b0_bet_mask.nii.gz
-    maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz
-    mrcalc $dwi ${sid}__b0_bet_mask_dilated.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet
-    mrcalc $b0 ${sid}__b0_bet_mask_dilated.nii.gz -mult ${sid}__b0_bet.nii.gz -quiet
+    bet ${sid}__b0.nii.gz ${sid}__b0_bet.nii.gz -m -R -f 0.16
+    mrcalc $dwi ${sid}__b0_bet_mask.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet
     """
 }
 
@@ -556,7 +534,7 @@ process Bet_T1 {
     """
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     antsBrainExtraction.sh -d 3 -a $t1 -e $template_dir/t1_template.nii.gz\
-        -o bet/ -m $template_dir/t1_brain_probability_map.nii.gz
+        -o bet/ -m $template_dir/t1_brain_probability_map.nii.gz -u 0
     mrcalc $t1 bet/BrainExtractionMask.nii.gz -mult ${sid}__t1_bet.nii.gz
     mv bet/BrainExtractionMask.nii.gz ${sid}__t1_bet_mask.nii.gz
     """
@@ -582,7 +560,7 @@ process Crop_T1 {
 }
 
 process Resample_DWI {
-    cpus 2
+    cpus 3
 
     input:
     set sid, file(dwi), file(mask) from dwi_mask_for_resample
@@ -619,7 +597,7 @@ dwi_for_resample_b0
     .set{dwi_and_grad_for_resample_b0}
 
 process Resample_B0 {
-    cpus 2
+    cpus 3
 
     input:
     set sid, file(dwi), file(bval), file(bvec) from dwi_and_grad_for_resample_b0
@@ -705,8 +683,7 @@ process DTI_Metrics {
     file "${sid}__residual_std_residuals.npy"
     set sid, "${sid}__fa.nii.gz", "${sid}__md.nii.gz" into fa_md_for_fodf
     set sid, "${sid}__fa.nii.gz" into\
-        fa_for_reg,
-        fa_for_rf
+        fa_for_reg
 
     script:
     """
@@ -825,15 +802,14 @@ process Segment_Tissues {
 
 dwi_and_grad_for_rf
     .join(b0_mask_for_rf)
-    .join(fa_for_rf)
-    .set{dwi_b0_fa_for_rf}
+    .set{dwi_b0_for_rf}
 
 process Compute_FRF {
     cpus 3
 
     input:
-    set sid, file(dwi), file(bval), file(bvec), file(b0_mask), file(fa)\
-        from dwi_b0_fa_for_rf
+    set sid, file(dwi), file(bval), file(bvec), file(b0_mask)\
+        from dwi_b0_for_rf
 
     output:
     set sid, "${sid}__frf.txt" into unique_frf, unique_frf_for_mean

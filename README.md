@@ -21,12 +21,12 @@ Steps
 -----
 
 ######Diffusion processes
-- preliminary DWI brain extraction (ANTs)
+- preliminary DWI brain extraction (FSL)
 - denoise DWI (Mrtrix3)
 - topup (FSL)
 - eddy (FSL)
 - extract B0 (Scilpy)
-- dwi brain extraction (ANTs)
+- dwi brain extraction (FSL)
 - N4 DWI (ANTs)
 - crop DWI (Scilpy)
 - upsample DWI (Scilpy)
