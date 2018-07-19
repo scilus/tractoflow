@@ -60,6 +60,8 @@ OPTIONAL ARGUMENTS (current value)
 --bet_topup_before_eddy_f                   FA threshold for intermediate BET operation
                                             on topup corrected images ($bet_topup_before_eddy_f).
 
+--bet_dwi_final_f                           FA threshold for the final DWI BET ($bet_dwi_final_f).
+
 --run_resample_dwi                          Run resample DWI ($run_resample_dwi).
 --dwi_resolution                            DWI resolution ($dwi_resolution).
 --dwi_interpolation                         Interpolation method [nn, lin, quad, cubic] ($dwi_interpolation).

@@ -20,6 +20,7 @@ if(params.help) {
                 "run_eddy":"$params.run_eddy",
                 "eddy_cmd":"$params.eddy_cmd",
                 "bet_topup_before_eddy_f":"$params.bet_topup_before_eddy_f",
+                "bet_dwi_final_f":"$params.bet_dwi_final_f",
                 "run_resample_dwi":"$params.run_resample_dwi",
                 "dwi_resolution":"$params.dwi_resolution",
                 "dwi_interpolation":"$params.dwi_interpolation",
@@ -419,7 +420,7 @@ process Bet_DWI {
     script:
     """
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
-    bet ${sid}__b0.nii.gz ${sid}__b0_bet.nii.gz -m -R -f 0.16
+    bet ${sid}__b0.nii.gz ${sid}__b0_bet.nii.gz -m -R -f $params.bet_dwi_final_f
     mrcalc $dwi ${sid}__b0_bet_mask.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet
     """
 }
