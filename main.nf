@@ -20,6 +20,7 @@ if(params.help) {
                 "run_eddy":"$params.run_eddy",
                 "eddy_cmd":"$params.eddy_cmd",
                 "bet_topup_before_eddy_f":"$params.bet_topup_before_eddy_f",
+                "use_slice_drop_correction":"$params.use_slice_drop_correction"
                 "bet_dwi_final_f":"$params.bet_dwi_final_f",
                 "run_resample_dwi":"$params.run_resample_dwi",
                 "dwi_resolution":"$params.dwi_resolution",
@@ -297,12 +298,16 @@ process Eddy {
     // Corrected DWI is clipped to 0 since Eddy can introduce negative values.
     script:
     if (params.run_eddy)
+        slice_drop_flag=""
+        if (params.use_slice_drop_correction)
+            slice_drop_flag="--slice_drop_correction"
         """
         OMP_NUM_THREADS=$task.cpus
         scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
             --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $params.encoding_direction\
-            --dwell_time $params.dwell_time --output_script --fix_seed
+            --dwell_time $params.dwell_time --output_script --fix_seed\
+            $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
@@ -347,6 +352,9 @@ process Eddy_Topup {
     // introduced by Eddy.
     script:
     if (params.run_eddy)
+        slice_drop_flag=""
+        if (params.use_slice_drop_correction)
+            slice_drop_flag="--slice_drop_correction"
         """
         OMP_NUM_THREADS=$task.cpus
         ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
@@ -357,7 +365,8 @@ process Eddy_Topup {
             --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
             --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $params.encoding_direction\
-            --dwell_time $params.dwell_time --output_script --fix_seed
+            --dwell_time $params.dwell_time --output_script --fix_seed\
+            $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
