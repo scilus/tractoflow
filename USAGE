@@ -43,6 +43,7 @@ OPTIONAL ARGUMENTS (current value)
 --b0_thr_extract_b0                         All b-values below b0_thr_extract_b0 are considered b=0 images ($b0_thr_extract_b0).
 --dwi_shell_tolerance                       All b-values to +-dwi_shell_tolerance are considered as the same b-value ($dwi_shell_tolerance).
 
+--bet_prelim_f                              FA threshold for preliminary BET ($bet_prelim_f).
 --dilate_b0_mask_prelim_brain_extraction    Dilation factor to keep the whole brain.
                                             Not the final extraction ($dilate_b0_mask_prelim_brain_extraction).
 
