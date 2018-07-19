@@ -221,6 +221,8 @@ process Denoise_DWI {
         dwi_for_eddy_topup
 
     script:
+    // The denoised DWI is clipped to 0 since negative values 
+    // could have been introduced.
     if(params.run_dwi_denoising)
         """
         MRTRIX_NTHREADS=$task.cpus
@@ -290,6 +292,7 @@ process Eddy {
     when:
     rev_b0_count == 0 || !params.run_topup || (!params.run_eddy && params.run_topup)
 
+    // Corrected DWI is clipped to 0 since Eddy can introduce negative values.
     script:
     if (params.run_eddy)
         """
@@ -299,7 +302,7 @@ process Eddy {
             --encoding_direction $params.encoding_direction\
             --dwell_time $params.dwell_time --output_script --fix_seed
         sh eddy.sh
-        mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
+        fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
@@ -338,6 +341,8 @@ process Eddy_Topup {
     when:
     rev_b0_count > 0 && params.run_topup
 
+    // Corrected DWI is clipped to ensure there are no negative values
+    // introduced by Eddy.
     script:
     if (params.run_eddy)
         """
@@ -351,7 +356,7 @@ process Eddy_Topup {
             --encoding_direction $params.encoding_direction\
             --dwell_time $params.dwell_time --output_script --fix_seed
         sh eddy.sh
-        mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
+        fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
