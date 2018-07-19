@@ -57,6 +57,8 @@ OPTIONAL ARGUMENTS (current value)
 
 --run_eddy                                  Run Eddy ($run_eddy).
 --eddy_cmd                                  Eddy command to use [eddy_openmp, eddy_cuda] ($eddy_cmd).
+--bet_topup_before_eddy_f                   FA threshold for intermediate BET operation
+                                            on topup corrected images ($bet_topup_before_eddy_f).
 
 --run_resample_dwi                          Run resample DWI ($run_resample_dwi).
 --dwi_resolution                            DWI resolution ($dwi_resolution).
