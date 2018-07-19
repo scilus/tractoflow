@@ -297,10 +297,11 @@ process Eddy {
 
     // Corrected DWI is clipped to 0 since Eddy can introduce negative values.
     script:
-    if (params.run_eddy)
+    if (params.run_eddy) {
         slice_drop_flag=""
-        if (params.use_slice_drop_correction)
+        if (params.use_slice_drop_correction) {
             slice_drop_flag="--slice_drop_correction"
+        }
         """
         OMP_NUM_THREADS=$task.cpus
         scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
@@ -313,12 +314,14 @@ process Eddy {
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
-    else
+    }
+    else {
         """
         mv $dwi ${sid}__dwi_corrected.nii.gz
         mv $bvec ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
+    }
 }
 
 dwi_for_eddy_topup
@@ -351,7 +354,7 @@ process Eddy_Topup {
     // Corrected DWI is clipped to ensure there are no negative values
     // introduced by Eddy.
     script:
-    if (params.run_eddy)
+    if (params.run_eddy) {
         slice_drop_flag=""
         if (params.use_slice_drop_correction)
             slice_drop_flag="--slice_drop_correction"
@@ -372,12 +375,14 @@ process Eddy_Topup {
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
-    else
+    }
+    else {
         """
         mv $dwi ${sid}__dwi_corrected.nii.gz
         mv $bvec ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
+    }
 }
 
 dwi_gradients_from_eddy
