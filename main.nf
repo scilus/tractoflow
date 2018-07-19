@@ -20,7 +20,7 @@ if(params.help) {
                 "run_eddy":"$params.run_eddy",
                 "eddy_cmd":"$params.eddy_cmd",
                 "bet_topup_before_eddy_f":"$params.bet_topup_before_eddy_f",
-                "use_slice_drop_correction":"$params.use_slice_drop_correction"
+                "use_slice_drop_correction":"$params.use_slice_drop_correction",
                 "bet_dwi_final_f":"$params.bet_dwi_final_f",
                 "run_resample_dwi":"$params.run_resample_dwi",
                 "dwi_resolution":"$params.dwi_resolution",
