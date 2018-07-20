@@ -601,12 +601,13 @@ process Resample_DWI {
             dwi_resample.nii.gz \
             --resolution $params.dwi_resolution \
             --interp  $params.dwi_interpolation
+        fslmaths dwi_resample.nii.gz -thr 0 dwi_resample_clipped.nii.gz
         scil_resample_volume.py $mask \
             mask_resample.nii.gz \
             --ref dwi_resample.nii.gz \
             --enforce_dimensions \
             --interp nn
-        mrcalc dwi_resample.nii.gz mask_resample.nii.gz\
+        mrcalc dwi_resample_clipped.nii.gz mask_resample.nii.gz\
             -mult ${sid}__dwi_resampled.nii.gz -quiet
         """
     else
