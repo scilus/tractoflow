@@ -43,7 +43,7 @@ OPTIONAL ARGUMENTS (current value)
 --b0_thr_extract_b0                         All b-values below b0_thr_extract_b0 are considered b=0 images ($b0_thr_extract_b0).
 --dwi_shell_tolerance                       All b-values to +-dwi_shell_tolerance are considered as the same b-value ($dwi_shell_tolerance).
 
---bet_prelim_f                              FA threshold for preliminary BET ($bet_prelim_f).
+--bet_prelim_f                              Fractional Intensity threshold for preliminary BET ($bet_prelim_f).
 --dilate_b0_mask_prelim_brain_extraction    Dilation factor to keep the whole brain.
                                             Not the final extraction ($dilate_b0_mask_prelim_brain_extraction).
 
@@ -57,11 +57,11 @@ OPTIONAL ARGUMENTS (current value)
 
 --run_eddy                                  Run Eddy ($run_eddy).
 --eddy_cmd                                  Eddy command to use [eddy_openmp, eddy_cuda] ($eddy_cmd).
---bet_topup_before_eddy_f                   FA threshold for intermediate BET operation
+--bet_topup_before_eddy_f                   Fractional Intensity threshold for intermediate BET operation
                                             on topup corrected images ($bet_topup_before_eddy_f).
 --use_slice_drop_correction                 If set, will use the slice drop correction option from Eddy ($--slice_drop_correction).
 
---bet_dwi_final_f                           FA threshold for the final DWI BET ($bet_dwi_final_f).
+--bet_dwi_final_f                           Fractional Intensity threshold for the final DWI BET ($bet_dwi_final_f).
 
 --run_resample_dwi                          Run resample DWI ($run_resample_dwi).
 --dwi_resolution                            DWI resolution ($dwi_resolution).
@@ -95,11 +95,10 @@ OPTIONAL ARGUMENTS (current value)
                                             else use the WM-GM interface as seeding mask ($wm_seeding).
 
 --algo                                      Tracking algorithm [prob, det] ($algo).
---seeding                                   Seeding type [npv, nt, ns] ($seeding).
+--seeding                                   Seeding type [npv, nt] ($seeding).
 --nbr_seeds                                 Number of seeds related to the seeding type param ($nbr_seeds).
 --random                                    Random seed ($random).
 --step                                      Step size ($step).
---rk_order                                  Runge-Kutta order ($rk_order).
 --theta                                     Maximum angle between 2 steps ($theta).
 --minL                                      Minimum length ($minL).
 --maxL                                      Maximum length ($maxL).

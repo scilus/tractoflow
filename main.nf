@@ -43,7 +43,6 @@ if(params.help) {
                 "nbr_seeds":"$params.nbr_seeds",
                 "random":"$params.random",
                 "step":"$params.step",
-                "rk_order":"$params.rk_order",
                 "theta":"$params.theta",
                 "minL":"$params.minL",
                 "maxL":"$params.maxL",
@@ -101,6 +100,9 @@ log.info ""
 log.info "[Mean FRF]"
 log.info "Mean FRF: $params.mean_frf"
 log.info ""
+log.info "[FODF Metrics]"
+log.info "FODF basis: $params.basis"
+log.info ""
 log.info "[Seeding mask]"
 log.info "WM seeding: $params.wm_seeding"
 log.info ""
@@ -113,6 +115,7 @@ log.info "Step size: $params.step"
 log.info "Theta: $params.theta"
 log.info "Minimum length: $params.minL"
 log.info "Maximum length: $params.maxL"
+log.info "FODF basis: $params.basis"
 log.info "Compress streamlines: $params.compress_streamlines"
 log.info "Compressing threshold: $params.compress_value"
 log.info ""
@@ -588,7 +591,7 @@ dwi_mask_for_normalize
     .join(gradients_for_normalize)
     .set{dwi_mask_grad_for_normalize}
 process Normalize_DWI {
-    cpus 1
+    cpus 3
 
     input:
     set sid, file(dwi), file(mask), file(bval), file(bvec) from dwi_mask_grad_for_normalize
@@ -1000,7 +1003,7 @@ fodf_for_tracking
     .set{fodf_maps_for_tracking}
 
 process Tracking {
-    cpus 1
+    cpus 2
 
     input:
     set sid, file(fodf), file(include), file(exclude), file(seed)\
