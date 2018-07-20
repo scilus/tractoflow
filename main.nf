@@ -1000,7 +1000,7 @@ fodf_for_tracking
     .set{fodf_maps_for_tracking}
 
 process Tracking {
-    cpus params.processes_tracking
+    cpus 1
 
     input:
     set sid, file(fodf), file(include), file(exclude), file(seed)\
