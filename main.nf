@@ -290,7 +290,7 @@ process Eddy {
     set sid, "${sid}__dwi_corrected.nii.gz" into\
         dwi_from_eddy
     set sid, "${sid}__bval_eddy", "${sid}__dwi_eddy_corrected.bvec" into\
-        gradients_from_eddy
+        gradients_from_eddy, gradients_for_normalize
 
     when:
     rev_b0_count == 0 || !params.run_topup || (!params.run_eddy && params.run_topup)
@@ -345,7 +345,7 @@ process Eddy_Topup {
     set sid, "${sid}__dwi_corrected.nii.gz" into\
         dwi_from_eddy_topup
     set sid, "${sid}__bval_eddy", "${sid}__dwi_eddy_corrected.bvec" into\
-        gradients_from_eddy_topup
+        gradients_from_eddy_topup, gradients_for_normalize
     file "${sid}__b0_bet_mask.nii.gz"
 
     when:
@@ -472,7 +472,8 @@ process Crop_DWI {
 
     output:
     set sid, "${sid}__dwi_cropped.nii.gz",
-        "${sid}__b0_mask_cropped.nii.gz" into dwi_mask_for_resample
+        "${sid}__b0_mask_cropped.nii.gz" into dwi_mask_for_normalize
+    set sid, "${sid}__b0_mask_cropped.nii.gz" into mask_for_resample
     file "${sid}__b0_cropped.nii.gz"
 
     script:
@@ -582,6 +583,28 @@ process Crop_T1 {
     """
 }
 
+
+dwi_mask_for_normalize
+    .join(gradients_for_normalize)
+    .set{dwi_mask_grad_for_normalize}
+process Normalize_DWI {
+    cpus 1
+
+    input:
+    set sid, file(dwi), file(mask), file(bval), file(bvec) from dwi_mask_grad_for_normalize
+
+    output:
+    set sid, "{sid}__dwi_normalized.nii.gz" into dwi_for_resample
+
+    script:
+    """
+    dwinormalise $dwi $mask ${sid}__dwi_normalized.nii.gz -fslgrad $bvec $bval
+    """
+}
+
+dwi_for_resample
+    .join(mask_for_resample)
+    .set{dwi_mask_for_resample}
 process Resample_DWI {
     cpus 3
 
