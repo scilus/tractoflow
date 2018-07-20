@@ -594,7 +594,7 @@ process Normalize_DWI {
     set sid, file(dwi), file(mask), file(bval), file(bvec) from dwi_mask_grad_for_normalize
 
     output:
-    set sid, "{sid}__dwi_normalized.nii.gz" into dwi_for_resample
+    set sid, "${sid}__dwi_normalized.nii.gz" into dwi_for_resample
 
     script:
     """
