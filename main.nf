@@ -126,7 +126,6 @@ log.info "Denoise T1: $params.processes_denoise_t1"
 log.info "Eddy: $params.processes_eddy"
 log.info "Compute fODF: $params.processes_fodf"
 log.info "Registration: $params.processes_registration"
-log.info "Tracking: $params.processes_tracking"
 log.info ""
 
 workflow.onComplete {
