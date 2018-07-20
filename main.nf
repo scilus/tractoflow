@@ -289,7 +289,7 @@ process Eddy {
     set sid, "${sid}__dwi_corrected.nii.gz" into\
         dwi_from_eddy
     set sid, "${sid}__bval_eddy", "${sid}__dwi_eddy_corrected.bvec" into\
-        gradients_from_eddy, gradients_for_normalize
+        gradients_from_eddy
 
     when:
     rev_b0_count == 0 || !params.run_topup || (!params.run_eddy && params.run_topup)
@@ -344,7 +344,7 @@ process Eddy_Topup {
     set sid, "${sid}__dwi_corrected.nii.gz" into\
         dwi_from_eddy_topup
     set sid, "${sid}__bval_eddy", "${sid}__dwi_eddy_corrected.bvec" into\
-        gradients_from_eddy_topup, gradients_for_normalize
+        gradients_from_eddy_topup
     file "${sid}__b0_bet_mask.nii.gz"
 
     when:
@@ -396,7 +396,8 @@ gradients_from_eddy
     .mix(gradients_from_eddy_topup)
     .into{gradients_for_resample_b0;
           gradients_for_dti_shell;
-          gradients_for_fodf_shell}
+          gradients_for_fodf_shell;
+          gradients_for_normalize}
 
 process Extract_B0 {
     cpus 2
