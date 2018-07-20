@@ -990,15 +990,13 @@ process Tracking {
     compress =\
         params.compress_streamlines ? '--compress ' + params.compress_value : ''
         """
-        scil_compute_particle_filter_tracking.py $fodf $seed\
-            $include $exclude ${sid}__tracking.trk --algo $params.algo\
-            --$params.seeding $params.nbr_seeds --random $params.random\
-            --step $params.step --rk_order $params.rk_order --theta $params.theta\
-            --maxL_no_dir $params.maxL_no_dir --sfthres $params.sfthres\
-            --sfthres_init $params.sfthres_init --minL $params.minL\
-            --maxL $params.maxL --sh_interp $params.sh_interp\
-            --mask_interp $params.mask_interp --particles $params.particles\
-            --back $params.back --front $params.front --pft_theta $params.pft_theta\
-            --processes $task.cpus $compress
+        scil_compute_pft_dipy.py $fodf $seed $include $exclude\
+            ${sid}__tracking.trk --algo $params.algo\
+            --$params.seeding $params.nbr_seeds --seed $params.random\
+            --step $params.step --theta $params.theta\
+            --sfthres $params.sfthres --sfthres_init $params.sfthres_init
+            --min_length $params.minL --max_length $params.maxL\
+            --particles $params.particles --back $params.back\
+            --forward $params.front $compress --basis $params.basis
         """
 }
