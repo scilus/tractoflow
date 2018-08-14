@@ -1015,14 +1015,15 @@ process Tracking {
     script:
     compress =\
         params.compress_streamlines ? '--compress ' + params.compress_value : ''
+    track_basis = params.basis == 'fibernav' ? 'descoteaux' : params.basis
         """
         scil_compute_pft_dipy.py $fodf $seed $include $exclude\
             ${sid}__tracking.trk --algo $params.algo\
             --$params.seeding $params.nbr_seeds --seed $params.random\
             --step $params.step --theta $params.theta\
-            --sfthres $params.sfthres --sfthres_init $params.sfthres_init
+            --sfthres $params.sfthres --sfthres_init $params.sfthres_init\
             --min_length $params.minL --max_length $params.maxL\
             --particles $params.particles --back $params.back\
-            --forward $params.front $compress --basis $params.basis
+            --forward $params.front $compress --basis $track_basis
         """
 }
