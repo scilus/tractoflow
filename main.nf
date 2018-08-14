@@ -581,7 +581,7 @@ process Crop_T1 {
     """
     scil_crop_volume.py $t1 ${sid}__t1_bet_cropped.nii.gz\
         --output_bbox t1_boundingBox.pkl -f
-    scil_crop_volume.py $t1 ${sid}__t1_bet_mask_cropped.nii.gz\
+    scil_crop_volume.py $t1_mask ${sid}__t1_bet_mask_cropped.nii.gz\
         --input_bbox t1_boundingBox.pkl -f
     """
 }
