@@ -108,10 +108,10 @@ OPTIONAL ARGUMENTS (current value)
 --output_dir                                Directory where to write the final results.
                                             By default, will be in "./results"
 
-NOTES
+--processes                                 The number of parallel processes to launch ($cpu_count).
+                                            Only affects the local scheduler.
 
-To set the number of parallel processes to launch, please use:
-'nextflow run -qs {nb_processes}'.
+NOTES
 
 The 'scilpy/scripts' folder should be in your PATH environment variable. Not necessary if the
 Singularity container is used.
