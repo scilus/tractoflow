@@ -59,7 +59,7 @@ OPTIONAL ARGUMENTS (current value)
 --eddy_cmd                                  Eddy command to use [eddy_openmp, eddy_cuda] ($eddy_cmd).
 --bet_topup_before_eddy_f                   Fractional Intensity threshold for intermediate BET operation
                                             on topup corrected images ($bet_topup_before_eddy_f).
---use_slice_drop_correction                 If set, will use the slice drop correction option from Eddy ($--slice_drop_correction).
+--use_slice_drop_correction                 If set, will use the slice drop correction option from Eddy ($use_slice_drop_correction).
 
 --bet_dwi_final_f                           Fractional Intensity threshold for the final DWI BET ($bet_dwi_final_f).
 
