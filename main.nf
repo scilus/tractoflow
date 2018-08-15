@@ -11,6 +11,7 @@ if(params.help) {
     bindings = ["b0_thr_extract_b0":"$params.b0_thr_extract_b0",
                 "dwi_shell_tolerance":"$params.dwi_shell_tolerance",
                 "dilate_b0_mask_prelim_brain_extraction":"$params.dilate_b0_mask_prelim_brain_extraction",
+                "bet_prelim_f":"$params.bet_prelim_f",
                 "run_dwi_denoising":"$params.run_dwi_denoising",
                 "extent":"$params.extent",
                 "run_topup":"$params.run_topup",
@@ -18,6 +19,9 @@ if(params.help) {
                 "dwell_time":"$params.dwell_time",
                 "run_eddy":"$params.run_eddy",
                 "eddy_cmd":"$params.eddy_cmd",
+                "bet_topup_before_eddy_f":"$params.bet_topup_before_eddy_f",
+                "use_slice_drop_correction":"$params.use_slice_drop_correction",
+                "bet_dwi_final_f":"$params.bet_dwi_final_f",
                 "run_resample_dwi":"$params.run_resample_dwi",
                 "dwi_resolution":"$params.dwi_resolution",
                 "dwi_interpolation":"$params.dwi_interpolation",
@@ -39,7 +43,6 @@ if(params.help) {
                 "nbr_seeds":"$params.nbr_seeds",
                 "random":"$params.random",
                 "step":"$params.step",
-                "rk_order":"$params.rk_order",
                 "theta":"$params.theta",
                 "minL":"$params.minL",
                 "maxL":"$params.maxL",
@@ -97,6 +100,9 @@ log.info ""
 log.info "[Mean FRF]"
 log.info "Mean FRF: $params.mean_frf"
 log.info ""
+log.info "[FODF Metrics]"
+log.info "FODF basis: $params.basis"
+log.info ""
 log.info "[Seeding mask]"
 log.info "WM seeding: $params.wm_seeding"
 log.info ""
@@ -109,20 +115,19 @@ log.info "Step size: $params.step"
 log.info "Theta: $params.theta"
 log.info "Minimum length: $params.minL"
 log.info "Maximum length: $params.maxL"
+log.info "FODF basis: $params.basis"
 log.info "Compress streamlines: $params.compress_streamlines"
 log.info "Compressing threshold: $params.compress_value"
 log.info ""
 
 log.info "Number of processes per tasks"
 log.info "============================="
-log.info "DWI brain extraction: $params.processes_brain_extraction_dwi"
 log.info "T1 brain extraction: $params.processes_brain_extraction_t1"
 log.info "Denoise DWI: $params.processes_denoise_dwi"
 log.info "Denoise T1: $params.processes_denoise_t1"
 log.info "Eddy: $params.processes_eddy"
 log.info "Compute fODF: $params.processes_fodf"
 log.info "Registration: $params.processes_registration"
-log.info "Tracking: $params.processes_tracking"
 log.info ""
 
 workflow.onComplete {
@@ -183,7 +188,7 @@ dwi_for_prelim_bet
     .set{dwi_gradient_for_prelim_bet}
 
 process Bet_Prelim_DWI {
-    cpus params.processes_brain_extraction_dwi
+    cpus 2
 
     input:
     set sid, file(dwi), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
@@ -196,10 +201,9 @@ process Bet_Prelim_DWI {
 
     script:
     """
-    ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0
-    bet ${sid}__b0.nii.gz ${sid}__b0_bet.nii.gz -m -R -f 0.16
+    bet ${sid}__b0.nii.gz ${sid}__b0_bet.nii.gz -m -R -f $params.bet_prelim_f
     maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz\
         --npass $params.dilate_b0_mask_prelim_brain_extraction
     mrcalc ${sid}__b0.nii.gz ${sid}__b0_bet_mask_dilated.nii.gz\
@@ -220,6 +224,8 @@ process Denoise_DWI {
         dwi_for_eddy_topup
 
     script:
+    // The denoised DWI is clipped to 0 since negative values 
+    // could have been introduced.
     if(params.run_dwi_denoising)
         """
         MRTRIX_NTHREADS=$task.cpus
@@ -289,25 +295,33 @@ process Eddy {
     when:
     rev_b0_count == 0 || !params.run_topup || (!params.run_eddy && params.run_topup)
 
+    // Corrected DWI is clipped to 0 since Eddy can introduce negative values.
     script:
-    if (params.run_eddy)
+    if (params.run_eddy) {
+        slice_drop_flag=""
+        if (params.use_slice_drop_correction) {
+            slice_drop_flag="--slice_drop_correction"
+        }
         """
         OMP_NUM_THREADS=$task.cpus
         scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
             --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $params.encoding_direction\
-            --dwell_time $params.dwell_time --output_script --fix_seed
+            --dwell_time $params.dwell_time --output_script --fix_seed\
+            $slice_drop_flag
         sh eddy.sh
-        mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
+        fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
-    else
+    }
+    else {
         """
         mv $dwi ${sid}__dwi_corrected.nii.gz
         mv $bvec ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
+    }
 }
 
 dwi_for_eddy_topup
@@ -337,29 +351,38 @@ process Eddy_Topup {
     when:
     rev_b0_count > 0 && params.run_topup
 
+    // Corrected DWI is clipped to ensure there are no negative values
+    // introduced by Eddy.
     script:
-    if (params.run_eddy)
+    if (params.run_eddy) {
+        slice_drop_flag=""
+        if (params.use_slice_drop_correction)
+            slice_drop_flag="--slice_drop_correction"
         """
         OMP_NUM_THREADS=$task.cpus
         ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
         mrconvert $b0s_corrected b0_corrected.nii.gz -coord 3 0 -axes 0,1,2
-        bet b0_corrected.nii.gz ${sid}__b0_bet.nii.gz -m -R -f 0.16
+        bet b0_corrected.nii.gz ${sid}__b0_bet.nii.gz -m -R\
+            -f $params.bet_topup_before_eddy_f
         scil_prepare_eddy_command.py $dwi $bval $bvec ${sid}__b0_bet_mask.nii.gz\
             --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
             --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $params.encoding_direction\
-            --dwell_time $params.dwell_time --output_script --fix_seed
+            --dwell_time $params.dwell_time --output_script --fix_seed\
+            $slice_drop_flag
         sh eddy.sh
-        mv dwi_eddy_corrected.nii.gz ${sid}__dwi_corrected.nii.gz
+        fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
-    else
+    }
+    else {
         """
         mv $dwi ${sid}__dwi_corrected.nii.gz
         mv $bvec ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
+    }
 }
 
 dwi_gradients_from_eddy
@@ -374,7 +397,8 @@ gradients_from_eddy
     .mix(gradients_from_eddy_topup)
     .into{gradients_for_resample_b0;
           gradients_for_dti_shell;
-          gradients_for_fodf_shell}
+          gradients_for_fodf_shell;
+          gradients_for_normalize}
 
 process Extract_B0 {
     cpus 2
@@ -397,7 +421,7 @@ dwi_for_bet
     .set{dwi_b0_for_bet}
 
 process Bet_DWI {
-    cpus params.processes_brain_extraction_dwi
+    cpus 2
 
     input:
     set sid, file(dwi), file(b0) from dwi_b0_for_bet
@@ -410,8 +434,7 @@ process Bet_DWI {
 
     script:
     """
-    ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
-    bet ${sid}__b0.nii.gz ${sid}__b0_bet.nii.gz -m -R -f 0.16
+    bet $b0 ${sid}__b0_bet.nii.gz -m -R -f $params.bet_dwi_final_f
     mrcalc $dwi ${sid}__b0_bet_mask.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet
     """
 }
@@ -449,7 +472,8 @@ process Crop_DWI {
 
     output:
     set sid, "${sid}__dwi_cropped.nii.gz",
-        "${sid}__b0_mask_cropped.nii.gz" into dwi_mask_for_resample
+        "${sid}__b0_mask_cropped.nii.gz" into dwi_mask_for_normalize
+    set sid, "${sid}__b0_mask_cropped.nii.gz" into mask_for_resample
     file "${sid}__b0_cropped.nii.gz"
 
     script:
@@ -554,11 +578,33 @@ process Crop_T1 {
     """
     scil_crop_volume.py $t1 ${sid}__t1_bet_cropped.nii.gz\
         --output_bbox t1_boundingBox.pkl -f
-    scil_crop_volume.py $t1 ${sid}__t1_bet_mask_cropped.nii.gz\
+    scil_crop_volume.py $t1_mask ${sid}__t1_bet_mask_cropped.nii.gz\
         --input_bbox t1_boundingBox.pkl -f
     """
 }
 
+
+dwi_mask_for_normalize
+    .join(gradients_for_normalize)
+    .set{dwi_mask_grad_for_normalize}
+process Normalize_DWI {
+    cpus 3
+
+    input:
+    set sid, file(dwi), file(mask), file(bval), file(bvec) from dwi_mask_grad_for_normalize
+
+    output:
+    set sid, "${sid}__dwi_normalized.nii.gz" into dwi_for_resample
+
+    script:
+    """
+    dwinormalise $dwi $mask ${sid}__dwi_normalized.nii.gz -fslgrad $bvec $bval
+    """
+}
+
+dwi_for_resample
+    .join(mask_for_resample)
+    .set{dwi_mask_for_resample}
 process Resample_DWI {
     cpus 3
 
@@ -578,12 +624,13 @@ process Resample_DWI {
             dwi_resample.nii.gz \
             --resolution $params.dwi_resolution \
             --interp  $params.dwi_interpolation
+        fslmaths dwi_resample.nii.gz -thr 0 dwi_resample_clipped.nii.gz
         scil_resample_volume.py $mask \
             mask_resample.nii.gz \
             --ref dwi_resample.nii.gz \
             --enforce_dimensions \
             --interp nn
-        mrcalc dwi_resample.nii.gz mask_resample.nii.gz\
+        mrcalc dwi_resample_clipped.nii.gz mask_resample.nii.gz\
             -mult ${sid}__dwi_resampled.nii.gz -quiet
         """
     else
@@ -953,7 +1000,7 @@ fodf_for_tracking
     .set{fodf_maps_for_tracking}
 
 process Tracking {
-    cpus params.processes_tracking
+    cpus 2
 
     input:
     set sid, file(fodf), file(include), file(exclude), file(seed)\
@@ -965,16 +1012,15 @@ process Tracking {
     script:
     compress =\
         params.compress_streamlines ? '--compress ' + params.compress_value : ''
+    track_basis = params.basis == 'fibernav' ? 'descoteaux' : params.basis
         """
-        scil_compute_particle_filter_tracking.py $fodf $seed\
-            $include $exclude ${sid}__tracking.trk --algo $params.algo\
-            --$params.seeding $params.nbr_seeds --random $params.random\
-            --step $params.step --rk_order $params.rk_order --theta $params.theta\
-            --maxL_no_dir $params.maxL_no_dir --sfthres $params.sfthres\
-            --sfthres_init $params.sfthres_init --minL $params.minL\
-            --maxL $params.maxL --sh_interp $params.sh_interp\
-            --mask_interp $params.mask_interp --particles $params.particles\
-            --back $params.back --front $params.front --pft_theta $params.pft_theta\
-            --processes $task.cpus $compress
+        scil_compute_pft_dipy.py $fodf $seed $include $exclude\
+            ${sid}__tracking.trk --algo $params.algo\
+            --$params.seeding $params.nbr_seeds --seed $params.random\
+            --step $params.step --theta $params.theta\
+            --sfthres $params.sfthres --sfthres_init $params.sfthres_init\
+            --min_length $params.minL --max_length $params.maxL\
+            --particles $params.particles --back $params.back\
+            --forward $params.front $compress --basis $track_basis
         """
 }
