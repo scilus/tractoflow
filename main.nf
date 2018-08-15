@@ -122,7 +122,6 @@ log.info ""
 
 log.info "Number of processes per tasks"
 log.info "============================="
-log.info "DWI brain extraction: $params.processes_brain_extraction_dwi"
 log.info "T1 brain extraction: $params.processes_brain_extraction_t1"
 log.info "Denoise DWI: $params.processes_denoise_dwi"
 log.info "Denoise T1: $params.processes_denoise_t1"
@@ -189,7 +188,7 @@ dwi_for_prelim_bet
     .set{dwi_gradient_for_prelim_bet}
 
 process Bet_Prelim_DWI {
-    cpus params.processes_brain_extraction_dwi
+    cpus 2
 
     input:
     set sid, file(dwi), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
@@ -202,7 +201,6 @@ process Bet_Prelim_DWI {
 
     script:
     """
-    ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0
     bet ${sid}__b0.nii.gz ${sid}__b0_bet.nii.gz -m -R -f $params.bet_prelim_f
@@ -423,7 +421,7 @@ dwi_for_bet
     .set{dwi_b0_for_bet}
 
 process Bet_DWI {
-    cpus params.processes_brain_extraction_dwi
+    cpus 2
 
     input:
     set sid, file(dwi), file(b0) from dwi_b0_for_bet
@@ -436,7 +434,6 @@ process Bet_DWI {
 
     script:
     """
-    ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     bet ${sid}__b0.nii.gz ${sid}__b0_bet.nii.gz -m -R -f $params.bet_dwi_final_f
     mrcalc $dwi ${sid}__b0_bet_mask.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet
     """
