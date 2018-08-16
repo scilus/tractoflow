@@ -47,7 +47,8 @@ if(params.help) {
                 "minL":"$params.minL",
                 "maxL":"$params.maxL",
                 "compress_streamlines":"$params.compress_streamlines",
-                "compress_value":"$params.compress_value"]
+                "compress_value":"$params.compress_value",
+                "cpu_count":"$cpu_count"]
 
     engine = new groovy.text.SimpleTemplateEngine()
     template = engine.createTemplate(usage.text).make(bindings)
