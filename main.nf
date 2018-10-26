@@ -37,6 +37,8 @@ if(params.help) {
                 "sh_order":"$params.sh_order",
                 "basis":"$params.basis",
                 "fodf_metrics_a_factor":"$params.fodf_metrics_a_factor",
+                "max_fa_in_ventricules":"$params.max_fa_in_ventricules",
+                "min_md_in_ventricules":"$params.min_md_in_ventricules",
                 "wm_seeding":"$params.wm_seeding",
                 "algo":"$params.algo",
                 "seeding":"$params.seeding",
@@ -103,6 +105,7 @@ log.info "Mean FRF: $params.mean_frf"
 log.info ""
 log.info "[FODF Metrics]"
 log.info "FODF basis: $params.basis"
+log.info "SH order: $params.sh_order"
 log.info ""
 log.info "[Seeding mask]"
 log.info "WM seeding: $params.wm_seeding"
@@ -941,14 +944,16 @@ process FODF_Metrics {
         --peak_indices ${sid}__peak_indices.nii.gz --processes $task.cpus
 
     scil_compute_fodf_max_in_ventricles.py ${sid}__fodf.nii.gz $fa $md\
-        --max_value_output ventricles_fodf_max_value.txt -f
+        --max_value_output ventricles_fodf_max_value.txt --basis $params.basis\
+        --fa_t $params.max_fa_in_ventricules --md_t $params.min_md_in_ventricules\
+        -f
 
     a_threshold=\$(echo $params.fodf_metrics_a_factor*\$(cat ventricles_fodf_max_value.txt)|bc)
 
     scil_compute_fodf_metrics.py ${sid}__fodf.nii.gz \${a_threshold}\
-        --mask $b0_mask --afd ${sid}__afd_max.nii.gz\
+        --mask $b0_mask --basis $params.basis --afd ${sid}__afd_max.nii.gz\
         --afd_total ${sid}__afd_total.nii.gz --afd_sum ${sid}__afd_sum.nii.gz\
-        --nufo ${sid}__nufo.nii.gz -f
+        --nufo ${sid}__nufo.nii.gz --rt $params.relative_threshold -f
     """
 }
 
