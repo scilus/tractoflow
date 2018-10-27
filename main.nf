@@ -37,6 +37,7 @@ if(params.help) {
                 "sh_order":"$params.sh_order",
                 "basis":"$params.basis",
                 "fodf_metrics_a_factor":"$params.fodf_metrics_a_factor",
+                "relative_threshold":"$params.relative_threshold",
                 "max_fa_in_ventricules":"$params.max_fa_in_ventricules",
                 "min_md_in_ventricules":"$params.min_md_in_ventricules",
                 "wm_seeding":"$params.wm_seeding",
