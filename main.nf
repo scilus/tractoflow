@@ -38,8 +38,8 @@ if(params.help) {
                 "basis":"$params.basis",
                 "fodf_metrics_a_factor":"$params.fodf_metrics_a_factor",
                 "relative_threshold":"$params.relative_threshold",
-                "max_fa_in_ventricule":"$params.max_fa_in_ventricule",
-                "min_md_in_ventricule":"$params.min_md_in_ventricule",
+                "max_fa_in_ventricle":"$params.max_fa_in_ventricle",
+                "min_md_in_ventricle":"$params.min_md_in_ventricle",
                 "wm_seeding":"$params.wm_seeding",
                 "algo":"$params.algo",
                 "seeding":"$params.seeding",
@@ -946,7 +946,7 @@ process FODF_Metrics {
 
     scil_compute_fodf_max_in_ventricles.py ${sid}__fodf.nii.gz $fa $md\
         --max_value_output ventricles_fodf_max_value.txt --basis $params.basis\
-        --fa_t $params.max_fa_in_ventricule --md_t $params.min_md_in_ventricule\
+        --fa_t $params.max_fa_in_ventricle --md_t $params.min_md_in_ventricle\
         -f
 
     a_threshold=\$(echo $params.fodf_metrics_a_factor*\$(cat ventricles_fodf_max_value.txt)|bc)
