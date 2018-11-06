@@ -91,8 +91,8 @@ OPTIONAL ARGUMENTS (current value)
 --basis                                     fODF basis [fibernav, mrtrix] ($basis)
 --fodf_metrics_a_factor                     Multiplicative factor for AFD max in ventricles ($fodf_metrics_a_factor).
 --relative_threshold                        Relative threshold on fODF amplitude in ]0,1] ($relative_threshold)
---max_fa_in_ventricle                      Maximal threshold of FA to be considered as ventricule voxel ($max_fa_in_ventricle)
---min_md_in_ventricle                      Minimal threshold of MD in mm2/s to be considered as ventricule voxel ($min_md_in_ventricle)
+--max_fa_in_ventricle                       Maximal threshold of FA to be considered as ventricule voxel ($max_fa_in_ventricle)
+--min_md_in_ventricle                       Minimal threshold of MD in mm2/s to be considered as ventricule voxel ($min_md_in_ventricle)
 
 --wm_seeding                                If 'wm_seeding=true', use the WM-GM interface and the WM mask as seeding mask,
                                             else use the WM-GM interface as seeding mask ($wm_seeding).
