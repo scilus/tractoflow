@@ -640,7 +640,7 @@ process Resample_DWI {
         """
     else
         """
-        mv $dwi dwi_resampled.nii.gz
+        mv $dwi ${sid}__dwi_resampled.nii.gz
         """
 }
 
