@@ -47,8 +47,8 @@ if(params.help) {
                 "random":"$params.random",
                 "step":"$params.step",
                 "theta":"$params.theta",
-                "minL":"$params.minL",
-                "maxL":"$params.maxL",
+                "min_len":"$params.min_len",
+                "max_len":"$params.max_len",
                 "compress_streamlines":"$params.compress_streamlines",
                 "compress_value":"$params.compress_value",
                 "cpu_count":"$cpu_count"]
@@ -118,8 +118,8 @@ log.info "Number of seeds: $params.nbr_seeds"
 log.info "Random seed: $params.random"
 log.info "Step size: $params.step"
 log.info "Theta: $params.theta"
-log.info "Minimum length: $params.minL"
-log.info "Maximum length: $params.maxL"
+log.info "Minimum length: $params.min_len"
+log.info "Maximum length: $params.max_len"
 log.info "FODF basis: $params.basis"
 log.info "Compress streamlines: $params.compress_streamlines"
 log.info "Compressing threshold: $params.compress_value"
@@ -191,6 +191,30 @@ gradients
 dwi_for_prelim_bet
     .join(gradients_for_prelim_bet)
     .set{dwi_gradient_for_prelim_bet}
+
+process README {
+    cpus 1
+    publishDir = params.Readme_Publish_Dir
+    tag = "README"
+
+    output:
+    file "readme.txt"
+
+    script:
+    String list_options = new String();
+    for (String item : params) {
+        list_options += item + "\n"
+    }
+    """
+    echo "SCIL Human processing pipeline\n" >> readme.txt
+    echo "Start time: $workflow.start\n" >> readme.txt
+    echo "[Command-line]\n$workflow.commandLine\n" >> readme.txt
+    echo "[Git Info]\n" >> readme.txt
+    echo "$workflow.repository - $workflow.revision [$workflow.commitId]\n" >> readme.txt
+    echo "[Options]\n" >> readme.txt
+    echo "$list_options" >> readme.txt
+    """
+}
 
 process Bet_Prelim_DWI {
     cpus 2
@@ -889,7 +913,7 @@ all_frf_to_collect
 
 process Mean_FRF {
     cpus 1
-    publishDir = params.MeanFRFPublishDir
+    publishDir = params.Mean_FRF_Publish_Dir
     tag = {"All_FRF"}
 
     input:
@@ -1026,7 +1050,7 @@ process Tracking {
             --$params.seeding $params.nbr_seeds --seed $params.random\
             --step $params.step --theta $params.theta\
             --sfthres $params.sfthres --sfthres_init $params.sfthres_init\
-            --min_length $params.minL --max_length $params.maxL\
+            --min_length $params.min_len --max_length $params.max_len\
             --particles $params.particles --back $params.back\
             --forward $params.front $compress --basis $track_basis
         """

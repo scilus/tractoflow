@@ -103,8 +103,8 @@ OPTIONAL ARGUMENTS (current value)
 --random                                    Random seed ($random).
 --step                                      Step size ($step).
 --theta                                     Maximum angle between 2 steps ($theta).
---minL                                      Minimum length ($minL).
---maxL                                      Maximum length ($maxL).
+--min_len                                   Minimum length ($min_len).
+--max_len                                   Maximum length ($max_len).
 --compress_streamlines                      Compress streamlines ($compress_streamlines).
 --compress_value                            Compression error threshold ($compress_value).
 
