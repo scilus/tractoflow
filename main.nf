@@ -964,19 +964,19 @@ process FODF_Metrics {
     script:
     """ 
     scil_compute_fodf.py $dwi $bval $bvec $frf --sh_order $params.sh_order\
-        --basis $params.basis --force_b0_threshold --mask $b0_mask\
+        --sh_basis $params.basis --force_b0_threshold --mask $b0_mask\
         --fodf ${sid}__fodf.nii.gz --peaks ${sid}__peaks.nii.gz\
         --peak_indices ${sid}__peak_indices.nii.gz --processes $task.cpus
 
     scil_compute_fodf_max_in_ventricles.py ${sid}__fodf.nii.gz $fa $md\
-        --max_value_output ventricles_fodf_max_value.txt --basis $params.basis\
+        --max_value_output ventricles_fodf_max_value.txt --sh_basis $params.basis\
         --fa_t $params.max_fa_in_ventricle --md_t $params.min_md_in_ventricle\
         -f
 
     a_threshold=\$(echo $params.fodf_metrics_a_factor*\$(cat ventricles_fodf_max_value.txt)|bc)
 
     scil_compute_fodf_metrics.py ${sid}__fodf.nii.gz \${a_threshold}\
-        --mask $b0_mask --basis $params.basis --afd ${sid}__afd_max.nii.gz\
+        --mask $b0_mask --sh_basis $params.basis --afd ${sid}__afd_max.nii.gz\
         --afd_total ${sid}__afd_total.nii.gz --afd_sum ${sid}__afd_sum.nii.gz\
         --nufo ${sid}__nufo.nii.gz --rt $params.relative_threshold -f
     """
@@ -1043,7 +1043,6 @@ process Tracking {
     script:
     compress =\
         params.compress_streamlines ? '--compress ' + params.compress_value : ''
-    track_basis = params.basis == 'fibernav' ? 'descoteaux' : params.basis
         """
         scil_compute_pft_dipy.py $fodf $seed $include $exclude\
             ${sid}__tracking.trk --algo $params.algo\
@@ -1052,6 +1051,6 @@ process Tracking {
             --sfthres $params.sfthres --sfthres_init $params.sfthres_init\
             --min_length $params.min_len --max_length $params.max_len\
             --particles $params.particles --back $params.back\
-            --forward $params.front $compress --basis $track_basis
+            --forward $params.front $compress --sh_basis $track_basis
         """
 }

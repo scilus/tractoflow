@@ -88,7 +88,7 @@ OPTIONAL ARGUMENTS (current value)
 --sh_order                                  Spherical harmonics order ($sh_order).
                                             Rules :-sh_order=8 for 45 directions
                                                    -sh_order=6 for 28 directions
---basis                                     fODF basis [fibernav, mrtrix] ($basis)
+--basis                                     fODF basis [descoteaux07, tournier07] ($basis)
 --fodf_metrics_a_factor                     Multiplicative factor for AFD max in ventricles ($fodf_metrics_a_factor).
 --relative_threshold                        Relative threshold on fODF amplitude in ]0,1] ($relative_threshold)
 --max_fa_in_ventricle                       Maximal threshold of FA to be considered as ventricule voxel ($max_fa_in_ventricle)
