@@ -1051,6 +1051,6 @@ process Tracking {
             --sfthres $params.sfthres --sfthres_init $params.sfthres_init\
             --min_length $params.min_len --max_length $params.max_len\
             --particles $params.particles --back $params.back\
-            --forward $params.front $compress --sh_basis $track_basis
+            --forward $params.front $compress --sh_basis $params.basis
         """
 }
