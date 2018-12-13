@@ -106,7 +106,8 @@ OPTIONAL ARGUMENTS (current value)
 --compress_streamlines                      Compress streamlines ($compress_streamlines).
 --compress_value                            Compression error threshold ($compress_value).
 
---template_t1                               Path to the template T1 for antsBrainExtraction.
+--template_t1                               Path to the template T1 directory for antsBrainExtraction.
+                                            The folder must contain t1_template.nii.gz and t1_brain_probability_map.nii.gz.
                                             The default path is the human_data folder in the singularity container ($template_t1).
 
 --output_dir                                Directory where to write the final results.
