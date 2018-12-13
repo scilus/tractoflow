@@ -34,8 +34,6 @@ DESCRIPTION
                                         ├── rev_b0.nii.gz (optional)
                                         └── t1.nii.gz
 
-    --template_t1=path/to/[template_t1] Template T1 for antsBrainExtraction (i.e. mni_152_sym_09c/t1)
-
 Files should be compressed Nifti files (.nii.gz)
 
 OPTIONAL ARGUMENTS (current value)
@@ -107,6 +105,10 @@ OPTIONAL ARGUMENTS (current value)
 --max_len                                   Maximum length ($max_len).
 --compress_streamlines                      Compress streamlines ($compress_streamlines).
 --compress_value                            Compression error threshold ($compress_value).
+
+--template_t1                               Path to the template T1 directory for antsBrainExtraction.
+                                            The folder must contain t1_template.nii.gz and t1_brain_probability_map.nii.gz.
+                                            The default path is the human_data folder in the singularity container ($template_t1).
 
 --output_dir                                Directory where to write the final results.
                                             By default, will be in "./results"

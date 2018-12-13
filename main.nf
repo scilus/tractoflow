@@ -51,7 +51,8 @@ if(params.help) {
                 "max_len":"$params.max_len",
                 "compress_streamlines":"$params.compress_streamlines",
                 "compress_value":"$params.compress_value",
-                "cpu_count":"$cpu_count"]
+                "cpu_count":"$cpu_count",
+                "template_t1":"$params.template_t1"]
 
     engine = new groovy.text.SimpleTemplateEngine()
     template = engine.createTemplate(usage.text).make(bindings)
@@ -135,15 +136,16 @@ log.info "Compute fODF: $params.processes_fodf"
 log.info "Registration: $params.processes_registration"
 log.info ""
 
+log.info "Template T1 path"
+log.info "================"
+log.info "Template T1: $params.template_t1"
+log.info ""
+
 workflow.onComplete {
     log.info "Pipeline completed at: $workflow.complete"
     log.info "Execution status: ${ workflow.success ? 'OK' : 'failed' }"
     log.info "Execution duration: $workflow.duration"
 }
-
-Channel
-    .fromPath("$params.template_t1", type:'dir')
-    .set{template_dir_t1}
 
 if (params.root){
     log.info "Input: $params.root"
@@ -577,7 +579,6 @@ process Bet_T1 {
 
     input:
     set sid, file(t1) from t1_for_bet
-    file template_dir from template_dir_t1.first()
 
     output:
     set sid, "${sid}__t1_bet.nii.gz", "${sid}__t1_bet_mask.nii.gz"\
@@ -586,8 +587,8 @@ process Bet_T1 {
     script:
     """
     ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
-    antsBrainExtraction.sh -d 3 -a $t1 -e $template_dir/t1_template.nii.gz\
-        -o bet/ -m $template_dir/t1_brain_probability_map.nii.gz -u 0
+    antsBrainExtraction.sh -d 3 -a $t1 -e $params.template_t1/t1_template.nii.gz\
+        -o bet/ -m $params.template_t1/t1_brain_probability_map.nii.gz -u 0
     mrcalc $t1 bet/BrainExtractionMask.nii.gz -mult ${sid}__t1_bet.nii.gz
     mv bet/BrainExtractionMask.nii.gz ${sid}__t1_bet_mask.nii.gz
     """
