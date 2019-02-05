@@ -52,7 +52,13 @@ if(params.help) {
                 "compress_streamlines":"$params.compress_streamlines",
                 "compress_value":"$params.compress_value",
                 "cpu_count":"$cpu_count",
-                "template_t1":"$params.template_t1"]
+                "template_t1":"$params.template_t1",
+                "processes_brain_extraction_t1":"$params.processes_brain_extraction_t1",
+                "processes_denoise_dwi":"$params.processes_denoise_dwi",
+                "processes_denoise_t1":"$params.processes_denoise_t1",
+                "processes_eddy":"$params.processes_eddy",
+                "processes_fodf":"$params.processes_fodf",
+                "processes_registration":"$params.processes_registration"]
 
     engine = new groovy.text.SimpleTemplateEngine()
     template = engine.createTemplate(usage.text).make(bindings)
