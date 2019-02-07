@@ -110,6 +110,13 @@ OPTIONAL ARGUMENTS (current value)
                                             The folder must contain t1_template.nii.gz and t1_brain_probability_map.nii.gz.
                                             The default path is the human_data folder in the singularity container ($template_t1).
 
+--processes_brain_extraction_t1             Number of processes for T1 brain extraction task ($processes_brain_extraction_t1).
+--processes_denoise_dwi                     Number of processes for DWI denoising task ($processes_denoise_dwi).
+--processes_denoise_t1                      Number of processes for T1 denoising task ($processes_denoise_t1).
+--processes_eddy                            Number of processes for eddy task ($processes_eddy).
+--processes_fodf                            Number of processes for fODF task ($processes_fodf).
+--processes_registration                    Number of processes for registration task ($processes_registration).
+
 --output_dir                                Directory where to write the final results.
                                             By default, will be in "./results"
 
