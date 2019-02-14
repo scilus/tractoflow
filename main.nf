@@ -3,6 +3,8 @@
 params.root = false
 params.subject = false
 params.help = false
+params.dti_shells = false
+params.fodf_shells = false
 
 if(params.help) {
     usage = file("$baseDir/USAGE")
@@ -25,8 +27,6 @@ if(params.help) {
                 "run_resample_dwi":"$params.run_resample_dwi",
                 "dwi_resolution":"$params.dwi_resolution",
                 "dwi_interpolation":"$params.dwi_interpolation",
-                "dti_shells":"$params.dti_shells",
-                "fodf_shells":"$params.fodf_shells",
                 "number_of_tissues":"$params.number_of_tissues",
                 "fa":"$params.fa",
                 "min_fa":"$params.min_fa",
@@ -181,6 +181,13 @@ else if (params.subject){
     .map{[it.parent.name, it]}
     .into{rev_b0; check_rev_b0}
     }
+else {
+    error "Error ~ Please use --root or --subject for the input data."
+}
+
+if (!params.dti_shells || !params.fodf_shells){
+    error "Error ~ Please set the DTI and fODF shells to use."
+}
 
 (dwi, gradients, t1_for_denoise) = in_data
     .map{sid, bvals, bvecs, dwi, t1 -> [tuple(sid, dwi),
