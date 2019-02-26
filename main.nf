@@ -1,7 +1,6 @@
 #!/usr/bin/env nextflow
 
 params.root = false
-params.subject = false
 params.help = false
 params.dti_shells = false
 params.fodf_shells = false
