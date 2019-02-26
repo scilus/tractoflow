@@ -5,7 +5,7 @@ Run human pipeline
 
 USAGE
 
-nextflow run main.nf [OPTIONAL_ARGUMENTS] (--root or --subject, template_t1)
+nextflow run main.nf [OPTIONAL_ARGUMENTS] (--root)
 
 DESCRIPTION
 
@@ -24,15 +24,6 @@ DESCRIPTION
                                             ├── bvec
                                             ├── rev_b0.nii.gz  (optional)
                                             └── t1.nii.gz
-
-    --subject=/path/to/[subject]        Subject folder containing:
-
-                                        [subject]
-                                        ├── dwi.nii.gz
-                                        ├── bval
-                                        ├── bvec
-                                        ├── rev_b0.nii.gz (optional)
-                                        └── t1.nii.gz
 
     --dti_shells                                Shells selected to compute the dti metrics (generally b < 1200).
                                                 Please write them between quotes e.g. (--dti_shells "0 300").

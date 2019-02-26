@@ -167,22 +167,8 @@ if (params.root){
     .map{[it.parent.name, it]}
     .into{rev_b0; check_rev_b0}
     }
-else if (params.subject){
-    log.info "Input: $params.subject"
-    subject = file(params.subject)
-    in_data = Channel
-        .fromFilePairs("$subject/*{bval,bvec,dwi.nii.gz,t1.nii.gz}",
-                       size: 4,
-                       maxDepth:1,
-                       flat: true) {it.parent.name}
-    Channel
-    .fromPath("$subject/*rev_b0.nii.gz",
-                    maxDepth:1)
-    .map{[it.parent.name, it]}
-    .into{rev_b0; check_rev_b0}
-    }
 else {
-    error "Error ~ Please use --root or --subject for the input data."
+    error "Error ~ Please use --root for the input data."
 }
 
 if (!params.dti_shells || !params.fodf_shells){
