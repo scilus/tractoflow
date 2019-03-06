@@ -1,0 +1,127 @@
+END USER LICENSE AGREEMENT
+
+NOTICE TO USER: PLEASE READ THIS CONTRACT CAREFULLY. BY USING ALL OR ANY PORTION
+OF THE APPLICATION YOU ACCEPT ALL THE TERMS AND CONDITIONS OF THIS AGREEMENT.
+
+1. Definitions
+
+When used in this Agreement, the following terms shall have the respective
+meanings indicated, such meanings to be applicable to both the singular and
+plural forms of the terms defined:
+
+"Licensor" means Sherbrooke Connectivity Imaging Laboratory (SCIL).
+
+"Application" means all of the contents of the files with which this Agreement 
+is provided, including but not limited to (i) software; (ii)
+image files ("Databases").
+
+"Use" or "Using" means to access, install, download, copy or otherwise benefit
+from using the functionality of the Application.
+
+“Licensee” means You in an academic or research context.
+
+"Computer" means an electronic device that accepts information in digital or
+similar form and manipulates it for a specific result based on a sequence of
+instructions.
+
+"Modifications" means (a) any file in the Application that results from an addition to,
+deletion from, or modification of the contents; (b) any new file in the Application.
+
+"Contribute" or "Contributor" or "Contributing" means legal entity that contributes to the
+modifications of the Application.
+
+2. Software License
+
+As long as you comply with the terms of this End User License Agreement (the
+"Agreement"), SCIL grants to you a world-wide, royalty-free and non-exclusive 
+license to Use the Application. Some third party materials included in the 
+Application may be subject to other terms and conditions, which are typically 
+listed in "Third party license" part.
+
+2.1 General Use
+
+You may install and Use the Application on your computer. You may contribute to the
+Application. Contributor must respect all terms and conditions of this Agreement.
+
+2.2 Limitations
+
+Using or contributing the Application, (i) you may not copy the Application for private Modifications;
+(ii) you might not use the application for commercial purposes ("Commercial Use");
+(iii) you must contact the SCIL for a patent using of the Application.
+
+2.3 Commercial Use
+
+You may not use the application for commercial purposes. For commercial use,
+please contact Imeka Solution Inc (https://www.imeka.ca/).
+
+2.4 Third party license
+
+Accepting this Agreement, you accept the license of the third party tools used:
+
+FSL (https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Licence)
+
+MRtrix3 (https://github.com/MRtrix3/mrtrix3/blob/master/LICENCE.txt)
+
+ANTs (https://github.com/ANTsX/ANTs/blob/master/ANTSCopyright.txt)
+
+Dipy (https://github.com/nipy/dipy/blob/master/LICENSE)
+
+Nextflow (https://github.com/nextflow-io/nextflow/blob/master/COPYING)
+
+Singularity (https://github.com/sylabs/singularity/blob/master/LICENSE.md)
+
+3. Transfer
+
+You may transfer all your rights to Use the Application
+to another person or legal entity provided that: (a) you also transfer this
+Agreement and the Application; (c) the receiving party accepts the terms and 
+conditions of this Agreement.
+
+4. NO WARRANTY
+
+The Software is being delivered to you "AS IS" and SCIL makes no
+warranty as to its use or performance. SCIL AND ITS SUPPLIERS DO
+NOT AND CANNOT WARRANT THE PERFORMANCE OR RESULTS YOU MAY OBTAIN BY USING THE
+SOFTWARE. EXCEPT FOR ANY WARRANTY, CONDITION, REPRESENTATION OR TERM TO THE
+EXTENT TO WHICH THE SAME CANNOT OR MAY NOT BE EXCLUDED OR LIMITED BY LAW
+APPLICABLE TO YOU IN YOUR JURISDICTION, SCIL AND ITS SUPPLIERS
+MAKE NO WARRANTIES, CONDITIONS, REPRESENTATIONS, OR TERMS (EXPRESS OR IMPLIED
+WHETHER BY STATUTE, COMMON LAW, CUSTOM, USAGE OR OTHERWISE) AS TO ANY MATTER
+INCLUDING WITHOUT LIMITATION NONINFRINGEMENT OF THIRD PARTY RIGHTS,
+MERCHANTABILITY, INTEGRATION, SATISFACTORY QUALITY, OR FITNESS FOR ANY
+PARTICULAR PURPOSE. FURTHERMORE, THIS SOFTWARE MAY NOT BE USED FOR MEDICAL
+DIAGNOSTIC AS IT IS NOT SANCTIONNED BY AUTHORITIES SUCH AS HEALTH CANADA AND THE
+FOOD AND DRUG ADMINISTRATION.
+
+5. LIMITATION OF LIABILITY
+
+IN NO EVENT WILL SCIL OR ITS SUPPLIERS BE LIABLE TO YOU FOR ANY
+DAMAGES, CLAIMS OR COSTS WHATSOEVER OR ANY CONSEQUENTIAL, INDIRECT, INCIDENTAL
+DAMAGES, OR ANY LOST PROFITS OR LOST SAVINGS, EVEN IF A SCIL
+REPRESENTATIVE HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH LOSS, DAMAGES, CLAIMS
+OR COSTS OR FOR ANY CLAIM BY ANY THIRD PARTY. THE FOREGOING LIMITATIONS AND
+EXCLUSIONS APPLY TO THE EXTENT PERMITTED BY APPLICABLE LAW IN YOUR JURISDICTION.
+
+6. Governing Law
+
+This Agreement shall be governed by and interpreted in accordance with the laws
+of the Province of Quebec, Canada.
+
+7. General Provisions
+
+If any part of this Agreement is found void and unenforceable, it will not
+affect the validity of the balance of the Agreement, which shall remain valid
+and enforceable according to its terms. This Agreement may only be
+modified by a writing signed by an authorized officer of SCIL.
+Updates may be licensed to you by SCIL with additional or
+different terms. This is the entire agreement between SCIL and
+you relating to the Application and it supersedes any prior representations,
+discussions, undertakings, communications or advertising relating to the
+Application.
+
+8. Compliance with Licenses
+
+If you have any question regarding this Agreement or if you wish to request any
+information from SCIL, please use the following contact information:
+
+Maxime Descoteaux (maxime.descoteaux@usherbrooke.ca)
