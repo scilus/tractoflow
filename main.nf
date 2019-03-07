@@ -66,7 +66,7 @@ if(params.help) {
     return
 }
 
-log.info "SCIL Human processing pipeline"
+log.info "TractoFlow pipeline"
 log.info "=============================="
 log.info ""
 log.info "Start time: $workflow.start"
@@ -206,7 +206,7 @@ process README {
         list_options += item + "\n"
     }
     """
-    echo "SCIL Human processing pipeline\n" >> readme.txt
+    echo "TractoFlow pipeline\n" >> readme.txt
     echo "Start time: $workflow.start\n" >> readme.txt
     echo "[Command-line]\n$workflow.commandLine\n" >> readme.txt
     echo "[Git Info]\n" >> readme.txt
