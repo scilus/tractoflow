@@ -62,7 +62,7 @@ Requirements
 
 - [Nextflow](https://www.nextflow.io)
 
-The file _singularity_human.def_ contains most of the requirements commands.
+The file _singularity_tractoflow.def_ contains most of the requirements commands.
 
 - Scilpy
 - Dipy
