@@ -55,7 +55,7 @@ Steps
 Singularity
 -----------
 The singularity is available on
-[singularity-TractoFlow](https://bitbucket.org/sciludes/singularity-human/src/master/) repository
+[singularity-TractoFlow](https://bitbucket.org/sciludes/singularity-tractoflow/src/master/) repository
  
 Requirements
 ------------
