@@ -1,7 +1,7 @@
-SCIL dMRI pipeline
-==================
+TractoFlow pipeline
+===================
 
-Run human pipeline
+Run TractoFlow pipeline
 
 USAGE
 
@@ -122,7 +122,7 @@ Singularity container is used.
 The intermediate working directory is, by default, set to './work'.
 To change it, use the '-w WORK_DIR' argument.
 
-The default config file is pipeline_human/nextflow.config.
+The default config file is tractoflow/nextflow.config.
 Use '-C config_file.config' to specify a non-default configuration file.
 The '-C config_file.config' must be inserted after the nextflow call
 like 'nextflow -C config_file.config run ...'.

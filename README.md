@@ -1,5 +1,5 @@
-Human pipeline
-==============
+TractoFlow pipeline
+===================
 
 Do all the processing. The different steps are explained below. The input subjects
 must all have the same encoding scheme (gradient table).
@@ -55,14 +55,14 @@ Steps
 Singularity
 -----------
 The singularity is available on
-[singularity-human](https://bitbucket.org/sciludes/singularity-human/src/master/) repository
+[singularity-TractoFlow](https://bitbucket.org/sciludes/singularity-tractoflow/src/master/) repository
  
 Requirements
 ------------
 
 - [Nextflow](https://www.nextflow.io)
 
-The file _singularity_human.def_ contains most of the requirements commands.
+The file _singularity_tractoflow.def_ contains most of the requirements commands.
 
 - Scilpy
 - Dipy

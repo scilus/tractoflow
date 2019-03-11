@@ -45,14 +45,14 @@ Application. Contributor must respect all terms and conditions of this Agreement
 
 2.2 Limitations
 
-Using or contributing the Application, (i) you may not copy the Application for private Modifications;
-(ii) you might not use the application for commercial purposes ("Commercial Use");
-(iii) you must contact the SCIL for a patent using of the Application.
+Using or contributing the Application, (i) you might not use the application for
+commercial purposes ("Commercial Use"); (ii) you must contact the SCIL for a
+patent based on or using the Application.
 
 2.3 Commercial Use
 
 You may not use the application for commercial purposes. For commercial use,
-please contact Imeka Solution Inc (https://www.imeka.ca/).
+please contact Imeka Solutions Inc. (https://www.imeka.ca/).
 
 2.4 Third party license
 
