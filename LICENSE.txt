@@ -52,7 +52,7 @@ patent based on or using the Application.
 2.3 Commercial Use
 
 You may not use the application for commercial purposes. For commercial use,
-please contact Imeka Solution Inc (https://www.imeka.ca/).
+please contact Imeka Solutions Inc. (https://www.imeka.ca/).
 
 2.4 Third party license
 
