@@ -67,7 +67,7 @@ if(params.help) {
 }
 
 log.info "TractoFlow pipeline"
-log.info "=============================="
+log.info "==================="
 log.info ""
 log.info "Start time: $workflow.start"
 log.info ""
