@@ -282,6 +282,7 @@ process Topup {
     output:
     set sid, "${sid}__corrected_b0s.nii.gz", "${params.prefix_topup}_fieldcoef.nii.gz",
     "${params.prefix_topup}_movpar.txt" into topup_files_for_eddy_topup
+    file "${sid}__rev_b0_warped.nii.gz"
 
     when:
     params.run_topup && params.run_eddy
@@ -289,7 +290,12 @@ process Topup {
     script:
     """
     OMP_NUM_THREADS=$task.cpus
-    scil_prepare_topup_command.py $dwi $bval $bvec $rev_b0\
+    ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+    scil_extract_b0.py $dwi $bval $bvec b0_mean.nii.gz --mean\
+        --b0_thr $params.b0_thr_extract_b0
+    antsRegistrationSyN.sh -d 3 -f b0_mean.nii.gz -m $rev_b0 -o output -t r
+    mv outputWarped.nii.gz ${sid}__rev_b0_warped.nii.gz
+    scil_prepare_topup_command.py $dwi $bval $bvec ${sid}__rev_b0_warped.nii.gz\
         --config $params.config_topup --b0_thr $params.b0_thr_extract_b0\
         --encoding_direction $params.encoding_direction\
         --dwell_time $params.dwell_time --output_prefix $params.prefix_topup\
