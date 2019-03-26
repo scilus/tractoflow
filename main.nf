@@ -534,7 +534,7 @@ process Denoise_T1 {
     script:
     """
     scil_run_nlmeans.py $t1 ${sid}__t1_denoised.nii.gz 1 \
-        --noise_est basic --processes $task.cpus -f
+        --processes $task.cpus -f
     """
 }
 
