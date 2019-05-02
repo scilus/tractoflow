@@ -629,10 +629,15 @@ process Normalize_DWI {
 
     output:
     set sid, "${sid}__dwi_normalized.nii.gz" into dwi_for_resample
+    file "${sid}_fa_wm_mask.nii.gz"
 
     script:
     """
-    dwinormalise $dwi $mask ${sid}__dwi_normalized.nii.gz -fslgrad $bvec $bval
+    scil_compute_dti_metrics.py $dwi $bval $bvec --mask $mask\
+        --not_all --fa fa.nii.gz
+    mrthreshold fa.nii.gz ${sid}_fa_wm_mask.nii.gz -abs $params.fa_threshold
+    dwinormalise $dwi ${sid}_fa_wm_mask.nii.gz ${sid}__dwi_normalized.nii.gz\
+        -fslgrad $bvec $bval
     """
 }
 
