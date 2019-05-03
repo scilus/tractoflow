@@ -634,7 +634,10 @@ process Normalize_DWI {
 
     script:
     """
-    scil_compute_dti_metrics.py $dwi $bval $bvec --mask $mask\
+    scil_extract_dwi_shell.py $dwi \
+        $bval $bvec $params.dti_shells dwi_dti.nii.gz \
+        bval_dti bvec_dti -t $params.dwi_shell_tolerance
+    scil_compute_dti_metrics.py dwi_dti.nii.gz bval_dti bvec_dti --mask $mask\
         --not_all --fa fa.nii.gz
     mrthreshold fa.nii.gz ${sid}_fa_wm_mask.nii.gz -abs $params.fa_mask_threshold
     dwinormalise $dwi ${sid}_fa_wm_mask.nii.gz ${sid}__dwi_normalized.nii.gz\
