@@ -1,26 +1,44 @@
 TractoFlow pipeline
 ===================
 
-Do all the processing. The different steps are explained below. The input subjects
-must all have the same encoding scheme (gradient table).
+TractoFlow pipeline is a fully automated and reproducible dMRI pipeline.
+TractoFlow takes raw DWI, b-values, b-vectors, T1 weighted image (and a reversed
+phase encoded b=0 if available) to process DTI, fODF metrics and a whole brain tractogram.
 
-WARNING: The results could take 4 times more disk space than the input.
+Documentation:
+--------------
 
-If you use this pipeline, please cite:
+TractoFlow documentation is available here:
 
-```
-Kurtzer GM, Sochat V, Bauer MW (2017)
-Singularity: Scientific containers for mobility of compute.
-PLoS ONE 12(5): e0177459. https://doi.org/10.1371/journal.pone.0177459
+[https://tractoflow-documentation.readthedocs.io](https://tractoflow-documentation.readthedocs.io)
 
-P. Di Tommaso, et al. Nextflow enables reproducible computational workflows.
-Nature Biotechnology 35, 316–319 (2017) doi:10.1038/nbt.3820
-```
+This documentation present who to install and launch TractoFlow on a local computer and an High Performance Computer.
+
+If you are a user and NOT A DEVELOPPER, we HIGHLY RECOMMEND to follow the instructions on the documentation website.
+
+Singularity
+-----------
+If you are on Linux, please use the Singularity container the run TractoFlow
+
+Please download Singularity container built here:
+
+[http://scil.dinf.usherbrooke.ca/en/containers_list/](http://scil.dinf.usherbrooke.ca/en/containers_list/)
+
+FOR DEVELOPPERS: The Singularity repository is available here:
+[singularity-TractoFlow](https://github.com/scilus/singularity-tractoflow)
+
+Docker
+------
+If you are on MacOS or Windows, please use the Docker container the run TractoFlow
+
+Please download Docker container built here:
+
+[http://scil.dinf.usherbrooke.ca/en/containers_list/](http://scil.dinf.usherbrooke.ca/en/containers_list/)
 
 Steps
 -----
 
-######Diffusion processes
+Diffusion processes
 - preliminary DWI brain extraction (FSL)
 - denoise DWI (Mrtrix3)
 - topup (FSL)
@@ -32,7 +50,7 @@ Steps
 - upsample DWI (Scilpy)
 - upsample B0 (Scilpy)
 
-######T1 processes
+T1 processes
 - denoise T1 (Scilpy)
 - N4 T1 (ANTs)
 - resample T1 (Scilpy)
@@ -41,7 +59,7 @@ Steps
 - registration on diffusion (ANTs)
 - tissue segmentation (FSL)
 
-######Metrics processes
+Metrics processes
 - extract DTI shells (configurable in `nextflow.config`) (Scilpy)
 - dti metrics (Scilpy)
 - extract fODF shells (configurable in `nextflow.config`) (Scilpy)
@@ -52,32 +70,12 @@ Steps
 - seeding mask (Scilpy)
 - particle filter tracking (Scilpy)
 
-Singularity
------------
-The singularity is available on
-[singularity-TractoFlow](https://github.com/scilus/singularity-tractoflow) repository
- 
-Requirements
-------------
-
-- [Nextflow](https://www.nextflow.io)
-
-The file _singularity_tractoflow.def_ contains most of the requirements commands.
-
-- Scilpy
-- Dipy
-- Mrtrix3
-- ANTS
-- FSL with the eddy_openmp
-[patch](https://fsl.fmrib.ox.ac.uk/fsldownloads/patches/eddy-patch-fsl-5.0.9/centos6/)
-
-Notes
------
-
-The _scilpy/scripts_ folder should be in your PATH environment variable if
-Singularity is not used.
-
 Usage
 -----
 
 See *USAGE* or run `nextflow run main.nf --help`
+
+References
+----------
+
+To refer to TratoFlow, please see `References` section on [TractoFlow documentation](https://tractoflow-documentation.readthedocs.io)
