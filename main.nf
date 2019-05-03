@@ -23,6 +23,7 @@ if(params.help) {
                 "bet_topup_before_eddy_f":"$params.bet_topup_before_eddy_f",
                 "use_slice_drop_correction":"$params.use_slice_drop_correction",
                 "bet_dwi_final_f":"$params.bet_dwi_final_f",
+                "fa_mask_threshold":"$params.fa_mask_threshold",
                 "run_resample_dwi":"$params.run_resample_dwi",
                 "dwi_resolution":"$params.dwi_resolution",
                 "dwi_interpolation":"$params.dwi_interpolation",
@@ -635,7 +636,7 @@ process Normalize_DWI {
     """
     scil_compute_dti_metrics.py $dwi $bval $bvec --mask $mask\
         --not_all --fa fa.nii.gz
-    mrthreshold fa.nii.gz ${sid}_fa_wm_mask.nii.gz -abs $params.fa_threshold
+    mrthreshold fa.nii.gz ${sid}_fa_wm_mask.nii.gz -abs $params.fa_mask_threshold
     dwinormalise $dwi ${sid}_fa_wm_mask.nii.gz ${sid}__dwi_normalized.nii.gz\
         -fslgrad $bvec $bval
     """
