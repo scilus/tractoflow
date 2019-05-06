@@ -1,7 +1,7 @@
 TractoFlow pipeline
 ===================
 
-TractoFlow pipeline is a fully automated and reproducible dMRI pipeline.
+The TractoFlow pipeline is a fully automated and reproducible dMRI processing pipeline.
 TractoFlow takes raw DWI, b-values, b-vectors, T1 weighted image (and a reversed
 phase encoded b=0 if available) to process DTI, fODF metrics and a whole brain tractogram.
 
@@ -12,26 +12,26 @@ TractoFlow documentation is available here:
 
 [https://tractoflow-documentation.readthedocs.io](https://tractoflow-documentation.readthedocs.io)
 
-This documentation present who to install and launch TractoFlow on a local computer and an High Performance Computer.
+This documentation presents how to install and launch TractoFlow on a local computer and a High Performance Computer.
 
-If you are a user and NOT A DEVELOPPER, we HIGHLY RECOMMEND to follow the instructions on the documentation website.
+If you are a user and NOT A DEVELOPER, we HIGHLY RECOMMEND following the instructions on the documentation website.
 
 Singularity
 -----------
-If you are on Linux, please use the Singularity container the run TractoFlow
+If you are on Linux, we recommend using the Singularity container to run TractoFlow
 
-Please download Singularity container built here:
+Prebuild Singularity images are available here:
 
 [http://scil.dinf.usherbrooke.ca/en/containers_list/](http://scil.dinf.usherbrooke.ca/en/containers_list/)
 
-FOR DEVELOPPERS: The Singularity repository is available here:
+FOR DEVELOPERS: The Singularity repository is available here:
 [singularity-TractoFlow](https://github.com/scilus/singularity-tractoflow)
 
 Docker
 ------
-If you are on MacOS or Windows, please use the Docker container the run TractoFlow
+If you are on MacOS or Windows, we recommend using the Docker container to run TractoFlow
 
-Please download Docker container built here:
+Prebuilt Docker images are available here:
 
 [http://scil.dinf.usherbrooke.ca/en/containers_list/](http://scil.dinf.usherbrooke.ca/en/containers_list/)
 
@@ -78,4 +78,4 @@ See *USAGE* or run `nextflow run main.nf --help`
 References
 ----------
 
-To refer to TratoFlow, please see `References` section on [TractoFlow documentation](https://tractoflow-documentation.readthedocs.io)
+To refer to TractoFlow, please see `References` section on [TractoFlow documentation](https://tractoflow-documentation.readthedocs.io/en/latest/reference/references.html)
