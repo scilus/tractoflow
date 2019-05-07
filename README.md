@@ -22,7 +22,7 @@ If you are on Linux, we recommend using the Singularity container to run TractoF
 
 Prebuild Singularity images are available here:
 
-[http://scil.dinf.usherbrooke.ca/en/containers_list/](http://scil.dinf.usherbrooke.ca/en/containers_list/)
+[http://scil.usherbrooke.ca/en/containers_list/](http://scil.usherbrooke.ca/en/containers_list/)
 
 FOR DEVELOPERS: The Singularity repository is available here:
 [singularity-TractoFlow](https://github.com/scilus/singularity-tractoflow)
@@ -33,7 +33,7 @@ If you are on MacOS or Windows, we recommend using the Docker container to run T
 
 Prebuilt Docker images are available here:
 
-[http://scil.dinf.usherbrooke.ca/en/containers_list/](http://scil.dinf.usherbrooke.ca/en/containers_list/)
+[http://scil.usherbrooke.ca/en/containers_list/](http://scil.usherbrooke.ca/en/containers_list/)
 
 Steps
 -----
