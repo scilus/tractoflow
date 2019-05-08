@@ -23,6 +23,7 @@ if(params.help) {
                 "bet_topup_before_eddy_f":"$params.bet_topup_before_eddy_f",
                 "use_slice_drop_correction":"$params.use_slice_drop_correction",
                 "bet_dwi_final_f":"$params.bet_dwi_final_f",
+                "fa_mask_threshold":"$params.fa_mask_threshold",
                 "run_resample_dwi":"$params.run_resample_dwi",
                 "dwi_resolution":"$params.dwi_resolution",
                 "dwi_interpolation":"$params.dwi_interpolation",
@@ -629,10 +630,18 @@ process Normalize_DWI {
 
     output:
     set sid, "${sid}__dwi_normalized.nii.gz" into dwi_for_resample
+    file "${sid}_fa_wm_mask.nii.gz"
 
     script:
     """
-    dwinormalise $dwi $mask ${sid}__dwi_normalized.nii.gz -fslgrad $bvec $bval
+    scil_extract_dwi_shell.py $dwi \
+        $bval $bvec $params.dti_shells dwi_dti.nii.gz \
+        bval_dti bvec_dti -t $params.dwi_shell_tolerance
+    scil_compute_dti_metrics.py dwi_dti.nii.gz bval_dti bvec_dti --mask $mask\
+        --not_all --fa fa.nii.gz
+    mrthreshold fa.nii.gz ${sid}_fa_wm_mask.nii.gz -abs $params.fa_mask_threshold
+    dwinormalise $dwi ${sid}_fa_wm_mask.nii.gz ${sid}__dwi_normalized.nii.gz\
+        -fslgrad $bvec $bval
     """
 }
 
