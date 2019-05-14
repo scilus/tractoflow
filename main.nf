@@ -1,6 +1,10 @@
 #!/usr/bin/env nextflow
 
+import groovy.json.*
+
 params.root = false
+params.bids = false
+params.bids_config = false
 params.help = false
 params.dti_shells = false
 params.fodf_shells = false
@@ -15,10 +19,10 @@ if(params.help) {
                 "bet_prelim_f":"$params.bet_prelim_f",
                 "run_dwi_denoising":"$params.run_dwi_denoising",
                 "extent":"$params.extent",
-                "run_topup":"$params.run_topup",
                 "encoding_direction":"$params.encoding_direction",
                 "dwell_time":"$params.dwell_time",
                 "run_eddy":"$params.run_eddy",
+                "run_topup":"$params.run_topup",
                 "eddy_cmd":"$params.eddy_cmd",
                 "bet_topup_before_eddy_f":"$params.bet_topup_before_eddy_f",
                 "use_slice_drop_correction":"$params.use_slice_drop_correction",
@@ -66,6 +70,7 @@ if(params.help) {
     print template.toString()
     return
 }
+log.debug "$workflow.commandLine"
 
 log.info "TractoFlow pipeline"
 log.info "==================="
@@ -74,7 +79,6 @@ log.info "Start time: $workflow.start"
 log.info ""
 
 log.debug "[Command-line]"
-log.debug "$workflow.commandLine"
 log.debug ""
 
 log.info "[Git Info]"
@@ -167,9 +171,65 @@ if (params.root){
     .map{[it.parent.name, it]}
     .into{rev_b0; check_rev_b0}
     }
-else {
-    error "Error ~ Please use --root for the input data."
-}
+    else if (params.bids || params.bids_config){
+      log.info "Input: $params.bids"
+      bids = file(params.bids)
+
+      if (!params.bids_config){
+        process Read_BIDS{
+          publishDir = params.Read_BIDS
+          tag = {"Read_BIDS"}
+
+          input:
+          val bids_folder from bids
+
+          output:
+          file "bids_struct.json" into bids_struct
+
+
+          script:
+          """
+          readBIDS.py -i $bids_folder -o bids_struct.json
+          """
+        }
+      }
+
+      process check_config{
+        input:
+          bids_struct into bids_check
+        output:
+          stdout into bidsIsValidp
+      }
+
+      if (bidsIsValidp.toInteger() == 0){
+        bidsIsValidp.subscribe{println it}
+        ch_in_data = Channel.create()
+        ch_rev_b0 = Channel.create()
+        bids_struct.map{it ->
+          jsonSlurper = new JsonSlurper()
+            data = jsonSlurper.parseText(it.getText())
+            for (item in data){
+              sid = "sub-" + item.subject + "_ses-" + item.session + "_run-" + item.run
+              sub = [sid, file(item.bval), file(item.bvec), file(item.dwi), file(item.t1)]
+
+              if( item.rev_b0 ) {
+                 sub_rev_b0 = [sid, file(item.rev_b0)]
+                 ch_rev_b0.bind(sub_rev_b0)}
+                 ch_in_data.bind(sub)
+              }
+              ch_in_data.close()
+              ch_rev_b0.close()
+          }
+          ch_in_data.set{in_data}
+          ch_rev_b0.into{rev_b0; check_rev_b0}
+      }
+      else{
+        error "Error ~ Please look at your bids-struct.json, fix and rerun nextflow input  --bids_config"
+      }
+    }
+    else{
+    error "Error ~ Please use --root or --bids for the input data."
+    }
 
 if (!params.dti_shells || !params.fodf_shells){
     error "Error ~ Please set the DTI and fODF shells to use."
@@ -254,7 +314,7 @@ process Denoise_DWI {
         dwi_for_eddy_topup
 
     script:
-    // The denoised DWI is clipped to 0 since negative values 
+    // The denoised DWI is clipped to 0 since negative values
     // could have been introduced.
     if(params.run_dwi_denoising)
         """
@@ -465,7 +525,7 @@ process Bet_DWI {
     output:
     set sid, "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask.nii.gz" into\
         b0_and_mask_for_crop
-    set sid, "${sid}__dwi_bet.nii.gz", "${sid}__b0_bet.nii.gz", 
+    set sid, "${sid}__dwi_bet.nii.gz", "${sid}__b0_bet.nii.gz",
         "${sid}__b0_bet_mask.nii.gz" into dwi_b0_b0_mask_for_n4
 
     script:
@@ -976,7 +1036,7 @@ process FODF_Metrics {
     file "${sid}__nufo.nii.gz"
 
     script:
-    """ 
+    """
     scil_compute_fodf.py $dwi $bval $bvec $frf --sh_order $params.sh_order\
         --sh_basis $params.basis --force_b0_threshold --mask $b0_mask\
         --fodf ${sid}__fodf.nii.gz --peaks ${sid}__peaks.nii.gz\
@@ -1018,7 +1078,7 @@ process PFT_Maps {
 wm_mask_for_seeding_mask
     .join(interface_for_seeding_mask)
     .set{wm_interface_for_seeding_mask}
-    
+
 process Seeding_Mask {
     cpus 1
 
