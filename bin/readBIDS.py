@@ -8,6 +8,7 @@ import argparse
 import bids
 import json
 
+
 def get_arguments():
     parser = argparse.ArgumentParser(
             formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -43,7 +44,6 @@ class readBIDS(object):
         self.bids = bids[0]
         self.json = json[0]
         self.data = []
-        #self.bidsValidated = True
 
     def run(self):
         self.ds = bids.BIDSLayout(self.bids)
@@ -60,7 +60,7 @@ class readBIDS(object):
                     fmaps = self.ds.get(subject=nSub, session=nSess,
                                         datatype='fmap', extensions='nii.gz')
                     t1s = self.ds.get(subject=nSub, session=nSess,
-                                     datatype='anat', extensions='nii.gz')
+                                      datatype='anat', extensions='nii.gz')
 
                     for nRun, dwi in enumerate(dwis):  # Possible runs
                         self.getData(nSub, dwi, fmaps, t1, nSess, nRun)
@@ -70,7 +70,7 @@ class readBIDS(object):
                 fmaps = self.ds.get(subject=nSub, datatype='fmap',
                                     extensions='epi.nii.gz')
                 t1s = self.ds.get(subject=nSub, datatype='anat',
-                                 extensions='nii.gz')
+                                  extensions='nii.gz')
                 nSess = ''
 
                 for nRun, dwi in enumerate(dwis):  # Possible runs
@@ -96,7 +96,8 @@ class readBIDS(object):
         # Find b0 for topup, take the first one
         revb0_path = ''
         for nfmap in fmaps:
-            if 'PhaseEncodingDirection' in nfmap.metadata and 'IntendedFor' in nfmap.metadata:
+            if 'PhaseEncodingDirection' in nfmap.metadata and\
+               'IntendedFor' in nfmap.metadata:
                 fmap_PE = nfmap.metadata['PhaseEncodingDirection']
                 refDWI = nfmap.metadata['IntendedFor']
 
@@ -108,15 +109,15 @@ class readBIDS(object):
         totalreadout = 1
         try:
             dwi_RT = dwi.metadata['TotalReadoutTime']
-            fmap_RT =   nfmap.metadata['TotalReadoutTime']
+            fmap_RT = nfmap.metadata['TotalReadoutTime']
             if dwi_RT == fmap_RT:
                 totalreadout = dwi_RT
-        except:
-            print('Pas grave')
+        except Exception:
+            pass
 
         t1_path = 'todo'
-        if len(t1s)==1:
-            t1_path =  t1[0].path
+        if len(t1s) == 1:
+            t1_path = t1s[0].path
         elif 'run' in dwi.path:
             for t1 in t1s:
                 if 'run-'+str(nRun+1) in t1.path:
