@@ -63,7 +63,7 @@ class readBIDS(object):
                                       datatype='anat', extensions='nii.gz')
 
                     for nRun, dwi in enumerate(dwis):  # Possible runs
-                        self.getData(nSub, dwi, fmaps, t1, nSess, nRun)
+                        self.getData(nSub, dwi, fmaps, t1s, nSess, nRun)
             else:
                 dwis = self.ds.get(subject=nSub, datatype='dwi',
                                    extensions='nii.gz')
