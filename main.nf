@@ -171,64 +171,64 @@ if (params.root){
     .map{[it.parent.name, it]}
     .into{rev_b0; check_rev_b0}
     }
-    else if (params.bids || params.bids_config){
-      log.info "Input: $params.bids"
-      bids = file(params.bids)
+else if (params.bids || params.bids_config){
+    log.info "Input: $params.bids"
+    bids = file(params.bids)
 
-      if (!params.bids_config){
-        process Read_BIDS{
-          publishDir = params.Read_BIDS
-          tag = {"Read_BIDS"}
+    if (!params.bids_config) {
 
-          input:
-          val bids_folder from bids
+        process Read_BIDS {
+            publishDir = params.Read_BIDS
+            tag = {"Read_BIDS"}
 
-          output:
-          file "bids_struct.json" into bids_struct
+            input:
+            val bids_folder from bids
+
+            output:
+            file "bids_struct.json" into bids_struct
 
 
-          script:
-          """
-          readBIDS.py -i $bids_folder -o bids_struct.json
-          """
+            script:
+            """
+            readBIDS.py -i $bids_folder -o bids_struct.json
+            """
         }
-      }
-      else{
-        bids_config into bids_struct
-      }
+    }
 
-      ch_in_data = Channel.create()
-      ch_rev_b0 = Channel.create()
-      bids_struct.map{it ->
-        jsonSlurper = new JsonSlurper()
-          data = jsonSlurper.parseText(it.getText())
-          for (item in data){
+    else {
+        bids_config into bids_struct
+    }
+
+    ch_in_data = Channel.create()
+    ch_rev_b0 = Channel.create()
+    bids_struct.map{it ->
+    jsonSlurper = new JsonSlurper()
+        data = jsonSlurper.parseText(it.getText())
+        for (item in data){
             sid = "sub-" + item.subject + "_ses-" + item.session + "_run-" + item.run
 
             if(item.t1 == 'todo'){
-              workflow.onError {
-                println "It seems that your json file contains some error - check and rerun"}
+                error "Error ~ Please look at your bids-struct.json in Read_BIDS folder.\nPlease fix todo fields and give this file in input using --bids_config option instead using --bids."
             }
             sub = [sid, file(item.bval), file(item.bvec), file(item.dwi), file(item.t1)]
 
             if( item.rev_b0 ) {
-               sub_rev_b0 = [sid, file(item.rev_b0)]
-               ch_rev_b0.bind(sub_rev_b0)}
-               ch_in_data.bind(sub)
-            }
-            ch_in_data.close()
-            ch_rev_b0.close()
+                sub_rev_b0 = [sid, file(item.rev_b0)]
+                ch_rev_b0.bind(sub_rev_b0)}
+                ch_in_data.bind(sub)
         }
-        ch_in_data.set{in_data}
-        ch_rev_b0.into{rev_b0; check_rev_b0}
-      }
-      else{
-        error "Error ~ Please look at your bids-struct.json, fix and rerun nextflow input  --bids_config"
-      }
+
+        ch_in_data.close()
+        ch_rev_b0.close()
     }
-    else{
-    error "Error ~ Please use --root or --bids for the input data."
-    }
+
+    ch_in_data.set{in_data}
+    ch_rev_b0.into{rev_b0; check_rev_b0}
+}
+
+else {
+    error "Error ~ Please use --root, --bids or --bids_config for the input data."
+}
 
 if (!params.dti_shells || !params.fodf_shells){
     error "Error ~ Please set the DTI and fODF shells to use."
