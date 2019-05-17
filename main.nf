@@ -170,65 +170,63 @@ if (params.root){
                     maxDepth:1)
     .map{[it.parent.name, it]}
     .into{rev_b0; check_rev_b0}
+}
+else if (params.bids || params.bids_config){
+  log.info "Input: $params.bids"
+  bids = file(params.bids)
+
+  if (!params.bids_config){
+    process Read_BIDS{
+      publishDir = params.Read_BIDS
+      tag = {"Read_BIDS"}
+
+      input:
+        val bids_folder from bids
+
+      output:
+        file "bids_struct.json" into bids_struct
+
+
+      script:
+      """
+      readBIDS.py -i $bids_folder -o bids_struct.json
+      """
     }
-    else if (params.bids || params.bids_config){
-      log.info "Input: $params.bids"
-      bids = file(params.bids)
+  }
+  else{
+        println bids_struct.getClass()
+        println bids_config.getClass()
+  }
 
-      if (!params.bids_config){
-        process Read_BIDS{
-          publishDir = params.Read_BIDS
-          tag = {"Read_BIDS"}
+  ch_in_data = Channel.create()
+  ch_rev_b0 = Channel.create()
+  bids_struct.map{it ->
+    jsonSlurper = new JsonSlurper()
+    data = jsonSlurper.parseText(it.getText())
+    for (item in data){
+      sid = "sub-" + item.subject + "_ses-" + item.session + "_run-" + item.run
 
-          input:
-          val bids_folder from bids
-
-          output:
-          file "bids_struct.json" into bids_struct
-
-
-          script:
-          """
-          readBIDS.py -i $bids_folder -o bids_struct.json
-          """
-        }
+      if(item.t1 == 'todo'){
+        workflow.onError {
+          println "It seems that your json file contains some error - check and rerun"}
       }
-      else{
-        bids_config into bids_struct
-      }
+      sub = [sid, file(item.bval), file(item.bvec), file(item.dwi), file(item.t1)]
 
-      ch_in_data = Channel.create()
-      ch_rev_b0 = Channel.create()
-      bids_struct.map{it ->
-        jsonSlurper = new JsonSlurper()
-          data = jsonSlurper.parseText(it.getText())
-          for (item in data){
-            sid = "sub-" + item.subject + "_ses-" + item.session + "_run-" + item.run
-
-            if(item.t1 == 'todo'){
-              workflow.onError {
-                println "It seems that your json file contains some error - check and rerun"}
-            }
-            sub = [sid, file(item.bval), file(item.bvec), file(item.dwi), file(item.t1)]
-
-            if( item.rev_b0 ) {
-               sub_rev_b0 = [sid, file(item.rev_b0)]
-               ch_rev_b0.bind(sub_rev_b0)}
-               ch_in_data.bind(sub)
-            }
-            ch_in_data.close()
-            ch_rev_b0.close()
-        }
-        ch_in_data.set{in_data}
-        ch_rev_b0.into{rev_b0; check_rev_b0}
+      if(item.rev_b0) {
+        sub_rev_b0 = [sid, file(item.rev_b0)]
+        ch_rev_b0.bind(sub_rev_b0)
       }
-      else{
-        error "Error ~ Please look at your bids-struct.json, fix and rerun nextflow input  --bids_config"
-      }
+      ch_in_data.bind(sub)
     }
-    else{
+    ch_in_data.close()
+    ch_rev_b0.close()
+  }
+  ch_in_data.set{in_data}
+  ch_rev_b0.into{rev_b0; check_rev_b0}
+}
+else{
     error "Error ~ Please use --root or --bids for the input data."
-    }
+}
 
 if (!params.dti_shells || !params.fodf_shells){
     error "Error ~ Please set the DTI and fODF shells to use."
