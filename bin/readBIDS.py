@@ -83,15 +83,16 @@ class readBIDS(object):
         bvec_path = self.ds.get_bvec(dwi_path)
         bval_path = self.ds.get_bval(dwi_path)
 
-        try:
+        dwi_PE = 'todo'
+        dwi_revPE = -1
+        conversion = {"i": "x", "j": "y", "k": "z"}
+        if 'PhaseEncodingDirection' in dwi.metadata:
             dwi_PE = dwi.metadata['PhaseEncodingDirection']
+            dwi_PE = dwi_PE.replace(dwi_PE[0], conversion[dwi_PE[0]])
             if len(dwi_PE) == 1:
                 dwi_revPE = dwi_PE+'-'
             else:
                 dwi_revPE = dwi_PE[0]
-        except KeyError:
-            # Crash violemment
-            print('Violence')
 
         # Find b0 for topup, take the first one
         revb0_path = ''
@@ -99,6 +100,7 @@ class readBIDS(object):
             if 'PhaseEncodingDirection' in nfmap.metadata and\
                'IntendedFor' in nfmap.metadata:
                 fmap_PE = nfmap.metadata['PhaseEncodingDirection']
+                fmap_PE = fmap_PE.replace(fmap_PE[0], conversion[fmap_PE[0]])
                 refDWI = nfmap.metadata['IntendedFor']
 
                 if fmap_PE == dwi_revPE:
@@ -106,21 +108,19 @@ class readBIDS(object):
                         revb0_path = nfmap.path
                         break
 
-        totalreadout = 1
-        try:
+        totalreadout = 'todo'
+        if 'TotalReadoutTime' in dwi.metadata and nfmap.metadata:
             dwi_RT = dwi.metadata['TotalReadoutTime']
             fmap_RT = nfmap.metadata['TotalReadoutTime']
             if dwi_RT == fmap_RT:
                 totalreadout = dwi_RT
-        except Exception:
-            pass
 
         t1_path = 'todo'
         if len(t1s) == 1:
             t1_path = t1s[0].path
         elif 'run' in dwi.path:
             for t1 in t1s:
-                if 'run-'+str(nRun+1) in t1.path:
+                if 'run-' + str(nRun + 1) in t1.path:
                     t1_path = t1.path
 
         self.data.append({'subject': nSub,
@@ -146,7 +146,6 @@ class readBIDS(object):
 
 
 def main():
-    """Let's go"""
     args = get_arguments()
     app = readBIDS(**vars(args))
     return app.run()
