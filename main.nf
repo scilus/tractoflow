@@ -214,10 +214,14 @@ else if (params.bids || params.bids_config){
 
             for (key in item.keySet()){
                 if(item[key] == 'todo'){
-                    error "Error ~ Please look at your bids-struct.json in Read_BIDS folder.\nPlease fix todo fields and give this file in input using --bids_config option instead using --bids."
+                    error "Error ~ Please look at your bids-struct.json " +
+                    "in Read_BIDS folder.\nPlease fix todo fields and give " +
+                    "this file in input using --bids_config option instead " +
+                    "using --bids."
                 }
             }
-            sub = [sid, file(item.bval), file(item.bvec), file(item.dwi), file(item.t1), item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
+            sub = [sid, file(item.bval), file(item.bvec), file(item.dwi),
+                   file(item.t1), item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
             ch_in_data.bind(sub)
 
             if(item.rev_b0) {
@@ -253,7 +257,8 @@ check_subjects_number.count()
     .concat(number_rev_b0)
     .toList()
     .subscribe{a, b -> if (a != b && b > 0) 
-    error "Error ~ Some subjects have a reversed phase encoded b=0 and others no. Please be sure to have the same acquisitions for all subjects."}
+    error "Error ~ Some subjects have a reversed phase encoded b=0 and others no.\n" +
+          "Please be sure to have the same acquisitions for all subjects."}
 
 dwi.into{dwi_for_prelim_bet; dwi_for_denoise}
 
