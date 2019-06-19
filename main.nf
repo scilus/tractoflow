@@ -168,7 +168,7 @@ if (params.root){
 
     data
         .map{[it, params.dwell_time, params.encoding_direction].flatten()}
-        .set{in_data}
+        .into{in_data; check_subjects_number}
 
     Channel
     .fromPath("$root/**/*rev_b0.nii.gz",
@@ -229,10 +229,9 @@ else if (params.bids || params.bids_config){
         ch_rev_b0.close()
     }
 
-    ch_in_data.set{in_data}
+    ch_in_data.into{in_data; check_subjects_number}
     ch_rev_b0.into{rev_b0; check_rev_b0}
 }
-
 else {
     error "Error ~ Please use --root, --bids or --bids_config for the input data."
 }
@@ -248,7 +247,13 @@ if (!params.dti_shells || !params.fodf_shells){
                                         tuple(sid, readout, encoding)]}
     .separate(4)
 
-check_rev_b0.count().set{ rev_b0_counter }
+check_rev_b0.count().into{ rev_b0_counter; number_rev_b0 }
+
+check_subjects_number.count()
+    .concat(number_rev_b0)
+    .toList()
+    .subscribe{a, b -> if (a != b && b > 0) 
+    error "Error ~ Some subjects have a reversed phase encoded b=0 and others no. Please be sure to have the same acquisitions for all subjects."}
 
 dwi.into{dwi_for_prelim_bet; dwi_for_denoise}
 
