@@ -193,7 +193,7 @@ else if (params.bids || params.bids_config){
 
             script:
             """
-            readBIDS.py -i $bids_folder -o bids_struct.json
+            readBIDS.py $bids_folder bids_struct.json
             """
         }
     }

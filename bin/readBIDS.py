@@ -1,48 +1,39 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Create a json file from BIDS
+Input: BIDS folder
+Output: json file
+"""
+
 import os
-import sys
 
 import argparse
 import bids
 import json
 
 
-def get_arguments():
+def _build_args_parser():
     parser = argparse.ArgumentParser(
             formatter_class=argparse.RawDescriptionHelpFormatter,
-            description="",
-            epilog="""
-            Create a json file from BIDS
-            Input: BIDS folder
-            Output: json file
-            """)
+            description=__doc__)
 
     parser.add_argument(
-            "-i", "--bids",
-            required=True, nargs="+",
-            help="BIDS folder",
-            )
+            "bids",
+            help="BIDS folder")
 
     parser.add_argument(
-            "-o", "--json",
-            required=True, nargs="+",
-            help="json output file",
-            )
+            "json",
+            help="json output file")
 
-    args = parser.parse_args()
-    if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit()
-    else:
-        return args
+    return parser
 
 
 class readBIDS(object):
     def __init__(self, bids, json):
-        self.bids = bids[0]
-        self.json = json[0]
+        self.bids = bids
+        self.json = json
         self.data = []
 
     def run(self):
@@ -51,26 +42,27 @@ class readBIDS(object):
         for nSub in self.ds.get_subjects():
             sessions = self.ds.get_sessions(subject=nSub)
             if sessions:
-                dwis = []
-                t1 = []
-                fmaps = []
                 for nSess in sessions:
                     dwis = self.ds.get(subject=nSub, session=nSess,
-                                       datatype='dwi', extensions='nii.gz')
+                                       datatype='dwi', extensions='nii.gz',
+                                       suffix='dwi')
                     fmaps = self.ds.get(subject=nSub, session=nSess,
-                                        datatype='fmap', extensions='nii.gz')
+                                        datatype='fmap', extensions='nii.gz',
+                                        suffix='epi')
                     t1s = self.ds.get(subject=nSub, session=nSess,
-                                      datatype='anat', extensions='nii.gz')
-
+                                      datatype='anat', extensions='nii.gz',
+                                      suffix='T1w')
+                    
                     for nRun, dwi in enumerate(dwis):  # Possible runs
                         self.getData(nSub, dwi, fmaps, t1s, nSess, nRun)
+
             else:
                 dwis = self.ds.get(subject=nSub, datatype='dwi',
-                                   extensions='nii.gz')
+                                   extensions='nii.gz', suffix='dwi')
                 fmaps = self.ds.get(subject=nSub, datatype='fmap',
-                                    extensions='epi.nii.gz')
+                                    extensions='epi.nii.gz', suffix='epi')
                 t1s = self.ds.get(subject=nSub, datatype='anat',
-                                  extensions='nii.gz')
+                                  extensions='nii.gz', suffix='T1w')
                 nSess = ''
 
                 for nRun, dwi in enumerate(dwis):  # Possible runs
@@ -146,10 +138,11 @@ class readBIDS(object):
 
 
 def main():
-    args = get_arguments()
-    app = readBIDS(**vars(args))
-    return app.run()
+    parser = _build_args_parser()
+    args = parser.parse_args()
+    BIDS_app = readBIDS(args.bids, args.json)
+    BIDS_app.run()
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()
