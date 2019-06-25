@@ -78,8 +78,8 @@ class readBIDS(object):
         dwi_PE = 'todo'
         dwi_revPE = -1
         conversion = {"i": "x", "j": "y", "k": "z"}
-        if 'PhaseEncodingDirection' in dwi.metadata:
-            dwi_PE = dwi.metadata['PhaseEncodingDirection']
+        if 'PhaseEncodingDirection' in dwi.get_metadata():
+            dwi_PE = dwi.get_metadata()['PhaseEncodingDirection']
             dwi_PE = dwi_PE.replace(dwi_PE[0], conversion[dwi_PE[0]])
             if len(dwi_PE) == 1:
                 dwi_revPE = dwi_PE+'-'
@@ -89,11 +89,11 @@ class readBIDS(object):
         # Find b0 for topup, take the first one
         revb0_path = ''
         for nfmap in fmaps:
-            if 'PhaseEncodingDirection' in nfmap.metadata and\
-               'IntendedFor' in nfmap.metadata:
-                fmap_PE = nfmap.metadata['PhaseEncodingDirection']
+            if 'PhaseEncodingDirection' in nfmap.get_metadata() and\
+               'IntendedFor' in nfmap.get_metadata():
+                fmap_PE = nfmap.get_metadata()['PhaseEncodingDirection']
                 fmap_PE = fmap_PE.replace(fmap_PE[0], conversion[fmap_PE[0]])
-                refDWI = nfmap.metadata['IntendedFor']
+                refDWI = nfmap.get_metadata()['IntendedFor']
 
                 if fmap_PE == dwi_revPE:
                     if os.path.basename(refDWI) == dwi.filename:
@@ -101,9 +101,9 @@ class readBIDS(object):
                         break
 
         totalreadout = 'todo'
-        if 'TotalReadoutTime' in dwi.metadata and nfmap.metadata:
-            dwi_RT = dwi.metadata['TotalReadoutTime']
-            fmap_RT = nfmap.metadata['TotalReadoutTime']
+        if 'TotalReadoutTime' in dwi.get_metadata() and nfmap.get_metadata():
+            dwi_RT = dwi.get_metadata()['TotalReadoutTime']
+            fmap_RT = nfmap.get_metadata()['TotalReadoutTime']
             if dwi_RT == fmap_RT:
                 totalreadout = dwi_RT
 
