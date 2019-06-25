@@ -19,10 +19,10 @@ if(params.help) {
                 "bet_prelim_f":"$params.bet_prelim_f",
                 "run_dwi_denoising":"$params.run_dwi_denoising",
                 "extent":"$params.extent",
+                "run_topup":"$params.run_topup",
                 "encoding_direction":"$params.encoding_direction",
                 "dwell_time":"$params.dwell_time",
                 "run_eddy":"$params.run_eddy",
-                "run_topup":"$params.run_topup",
                 "eddy_cmd":"$params.eddy_cmd",
                 "bet_topup_before_eddy_f":"$params.bet_topup_before_eddy_f",
                 "use_slice_drop_correction":"$params.use_slice_drop_correction",
@@ -70,7 +70,6 @@ if(params.help) {
     print template.toString()
     return
 }
-log.debug "$workflow.commandLine"
 
 log.info "TractoFlow pipeline"
 log.info "==================="
@@ -79,6 +78,7 @@ log.info "Start time: $workflow.start"
 log.info ""
 
 log.debug "[Command-line]"
+log.debug "$workflow.commandLine"
 log.debug ""
 
 log.info "[Git Info]"
@@ -181,7 +181,7 @@ else if (params.bids || params.bids_config){
         log.info "Input: $params.bids"
         bids = file(params.bids)
         process Read_BIDS {
-            publishDir = params.Read_BIDS
+            publishDir = params.Read_BIDS_Publish_Dir
             tag = {"Read_BIDS"}
 
             input:
