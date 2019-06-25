@@ -91,24 +91,21 @@ class readBIDS(object):
         totalreadout = ''
         for nfmap in fmaps:
             if 'PhaseEncodingDirection' in nfmap.get_metadata() and\
-               'IntendedFor' in nfmap.get_metadata():
+               'IntendedFor' in nfmap.get_metadata() and\
+               'TotalReadoutTime' in (dwi.get_metadata() and nfmap.get_metadata()):
                 refDWI = nfmap.get_metadata()['IntendedFor']
 
                 if os.path.basename(refDWI) == dwi.filename:
                     fmap_PE = nfmap.get_metadata()['PhaseEncodingDirection']
                     fmap_PE = fmap_PE.replace(fmap_PE[0], conversion[fmap_PE[0]])
-                    if fmap_PE == dwi_revPE:
-                            revb0_path = nfmap.path
-
+                    dwi_RT = dwi.get_metadata()['TotalReadoutTime']
+                    fmap_RT = nfmap.get_metadata()['TotalReadoutTime']
                     totalreadout = 'todo'
-                    if 'TotalReadoutTime' in dwi.get_metadata() and\
-                        nfmap.get_metadata():
-                        dwi_RT = dwi.get_metadata()['TotalReadoutTime']
-                        fmap_RT = nfmap.get_metadata()['TotalReadoutTime']
+                    if fmap_PE == dwi_revPE:
+                        revb0_path = nfmap.path
                         if dwi_RT == fmap_RT:
                             totalreadout = dwi_RT
-
-                    break
+                        break
 
         t1_path = 'todo'
         if len(t1s) == 1:
