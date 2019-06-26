@@ -46,34 +46,35 @@ class readBIDS(object):
                     dwis = self.ds.get(subject=nSub, session=nSess,
                                        datatype='dwi', extensions='nii.gz',
                                        suffix='dwi')
-                    fmaps = self.ds.get(subject=nSub, session=nSess,
-                                        datatype='fmap', extensions='nii.gz',
-                                        suffix='epi')
                     t1s = self.ds.get(subject=nSub, session=nSess,
                                       datatype='anat', extensions='nii.gz',
                                       suffix='T1w')
 
                     for nRun, dwi in enumerate(dwis):  # Possible runs
-                        self.getData(nSub, dwi, fmaps, t1s, nSess, nRun)
-
+                        self.getData(nSub, dwi, t1s, nSess, nRun)
             else:
                 dwis = self.ds.get(subject=nSub, datatype='dwi',
                                    extensions='nii.gz', suffix='dwi')
-                fmaps = self.ds.get(subject=nSub, datatype='fmap',
-                                    extensions='epi.nii.gz', suffix='epi')
                 t1s = self.ds.get(subject=nSub, datatype='anat',
                                   extensions='nii.gz', suffix='T1w')
                 nSess = ''
 
                 for nRun, dwi in enumerate(dwis):  # Possible runs
-                    self.getData(nSub, dwi, fmaps, t1s, nSess, nRun)
+                    self.getData(nSub, dwi, t1s, nSess, nRun)
+        self.writeJson()
 
-            self.writeJson()
-
-    def getData(self, nSub, dwi, fmaps, t1s, nSess, nRun):
+    def getData(self, nSub, dwi, t1s, nSess, nRun):
         dwi_path = dwi.path
-        bvec_path = self.ds.get_bvec(dwi_path)
-        bval_path = self.ds.get_bval(dwi_path)
+        associations = dwi.get_associations()
+        fmaps = []
+        for filename in associations:
+            path = filename.path
+            if "bval" in path:
+                bval_path = path
+            if "bvec" in path:
+                bvec_path = path
+            if "epi" in path:
+                fmaps.append(filename)
 
         dwi_PE = 'todo'
         dwi_revPE = -1
@@ -91,17 +92,14 @@ class readBIDS(object):
         totalreadout = ''
         for nfmap in fmaps:
             if 'PhaseEncodingDirection' in nfmap.get_metadata() and\
-               'IntendedFor' in nfmap.get_metadata() and\
                'TotalReadoutTime' in dwi.get_metadata() and\
                'TotalReadoutTime' in nfmap.get_metadata():
 
-                refDWI = nfmap.get_metadata()['IntendedFor']
                 fmap_PE = nfmap.get_metadata()['PhaseEncodingDirection']
                 fmap_PE = fmap_PE.replace(fmap_PE[0], conversion[fmap_PE[0]])
                 dwi_RT = dwi.get_metadata()['TotalReadoutTime']
                 fmap_RT = nfmap.get_metadata()['TotalReadoutTime']
-                if os.path.basename(refDWI) == dwi.filename and\
-                    fmap_PE == dwi_revPE and dwi_RT == fmap_RT:
+                if fmap_PE == dwi_revPE and dwi_RT == fmap_RT:
                     revb0_path = nfmap.path
                     totalreadout = dwi_RT
                     break
@@ -127,7 +125,7 @@ class readBIDS(object):
 
     def writeJson(self):
         with open(self.json, 'w') as outfile:
-            json.dump(self.data[::-1],
+            json.dump(self.data,
                       outfile,
                       indent=4,
                       separators=(',', ': '),
