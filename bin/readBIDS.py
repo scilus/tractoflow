@@ -52,7 +52,7 @@ class readBIDS(object):
                     t1s = self.ds.get(subject=nSub, session=nSess,
                                       datatype='anat', extensions='nii.gz',
                                       suffix='T1w')
-                    
+
                     for nRun, dwi in enumerate(dwis):  # Possible runs
                         self.getData(nSub, dwi, fmaps, t1s, nSess, nRun)
 
@@ -92,7 +92,8 @@ class readBIDS(object):
         for nfmap in fmaps:
             if 'PhaseEncodingDirection' in nfmap.get_metadata() and\
                'IntendedFor' in nfmap.get_metadata() and\
-               'TotalReadoutTime' in (dwi.get_metadata() and nfmap.get_metadata()):
+               'TotalReadoutTime' in dwi.get_metadata() and\
+               'TotalReadoutTime' in nfmap.get_metadata():
                 refDWI = nfmap.get_metadata()['IntendedFor']
 
                 if os.path.basename(refDWI) == dwi.filename:
@@ -100,8 +101,8 @@ class readBIDS(object):
                     fmap_PE = fmap_PE.replace(fmap_PE[0], conversion[fmap_PE[0]])
                     dwi_RT = dwi.get_metadata()['TotalReadoutTime']
                     fmap_RT = nfmap.get_metadata()['TotalReadoutTime']
-                    totalreadout = 'todo'
                     if fmap_PE == dwi_revPE:
+                        totalreadout = 'todo'
                         revb0_path = nfmap.path
                         if dwi_RT == fmap_RT:
                             totalreadout = dwi_RT
