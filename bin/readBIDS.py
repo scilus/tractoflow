@@ -131,7 +131,7 @@ def get_data(nSub, dwi, t1s, associations, nRun):
     fmaps = []
     bval_path = ''
     bvec_path = ''
-    if dwi.filename in self.associations.keys():
+    if dwi.filename in associations.keys():
         if "bval" in associations[dwi.filename].keys():
             bval_path = associations[dwi.filename]['bval']
         if "bvec" in associations[dwi.filename].keys():
