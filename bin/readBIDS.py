@@ -102,12 +102,13 @@ class readBIDS(object):
             fmaps = []
             bval_path=''
             bvec_path=''
-            if "bval" in self.associations[dwi.filename].keys():
-                bval_path = self.associations[dwi.filename]['bval']
-            if "bvec" in self.associations[dwi.filename].keys():
-                bvec_path = self.associations[dwi.filename]['bvec']
-            if "fmap" in self.associations[dwi.filename].keys():
-                fmaps = self.associations[dwi.filename]['fmap']
+            if dwi.filename in self.associations.keys():
+                if "bval" in self.associations[dwi.filename].keys():
+                    bval_path = self.associations[dwi.filename]['bval']
+                if "bvec" in self.associations[dwi.filename].keys():
+                    bvec_path = self.associations[dwi.filename]['bvec']
+                if "fmap" in self.associations[dwi.filename].keys():
+                    fmaps = self.associations[dwi.filename]['fmap']
 
             dwi_PE = 'todo'
             dwi_revPE = -1
