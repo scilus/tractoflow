@@ -10,8 +10,9 @@ Output: json file
 import os
 
 import argparse
-import bids
+from bids import BIDSLayout
 import json
+import time
 
 
 def _build_args_parser():
@@ -33,45 +34,85 @@ def _build_args_parser():
 class readBIDS(object):
     def __init__(self, bids, json):
         self.bids = bids
+        self.layout = None
+        self.associations = {}
         self.json = json
         self.data = []
 
     def run(self):
-        ds = bids.BIDSLayout(self.bids)
-        subjects = ds.get_subjects()
+        self.layout = BIDSLayout(self.bids, index_metadata=False)
+        subjects = self.layout.get_subjects()
         for nSub in subjects:
-            dwis = ds.get(subject=nSub,
+            dwis = self.layout.get(subject=nSub,
                           datatype='dwi', extension='nii.gz',
                           suffix='dwi')
-            t1s = ds.get(subject=nSub,
+            t1s = self.layout.get(subject=nSub,
                          datatype='anat', extension='nii.gz',
                          suffix='T1w')
+            fmaps = self.layout.get(subject=nSub,
+                            datatype='fmap', extension='nii.gz',
+                            suffix='epi')
+            bvals = self.layout.get(subject=nSub,
+                            datatype='dwi', extension='bval',
+                            suffix='dwi')
+            bvecs = self.layout.get(subject=nSub,
+                            datatype='dwi', extension='bvec',
+                            suffix='dwi')
+            self.get_dwi_associations(fmaps, bvals, bvecs)
             for nRun, dwi in enumerate(dwis):  # Possible runs
                 self.getData(nSub, dwi, t1s, nRun)
         self.writeJson()
+
+    def get_metadata(self, bf):
+        filename = bf.path.replace(
+                   '.' + bf.get_entities()['extension'], '')
+        with open(filename + '.json', 'r') as handle:
+            return json.load(handle)
+    
+    def get_dwi_associations(self, fmaps, bvals, bvecs):
+        for bval in bvals:
+            dwi_filename = os.path.basename(bval.path).replace('.bval', '.nii.gz')
+            if dwi_filename not in self.associations.keys():
+                self.associations[dwi_filename] = {"bval": bval.path}
+            else:
+                self.associations[dwi_filename]["bval"] = bval.path
+        for bvec in bvecs:
+            dwi_filename = os.path.basename(bvec.path).replace('.bvec', '.nii.gz')
+            if dwi_filename not in self.associations.keys():
+                self.associations[dwi_filename] = {"bvec": bvec.path}
+            else:
+                self.associations[dwi_filename]["bvec"] = bvec.path
+        for fmap in fmaps:
+            metadata = self.get_metadata(fmap)
+            intended = [metadata.get('IntendedFor', [])]
+            for target in intended:
+                dwi_filename = os.path.basename(target)
+                if dwi_filename not in self.associations.keys():
+                    self.associations[dwi_filename]= {'fmap' : [fmap]}
+                elif 'fmap' in self.associations[dwi_filename].keys():
+                    self.associations[dwi_filename]['fmap'].append(fmap)
+                else:
+                    self.associations[dwi_filename]['fmap'] = [fmap]
 
     def getData(self, nSub, dwi, t1s, nRun):
             nSess=''
             if 'session' in dwi.get_entities().keys():
                 nSess = dwi.get_entities()['session']
             dwi_path = dwi.path
-            associations = dwi.get_associations()
             fmaps = []
             bval_path=''
             bvec_path=''
-            for filename in associations:
-                path = filename.path
-                if "bval" in path:
-                    bval_path = path
-                if "bvec" in path:
-                    bvec_path = path
-                if "epi" in path:
-                    fmaps.append(filename)
+            if "bval" in self.associations[dwi.filename].keys():
+                bval_path = self.associations[dwi.filename]['bval']
+            if "bvec" in self.associations[dwi.filename].keys():
+                bvec_path = self.associations[dwi.filename]['bvec']
+            if "fmap" in self.associations[dwi.filename].keys():
+                fmaps = self.associations[dwi.filename]['fmap']
 
             dwi_PE = 'todo'
             dwi_revPE = -1
             conversion = {"i": "x", "j": "y", "k": "z"}
-            dwi_metadata = dwi.get_metadata()
+            dwi_metadata = self.get_metadata(dwi)
             if 'PhaseEncodingDirection' in dwi_metadata:
                 dwi_PE = dwi_metadata['PhaseEncodingDirection']
                 dwi_PE = dwi_PE.replace(dwi_PE[0], conversion[dwi_PE[0]])
@@ -84,7 +125,7 @@ class readBIDS(object):
             revb0_path = ''
             totalreadout = ''
             for nfmap in fmaps:
-                nfmap_metadata = nfmap.get_metadata()
+                nfmap_metadata = self.get_metadata(nfmap)
                 if 'PhaseEncodingDirection' in nfmap_metadata and\
                 'TotalReadoutTime' in dwi_metadata and\
                 'TotalReadoutTime' in nfmap_metadata:
