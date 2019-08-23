@@ -11,6 +11,7 @@ if(params.help) {
     cpu_count = Runtime.runtime.availableProcessors()
     bindings = ["b0_thr_extract_b0":"$params.b0_thr_extract_b0",
                 "dwi_shell_tolerance":"$params.dwi_shell_tolerance",
+                "random_seed":"$params.random_seed",
                 "dilate_b0_mask_prelim_brain_extraction":"$params.dilate_b0_mask_prelim_brain_extraction",
                 "bet_prelim_f":"$params.bet_prelim_f",
                 "run_dwi_denoising":"$params.run_dwi_denoising",
@@ -40,17 +41,34 @@ if(params.help) {
                 "relative_threshold":"$params.relative_threshold",
                 "max_fa_in_ventricle":"$params.max_fa_in_ventricle",
                 "min_md_in_ventricle":"$params.min_md_in_ventricle",
-                "wm_seeding":"$params.wm_seeding",
-                "algo":"$params.algo",
-                "seeding":"$params.seeding",
-                "nbr_seeds":"$params.nbr_seeds",
-                "random":"$params.random",
-                "step":"$params.step",
-                "theta":"$params.theta",
-                "min_len":"$params.min_len",
-                "max_len":"$params.max_len",
-                "compress_streamlines":"$params.compress_streamlines",
-                "compress_value":"$params.compress_value",
+                "run_pft_tracking":"$params.run_pft_tracking",
+                "pft_seeding_mask_type":"$params.pft_seeding_mask_type",
+                "pft_fa_seeding_mask_theshold":"$params.pft_fa_seeding_mask_theshold",
+                "pft_algo":"$params.pft_algo",
+                "pft_seeding":"$params.pft_seeding",
+                "pft_nbr_seeds":"$params.pft_nbr_seeds",
+                "pft_step":"$params.pft_step",
+                "pft_theta":"$params.pft_theta",
+                "pft_min_len":"$params.pft_min_len",
+                "pft_max_len":"$params.pft_max_len",
+                "pft_compress_streamlines":"$params.pft_compress_streamlines",
+                "pft_compress_value":"$params.pft_compress_value",
+                "local_seeding_mask_type":"$params.local_seeding_mask_type",
+                "local_fa_seeding_mask_theshold":"$params.local_fa_seeding_mask_theshold",
+                "local_tracking_mask_type":"$params.local_tracking_mask_type",
+                "local_fa_tracking_mask_theshold":"$params.local_fa_tracking_mask_theshold",
+                "run_local_tracking":"$params.run_local_tracking",
+                "local_compress_streamlines":"$params.local_compress_streamlines",
+                "local_algo":"$params.local_algo",
+                "local_seeding":"$params.local_seeding",
+                "local_nbr_seeds":"$params.local_nbr_seeds",
+                "local_step":"$params.local_step",
+                "local_theta":"$params.local_theta",
+                "local_sfthres":"$params.local_sfthres",
+                "local_sfthres_init":"$params.local_sfthres_init",
+                "local_min_len":"$params.local_min_len",
+                "local_max_len":"$params.local_max_len",
+                "local_compress_value":"$params.local_compress_value",
                 "cpu_count":"$cpu_count",
                 "template_t1":"$params.template_t1",
                 "processes_brain_extraction_t1":"$params.processes_brain_extraction_t1",
@@ -73,78 +91,8 @@ log.info ""
 log.info "Start time: $workflow.start"
 log.info ""
 
-log.debug "[Command-line]"
-log.debug "$workflow.commandLine"
-log.debug ""
-
-log.info "[Git Info]"
-log.info "$workflow.repository - $workflow.revision [$workflow.commitId]"
-log.info ""
-
-log.info "Options"
-log.info "======="
-log.info ""
-log.info "[Denoise DWI]"
-log.info "Denoise DWI: $params.run_dwi_denoising"
-log.info ""
-log.info "[Topup]"
-log.info "Run Topup: $params.run_topup"
-log.info ""
-log.info "[Eddy]"
-log.info "Run Eddy: $params.run_eddy"
-log.info "Eddy command: $params.eddy_cmd"
-log.info ""
-log.info "[Resample DWI]"
-log.info "Resample DWI: $params.run_resample_dwi"
-log.info "Resolution: $params.dwi_resolution"
-log.info ""
-log.info "[DTI shells]"
-log.info "DTI shells: $params.dti_shells"
-log.info ""
-log.info "[fODF shells]"
-log.info "fODF shells: $params.fodf_shells"
-log.info ""
-log.info "[Compute fiber response function (FRF)]"
-log.info "Set FRF: $params.set_frf"
-log.info "FRF value: $params.manual_frf"
-log.info ""
-log.info "[Mean FRF]"
-log.info "Mean FRF: $params.mean_frf"
-log.info ""
-log.info "[FODF Metrics]"
-log.info "FODF basis: $params.basis"
-log.info "SH order: $params.sh_order"
-log.info ""
-log.info "[Seeding mask]"
-log.info "WM seeding: $params.wm_seeding"
-log.info ""
-log.info "[PFT tracking]"
-log.info "Algo: $params.algo"
-log.info "Seeding type: $params.seeding"
-log.info "Number of seeds: $params.nbr_seeds"
-log.info "Random seed: $params.random"
-log.info "Step size: $params.step"
-log.info "Theta: $params.theta"
-log.info "Minimum length: $params.min_len"
-log.info "Maximum length: $params.max_len"
-log.info "FODF basis: $params.basis"
-log.info "Compress streamlines: $params.compress_streamlines"
-log.info "Compressing threshold: $params.compress_value"
-log.info ""
-
-log.info "Number of processes per tasks"
-log.info "============================="
-log.info "T1 brain extraction: $params.processes_brain_extraction_t1"
-log.info "Denoise DWI: $params.processes_denoise_dwi"
-log.info "Denoise T1: $params.processes_denoise_t1"
-log.info "Eddy: $params.processes_eddy"
-log.info "Compute fODF: $params.processes_fodf"
-log.info "Registration: $params.processes_registration"
-log.info ""
-
-log.info "Template T1 path"
-log.info "================"
-log.info "Template T1: $params.template_t1"
+log.info "[Command-line]"
+log.info "$workflow.commandLine"
 log.info ""
 
 workflow.onComplete {
@@ -173,6 +121,34 @@ else {
 
 if (!params.dti_shells || !params.fodf_shells){
     error "Error ~ Please set the DTI and fODF shells to use."
+}
+
+if (params.pft_seeding_mask_type != "wm" && params.pft_seeding_mask_type != "interface" && params.pft_seeding_mask_type != "fa"){
+    error "Error ~ --pft_seeding_mask_type can only take wm, interface or fa. Please select one of these choices"
+}
+
+if (params.local_seeding_mask_type != "wm" && params.local_seeding_mask_type != "fa"){
+    error "Error ~ --local_seeding_mask_type can only take wm or fa. Please select one of these choices"
+}
+
+if (params.local_tracking_mask_type != "wm" && params.local_tracking_mask_type != "fa"){
+    error "Error ~ --local_tracking_mask_type can only take wm or fa. Please select one of these choices"
+}
+
+if (params.local_algo != "det" && params.local_algo != "prob"){
+    error "Error ~ --local_algo can only take det or prob. Please select one of these choices"
+}
+
+if (params.pft_algo != "det" && params.pft_algo != "prob"){
+    error "Error ~ --pft_algo can only take det or prob. Please select one of these choices"
+}
+
+if (params.local_seeding != "nt" && params.local_seeding != "npv"){
+    error "Error ~ --local_seeding can only take nt or npv. Please select one of these choices"
+}
+
+if (params.pft_seeding != "nt" && params.pft_seeding != "npv"){
+    error "Error ~ --pft_seeding can only take nt or npv. Please select one of these choices"
 }
 
 (dwi, gradients, t1_for_denoise) = in_data
@@ -773,7 +749,7 @@ process DTI_Metrics {
     file "${sid}__residual_std_residuals.npy"
     set sid, "${sid}__fa.nii.gz", "${sid}__md.nii.gz" into fa_md_for_fodf
     set sid, "${sid}__fa.nii.gz" into\
-        fa_for_reg
+        fa_for_reg, fa_for_pft_tracking, fa_for_local_tracking_mask, fa_for_local_seeding_mask
 
     script:
     """
@@ -873,7 +849,7 @@ process Segment_Tissues {
     output:
     set sid, "${sid}__map_wm.nii.gz", "${sid}__map_gm.nii.gz",
         "${sid}__map_csf.nii.gz" into map_wm_gm_csf_for_pft_maps
-    set sid, "${sid}__mask_wm.nii.gz" into wm_mask_for_seeding_mask
+    set sid, "${sid}__mask_wm.nii.gz" into wm_mask_for_pft_tracking, wm_mask_for_local_tracking_mask, wm_mask_for_local_seeding_mask
     file "${sid}__mask_gm.nii.gz"
     file "${sid}__mask_csf.nii.gz"
 
@@ -967,7 +943,7 @@ process FODF_Metrics {
         file(md), file(frf) from dwi_b0_metrics_frf_for_fodf
 
     output:
-    set sid, "${sid}__fodf.nii.gz" into fodf_for_tracking
+    set sid, "${sid}__fodf.nii.gz" into fodf_for_pft_tracking, fodf_for_local_tracking
     file "${sid}__peaks.nii.gz"
     file "${sid}__peak_indices.nii.gz"
     file "${sid}__afd_max.nii.gz"
@@ -996,7 +972,7 @@ process FODF_Metrics {
     """
 }
 
-process PFT_Maps {
+process PFT_Tracking_Maps {
     cpus 1
 
     input:
@@ -1004,67 +980,167 @@ process PFT_Maps {
 
     output:
     set sid, "${sid}__map_include.nii.gz",
-        "${sid}__map_exclude.nii.gz" into pft_maps_for_tracking
-    set sid, "${sid}__interface.nii.gz" into interface_for_seeding_mask
+        "${sid}__map_exclude.nii.gz", "${sid}__seeding_mask.nii.gz"\
+        into pft_maps_for_pft_tracking
+    set sid, "${sid}__interface.nii.gz" into interface_for_pft_seeding_mask
+
+    when:
+        params.run_pft_tracking
 
     script:
     """
     scil_compute_maps_for_particle_filter_tracking.py $wm $gm $csf \
-    --include ${sid}__map_include.nii.gz --exclude ${sid}__map_exclude.nii.gz\
+        --include ${sid}__map_include.nii.gz \
+        --exclude ${sid}__map_exclude.nii.gz \
         --interface ${sid}__interface.nii.gz -f
     """
 }
+wm_mask_for_pft_tracking
+    .join(fa_for_pft_tracking)
+    .join(interface_for_pft_seeding_mask)
+    .set{wm_fa_int_for_pft}
 
-wm_mask_for_seeding_mask
-    .join(interface_for_seeding_mask)
-    .set{wm_interface_for_seeding_mask}
-    
-process Seeding_Mask {
+process PFT_Seeding_Mask {
     cpus 1
 
     input:
-    set sid, file(wm), file(interface_mask) from wm_interface_for_seeding_mask
+    set sid, file(wm), file(fa), file(interface_mask) from wm_fa_int_for_pft
 
     output:
-    set sid, "${sid}__seeding_mask.nii.gz" into seeding_mask_for_tracking
+    set sid, "${sid}__pft_seeding_mask.nii.gz" into seeding_mask_for_pft
+
+    when:
+        params.run_pft_tracking
 
     script:
-    if (params.wm_seeding)
+    if (params.pft_seeding_mask_type == "wm")
         """
-        scil_mask_math.py union $wm $interface_mask ${sid}__seeding_mask.nii.gz
+        scil_mask_math.py union $wm $interface_mask ${sid}__pft_seeding_mask.nii.gz
         """
-    else
+    else if (params.pft_seeding_mask_type == "interface")
         """
-        mv $interface_mask ${sid}__seeding_mask.nii.gz
+        mv $interface_mask ${sid}__pft_seeding_mask.nii.gz
+        """
+    else if (params.pft_seeding_mask_type == "fa")
+        """
+        mrcalc $fa $params.pft_fa_seeding_mask_theshold -ge ${sid}__pft_seeding_mask.nii.gz
         """
 }
 
-fodf_for_tracking
-    .join(pft_maps_for_tracking)
-    .join(seeding_mask_for_tracking)
-    .set{fodf_maps_for_tracking}
+fodf_for_pft_tracking
+    .join(pft_maps_for_pft_tracking)
+    .join(seeding_mask_for_pft)
+    .set{fodf_maps_for_pft_tracking}
 
-process Tracking {
+process PFT_Tracking {
     cpus 2
 
     input:
     set sid, file(fodf), file(include), file(exclude), file(seed)\
-        from fodf_maps_for_tracking
+        from fodf_maps_for_pft_tracking
 
     output:
-    file "${sid}__tracking.trk"
+    file "${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}.trk"
+
+    when:
+        params.run_pft_tracking
+
+    script:
+    compress =\
+        params.pft_compress_streamlines ? '--compress ' + params.pft_compress_value : ''
+        """
+        scil_compute_pft.py $fodf $seed $include $exclude\
+            ${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}.trk\
+            --algo $params.pft_algo --$params.pft_seeding $params.pft_nbr_seeds\
+            --seed $params.random_seed --step $params.pft_step --theta $params.pft_theta\
+            --sfthres $params.pft_sfthres --sfthres_init $params.pft_sfthres_init\
+            --min_length $params.pft_min_len --max_length $params.pft_max_len\
+            --particles $params.pft_particles --back $params.pft_back\
+            --forward $params.pft_front $compress --sh_basis $params.basis
+        """
+}
+
+wm_mask_for_local_tracking_mask
+    .join(fa_for_local_tracking_mask)
+    .set{wm_fa_for_local_tracking_mask}
+
+process Local_Tracking_Mask {
+    cpus 1
+
+    input:
+    set sid, file(wm), file(fa) from wm_fa_for_local_tracking_mask
+
+    output:
+    set sid, "${sid}__local_tracking_mask.nii.gz" into tracking_mask_for_local
+
+    when:
+        params.run_local_tracking
+
+    script:
+    if (params.local_tracking_mask_type == "wm")
+        """
+        mv $wm ${sid}__local_tracking_mask.nii.gz
+        """
+    else if (params.local_tracking_mask_type == "fa")
+        """
+        mrcalc $fa $params.local_fa_tracking_mask_theshold -ge ${sid}__local_tracking_mask.nii.gz
+        """
+}
+
+wm_mask_for_local_seeding_mask
+    .join(fa_for_local_seeding_mask)
+    .set{wm_fa_for_local_seeding_mask}
+
+process Local_Seeding_Mask {
+    cpus 1
+
+    input:
+    set sid, file(wm), file(fa) from wm_fa_for_local_seeding_mask
+
+    output:
+    set sid, "${sid}__local_seeding_mask.nii.gz" into tracking_seeding_mask_for_local
+
+    when:
+        params.run_local_tracking
+
+    script:
+    if (params.local_seeding_mask_type == "wm")
+        """
+        mv $wm ${sid}__local_seeding_mask.nii.gz
+        """
+    else if (params.local_seeding_mask_type == "fa")
+        """
+        mrcalc $fa $params.pft_fa_seeding_mask_theshold -ge ${sid}__local_seeding_mask.nii.gz
+        """
+}
+
+fodf_for_local_tracking
+    .join(tracking_mask_for_local)
+    .join(tracking_seeding_mask_for_local)
+    .set{fodf_maps_for_local_tracking}
+
+process Local_Tracking {
+    cpus 2
+
+    input:
+    set sid, file(fodf), file(tracking_mask), file(seed)\
+        from fodf_maps_for_local_tracking
+
+    output:
+    file "${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask.trk"
+
+    when:
+        params.run_local_tracking
 
     script:
     compress =\
         params.compress_streamlines ? '--compress ' + params.compress_value : ''
         """
-        scil_compute_pft_dipy.py $fodf $seed $include $exclude\
-            ${sid}__tracking.trk --algo $params.algo\
-            --$params.seeding $params.nbr_seeds --seed $params.random\
-            --step $params.step --theta $params.theta\
-            --sfthres $params.sfthres --sfthres_init $params.sfthres_init\
-            --min_length $params.min_len --max_length $params.max_len\
-            --particles $params.particles --back $params.back\
-            --forward $params.front $compress --sh_basis $params.basis
+        scil_compute_local_tracking.py $fodf $seed $tracking_mask\
+            ${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask.trk\
+            --algo $params.algo --$params.seeding $params.nbr_seeds\
+            --seed $params.random_seed --step $params.step --theta $params.theta\
+            --sfthres $params.sfthres --min_length $params.min_len\
+            --max_length $params.max_len $compress --sh_basis $params.basis
         """
 }
