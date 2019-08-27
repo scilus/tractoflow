@@ -91,10 +91,6 @@ log.info ""
 log.info "Start time: $workflow.start"
 log.info ""
 
-log.info "[Command-line]"
-log.info "$workflow.commandLine"
-log.info ""
-
 workflow.onComplete {
     log.info "Pipeline completed at: $workflow.complete"
     log.info "Execution status: ${ workflow.success ? 'OK' : 'failed' }"
@@ -980,8 +976,7 @@ process PFT_Tracking_Maps {
 
     output:
     set sid, "${sid}__map_include.nii.gz",
-        "${sid}__map_exclude.nii.gz", "${sid}__seeding_mask.nii.gz"\
-        into pft_maps_for_pft_tracking
+        "${sid}__map_exclude.nii.gz" into pft_maps_for_pft_tracking
     set sid, "${sid}__interface.nii.gz" into interface_for_pft_seeding_mask
 
     when:
@@ -1134,13 +1129,13 @@ process Local_Tracking {
 
     script:
     compress =\
-        params.compress_streamlines ? '--compress ' + params.compress_value : ''
+        params.local_compress_streamlines ? '--compress ' + params.local_compress_value : ''
         """
         scil_compute_local_tracking.py $fodf $seed $tracking_mask\
             ${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask.trk\
-            --algo $params.algo --$params.seeding $params.nbr_seeds\
-            --seed $params.random_seed --step $params.step --theta $params.theta\
-            --sfthres $params.sfthres --min_length $params.min_len\
-            --max_length $params.max_len $compress --sh_basis $params.basis
+            --algo $params.local_algo --$params.local_seeding $params.local_nbr_seeds\
+            --seed $params.random_seed --step $params.local_step --theta $params.local_theta\
+            --sfthres $params.local_sfthres --min_length $params.local_min_len\
+            --max_length $params.local_max_len $compress --sh_basis $params.basis
         """
 }
