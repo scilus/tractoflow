@@ -48,7 +48,7 @@ OPTIONAL ARGUMENTS (current value)
 
 --run_topup                                 Run Topup ($run_topup).
 --encoding_direction                        Encoding direction of the DWI [x, y, z] ($encoding_direction).
---dwell_time                                Dwell-time ($dwell_time).
+--readout                                   Readout time ($readout).
 
 --run_eddy                                  Run Eddy ($run_eddy).
 --eddy_cmd                                  Eddy command to use [eddy_openmp, eddy_cuda] ($eddy_cmd).

@@ -17,7 +17,7 @@ if(params.help) {
                 "extent":"$params.extent",
                 "run_topup":"$params.run_topup",
                 "encoding_direction":"$params.encoding_direction",
-                "dwell_time":"$params.dwell_time",
+                "readout":"$params.readout",
                 "run_eddy":"$params.run_eddy",
                 "eddy_cmd":"$params.eddy_cmd",
                 "bet_topup_before_eddy_f":"$params.bet_topup_before_eddy_f",
@@ -299,7 +299,7 @@ process Topup {
     scil_prepare_topup_command.py $dwi $bval $bvec ${sid}__rev_b0_warped.nii.gz\
         --config $params.config_topup --b0_thr $params.b0_thr_extract_b0\
         --encoding_direction $params.encoding_direction\
-        --dwell_time $params.dwell_time --output_prefix $params.prefix_topup\
+        --readout $params.readout --output_prefix $params.prefix_topup\
         --output_script
     sh topup.sh
     cp corrected_b0s.nii.gz ${sid}__corrected_b0s.nii.gz
@@ -343,7 +343,7 @@ process Eddy {
         scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
             --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $params.encoding_direction\
-            --dwell_time $params.dwell_time --output_script --fix_seed\
+            --readout $params.readout --output_script --fix_seed\
             $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
@@ -404,7 +404,7 @@ process Eddy_Topup {
             --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
             --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $params.encoding_direction\
-            --dwell_time $params.dwell_time --output_script --fix_seed\
+            --readout $params.readout --output_script --fix_seed\
             $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
@@ -1058,7 +1058,7 @@ process Tracking {
     compress =\
         params.compress_streamlines ? '--compress ' + params.compress_value : ''
         """
-        scil_compute_pft_dipy.py $fodf $seed $include $exclude\
+        scil_compute_pft.py $fodf $seed $include $exclude\
             ${sid}__tracking.trk --algo $params.algo\
             --$params.seeding $params.nbr_seeds --seed $params.random\
             --step $params.step --theta $params.theta\
