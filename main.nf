@@ -27,6 +27,10 @@ if(params.help) {
                 "run_resample_dwi":"$params.run_resample_dwi",
                 "dwi_resolution":"$params.dwi_resolution",
                 "dwi_interpolation":"$params.dwi_interpolation",
+                "run_t1_denoising":"$params.run_t1_denoising",
+                "run_resample_t1":"$params.run_resample_t1",
+                "t1_resolution":"$params.t1_resolution",
+                "t1_interpolation":"$params.t1_interpolation",
                 "number_of_tissues":"$params.number_of_tissues",
                 "fa":"$params.fa",
                 "min_fa":"$params.min_fa",
@@ -533,10 +537,15 @@ process Denoise_T1 {
     set sid, "${sid}__t1_denoised.nii.gz" into t1_for_n4
 
     script:
-    """
-    scil_run_nlmeans.py $t1 ${sid}__t1_denoised.nii.gz 1 \
-        --processes $task.cpus -f
-    """
+    if(params.run_t1_denoising)
+        """
+        scil_run_nlmeans.py $t1 ${sid}__t1_denoised.nii.gz 1 \
+            --processes $task.cpus -f
+        """
+    else
+        """
+        mv $t1 ${sid}__t1_denoised.nii.gz
+        """
 }
 
 process N4_T1 {
