@@ -54,7 +54,7 @@ OPTIONAL ARGUMENTS (current value)
 
 --run_topup                                 Run Topup ($run_topup).
 --encoding_direction                        Encoding direction of the DWI [x, y, z] ($encoding_direction).
---dwell_time                                Dwell-time ($dwell_time).
+--readout                                   Readout time ($readout).
 
 --run_eddy                                  Run Eddy ($run_eddy).
 --eddy_cmd                                  Eddy command to use [eddy_openmp, eddy_cuda] ($eddy_cmd).
@@ -68,7 +68,13 @@ OPTIONAL ARGUMENTS (current value)
 
 --run_resample_dwi                          Run resample DWI ($run_resample_dwi).
 --dwi_resolution                            DWI resolution ($dwi_resolution).
---dwi_interpolation                         Interpolation method [nn, lin, quad, cubic] ($dwi_interpolation).
+--dwi_interpolation                         DWI interpolation method [nn, lin, quad, cubic] ($dwi_interpolation).
+
+--run_t1_denoising                          Run T1 denoising ($run_t1_denoising).
+
+--run_resample_t1                           Run resample T1 ($run_resample_t1).
+--t1_resolution                             T1 resolution ($t1_resolution).
+--t1_interpolation                          T1 interpolation method [nn, lin, quad, cubic] ($t1_interpolation).
 
 --number_of_tissues                         Number of tissue classes ($number_of_tissues).
 
