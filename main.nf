@@ -171,7 +171,7 @@ if (params.root && (!params.bids || !params.bids_config)){
                        flat: true) {it.parent.name}
 
     data
-        .map{[it, params.dwell_time, params.encoding_direction].flatten()}
+        .map{[it, params.readout, params.encoding_direction].flatten()}
         .into{in_data; check_subjects_number}
 
     Channel
