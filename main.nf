@@ -161,7 +161,7 @@ workflow.onComplete {
     log.info "Execution duration: $workflow.duration"
 }
 
-if (params.root){
+if (params.root && (!params.bids || !params.bids_config)){
     log.info "Input: $params.root"
     root = file(params.root)
     data = Channel
@@ -182,22 +182,23 @@ if (params.root){
 }
 else if (params.bids || params.bids_config){
     if (!params.bids_config) {
-        log.info "Input: $params.bids"
+        log.info "Input BIDS: $params.bids"
         bids = file(params.bids)
         process Read_BIDS {
             publishDir = params.Read_BIDS_Publish_Dir
+            scratch = false
             tag = {"Read_BIDS"}
 
             input:
-            val bids_folder from bids
+            file(bids_folder) from bids
 
             output:
-            file "bids_struct.json" into bids_struct
-
+            file "tractoflow_bids_struct.json" into bids_struct
 
             script:
             """
-            readBIDS.py $bids_folder bids_struct.json
+            scil_validate_bids.py $bids_folder tractoflow_bids_struct.json\
+                --readout $params.readout
             """
         }
     }
@@ -218,9 +219,17 @@ else if (params.bids || params.bids_config){
 
             for (key in item.keySet()){
                 if(item[key] == 'todo'){
-                    error "Error ~ Please look at your bids-struct.json " +
+                    error "Error ~ Please look at your tractoflow_bids_struct.json " +
                     "in Read_BIDS folder.\nPlease fix todo fields and give " +
                     "this file in input using --bids_config option instead " +
+                    "using --bids."
+                }
+                else if (item[key] == 'error_readout'){
+                    error "Error ~ Please look at your tractoflow_bids_struct.json " +
+                    "in Read_BIDS folder.\nPlease fix error_readout fields. "+
+                    "This error indicate that readout time looks wrong. "+
+                    "Please correct the value or remove the subject in the json and " +
+                    "give the updated file in input using --bids_config option instead " +
                     "using --bids."
                 }
             }
@@ -255,10 +264,16 @@ if (!params.dti_shells || !params.fodf_shells){
                                         tuple(sid, readout, encoding)]}
     .separate(4)
 
-check_rev_b0.count().into{ rev_b0_counter; number_rev_b0 }
+check_rev_b0.count().into{ rev_b0_counter; number_rev_b0_for_compare }
 
-check_subjects_number.count()
-    .concat(number_rev_b0)
+check_subjects_number.count().into{ number_subj_for_null_check; number_subj_for_compare }
+
+if (number_subj_for_null_check == 0){
+    error "Error ~ No subjects found. Please check the naming convention or your BIDS folder."
+}
+
+number_subj_for_compare.count()
+    .concat(number_rev_b0_for_compare)
     .toList()
     .subscribe{a, b -> if (a != b && b > 0) 
     error "Error ~ Some subjects have a reversed phase encoded b=0 and others no.\n" +
