@@ -227,7 +227,7 @@ else if (params.bids || params.bids_config){
                 else if (item[key] == 'error_readout'){
                     error "Error ~ Please look at your tractoflow_bids_struct.json " +
                     "in Read_BIDS folder.\nPlease fix error_readout fields. "+
-                    "This error indicate that readout time looks wrong. "+
+                    "This error indicate that readout time looks wrong.\n"+
                     "Please correct the value or remove the subject in the json and " +
                     "give the updated file in input using --bids_config option instead " +
                     "using --bids."
