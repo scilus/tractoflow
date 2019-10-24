@@ -187,6 +187,7 @@ else if (params.bids || params.bids_config){
         process Read_BIDS {
             publishDir = params.Read_BIDS_Publish_Dir
             scratch = false
+            stageInMode = 'symlink'
             tag = {"Read_BIDS"}
 
             input:
