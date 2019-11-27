@@ -20,9 +20,9 @@ If you are a user and NOT A DEVELOPER, we HIGHLY RECOMMEND following the instruc
 Support:
 --------
 
-For questions or help on TractoFlow, please create a topic on Neurostar with the `tractoflow` tag. [https://neurostars.org](https://neurostars.org)
+For questions or help on TractoFlow, please create a topic on Neurostars with the `tractoflow` tag. [Neurostars](https://neurostars.org)
 
-Before posting, please check the topics already created. [https://neurostars.org/tags/tractoflow](https://neurostars.org/tags/tractoflow)
+Before posting, please [check the topics](https://neurostars.org/tags/tractoflow) already created.
 
 
 Singularity
