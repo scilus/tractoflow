@@ -20,7 +20,7 @@ If you are a user and NOT A DEVELOPER, we HIGHLY RECOMMEND following the instruc
 Support:
 --------
 
-For questions or help on TractoFlow, please create a topic on Neurostars with the `tractoflow` tag. [Neurostars](https://neurostars.org)
+For questions or help on TractoFlow, please create a topic on [Neurostars](https://neurostars.org) with the `tractoflow` tag.
 
 Before posting, please [check the topics](https://neurostars.org/tags/tractoflow) already created.
 
