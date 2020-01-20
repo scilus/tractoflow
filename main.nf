@@ -161,7 +161,7 @@ workflow.onComplete {
     log.info "Execution duration: $workflow.duration"
 }
 
-if (params.root && (!params.bids || !params.bids_config)){
+if (params.root && !(params.bids && params.bids_config)){
     log.info "Input: $params.root"
     root = file(params.root)
     data = Channel
@@ -276,7 +276,7 @@ if (number_subj_for_null_check == 0){
 number_subj_for_compare.count()
     .concat(number_rev_b0_for_compare)
     .toList()
-    .subscribe{a, b -> if (a != b && b > 0) 
+    .subscribe{a, b -> if (a != b && b > 0)
     error "Error ~ Some subjects have a reversed phase encoded b=0 and others no.\n" +
           "Please be sure to have the same acquisitions for all subjects."}
 
