@@ -1,6 +1,10 @@
 #!/usr/bin/env nextflow
 
+import groovy.json.*
+
 params.root = false
+params.bids = false
+params.bids_config = false
 params.help = false
 params.dti_shells = false
 params.fodf_shells = false
@@ -157,41 +161,135 @@ workflow.onComplete {
     log.info "Execution duration: $workflow.duration"
 }
 
-if (params.root){
+if (params.root && !(params.bids && params.bids_config)){
     log.info "Input: $params.root"
     root = file(params.root)
-    in_data = Channel
+    data = Channel
         .fromFilePairs("$root/**/*{bval,bvec,dwi.nii.gz,t1.nii.gz}",
                        size: 4,
                        maxDepth:1,
                        flat: true) {it.parent.name}
+
+    data
+        .map{[it, params.readout, params.encoding_direction].flatten()}
+        .into{in_data; check_subjects_number}
+
     Channel
     .fromPath("$root/**/*rev_b0.nii.gz",
                     maxDepth:1)
     .map{[it.parent.name, it]}
     .into{rev_b0; check_rev_b0}
+}
+else if (params.bids || params.bids_config){
+    if (!params.bids_config) {
+        log.info "Input BIDS: $params.bids"
+        bids = file(params.bids)
+        process Read_BIDS {
+            publishDir = params.Read_BIDS_Publish_Dir
+            scratch = false
+            stageInMode = 'symlink'
+            tag = {"Read_BIDS"}
+            errorStrategy = { task.attempt <= 3 ? 'retry' : 'terminate' }
+
+            input:
+            file(bids_folder) from bids
+
+            output:
+            file "tractoflow_bids_struct.json" into bids_struct
+
+            script:
+            """
+            scil_validate_bids.py $bids_folder tractoflow_bids_struct.json\
+                --readout $params.readout
+            """
+        }
     }
+
+    else {
+        log.info "BIDS config: $params.bids_config"
+        config = file(params.bids_config)
+        bids_struct = Channel.from(config)
+    }
+
+    ch_in_data = Channel.create()
+    ch_rev_b0 = Channel.create()
+    bids_struct.map{it ->
+    jsonSlurper = new JsonSlurper()
+        data = jsonSlurper.parseText(it.getText())
+        for (item in data){
+            sid = "sub-" + item.subject + "_ses-" + item.session + "_run-" + item.run
+
+            for (key in item.keySet()){
+                if(item[key] == 'todo'){
+                    error "Error ~ Please look at your tractoflow_bids_struct.json " +
+                    "in Read_BIDS folder.\nPlease fix todo fields and give " +
+                    "this file in input using --bids_config option instead of" +
+                    "using --bids."
+                }
+                else if (item[key] == 'error_readout'){
+                    error "Error ~ Please look at your tractoflow_bids_struct.json " +
+                    "in Read_BIDS folder.\nPlease fix error_readout fields. "+
+                    "This error indicate that readout time looks wrong.\n"+
+                    "Please correct the value or remove the subject in the json and " +
+                    "give the updated file in input using --bids_config option instead of" +
+                    "using --bids."
+                }
+            }
+            sub = [sid, file(item.bval), file(item.bvec), file(item.dwi),
+                   file(item.t1), item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
+            ch_in_data.bind(sub)
+
+            if(item.rev_b0) {
+                sub_rev_b0 = [sid, file(item.rev_b0)]
+                ch_rev_b0.bind(sub_rev_b0)}
+        }
+
+        ch_in_data.close()
+        ch_rev_b0.close()
+    }
+
+    ch_in_data.into{in_data; check_subjects_number}
+    ch_rev_b0.into{rev_b0; check_rev_b0}
+}
 else {
-    error "Error ~ Please use --root for the input data."
+    error "Error ~ Please use --root, --bids or --bids_config for the input data."
 }
 
 if (!params.dti_shells || !params.fodf_shells){
     error "Error ~ Please set the DTI and fODF shells to use."
 }
 
-(dwi, gradients, t1_for_denoise) = in_data
-    .map{sid, bvals, bvecs, dwi, t1 -> [tuple(sid, dwi),
+(dwi, gradients, t1_for_denoise, readout_encoding) = in_data
+    .map{sid, bvals, bvecs, dwi, t1, readout, encoding -> [tuple(sid, dwi),
                                         tuple(sid, bvals, bvecs),
-                                        tuple(sid, t1)]}
-    .separate(3)
+                                        tuple(sid, t1),
+                                        tuple(sid, readout, encoding)]}
+    .separate(4)
 
-check_rev_b0.count().set{ rev_b0_counter }
+check_rev_b0.count().into{ rev_b0_counter; number_rev_b0_for_compare }
+
+check_subjects_number.count().into{ number_subj_for_null_check; number_subj_for_compare }
+
+if (number_subj_for_null_check == 0){
+    error "Error ~ No subjects found. Please check the naming convention or your BIDS folder."
+}
+
+number_subj_for_compare.count()
+    .concat(number_rev_b0_for_compare)
+    .toList()
+    .subscribe{a, b -> if (a != b && b > 0) 
+    error "Error ~ Some subjects have a reversed phase encoded b=0 and others don't.\n" +
+          "Please be sure to have the same acquisitions for all subjects."}
 
 dwi.into{dwi_for_prelim_bet; dwi_for_denoise}
 
 gradients
     .into{gradients_for_prelim_bet; gradients_for_eddy; gradients_for_topup;
           gradients_for_eddy_topup}
+
+readout_encoding
+    .into{readout_encoding_for_topup; readout_encoding_for_eddy;
+          readout_encoding_for_eddy_topup}
 
 dwi_for_prelim_bet
     .join(gradients_for_prelim_bet)
@@ -261,7 +359,7 @@ process Denoise_DWI {
         dwi_for_eddy_topup
 
     script:
-    // The denoised DWI is clipped to 0 since negative values 
+    // The denoised DWI is clipped to 0 since negative values
     // could have been introduced.
     if(params.run_dwi_denoising)
         """
@@ -280,13 +378,14 @@ process Denoise_DWI {
 dwi_for_topup
     .join(gradients_for_topup)
     .join(rev_b0)
+    .join(readout_encoding_for_topup)
     .set{dwi_gradients_rev_b0_for_topup}
 
 process Topup {
     cpus 2
 
     input:
-    set sid, file(dwi), file(bval), file(bvec), file(rev_b0)\
+    set sid, file(dwi), file(bval), file(bvec), file(rev_b0), readout, encoding\
         from dwi_gradients_rev_b0_for_topup
 
     output:
@@ -308,8 +407,8 @@ process Topup {
     mv outputWarped.nii.gz ${sid}__rev_b0_warped.nii.gz
     scil_prepare_topup_command.py $dwi $bval $bvec ${sid}__rev_b0_warped.nii.gz\
         --config $params.config_topup --b0_thr $params.b0_thr_extract_b0\
-        --encoding_direction $params.encoding_direction\
-        --readout $params.readout --output_prefix $params.prefix_topup\
+        --encoding_direction $encoding\
+        --readout $readout --output_prefix $params.prefix_topup\
         --output_script
     sh topup.sh
     cp corrected_b0s.nii.gz ${sid}__corrected_b0s.nii.gz
@@ -319,13 +418,14 @@ process Topup {
 dwi_for_eddy
     .join(gradients_for_eddy)
     .join(b0_mask_for_eddy)
+    .join(readout_encoding_for_eddy)
     .set{dwi_gradients_mask_topup_files_for_eddy}
 
 process Eddy {
     cpus params.processes_eddy
 
     input:
-    set sid, file(dwi), file(bval), file(bvec), file(mask)\
+    set sid, file(dwi), file(bval), file(bvec), file(mask), readout, encoding\
         from dwi_gradients_mask_topup_files_for_eddy
     val(rev_b0_count) from rev_b0_counter
 
@@ -354,8 +454,8 @@ process Eddy {
         export OPENBLAS_NUM_THREADS=1
         scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
             --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
-            --encoding_direction $params.encoding_direction\
-            --readout $params.readout --output_script --fix_seed\
+            --encoding_direction $encoding\
+            --readout $readout --output_script --fix_seed\
             $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
@@ -375,6 +475,7 @@ process Eddy {
 dwi_for_eddy_topup
     .join(gradients_for_eddy_topup)
     .join(topup_files_for_eddy_topup)
+    .join(readout_encoding_for_eddy_topup)
     .set{dwi_gradients_mask_topup_files_for_eddy_topup}
 
 process Eddy_Topup {
@@ -382,7 +483,7 @@ process Eddy_Topup {
 
     input:
     set sid, file(dwi), file(bval), file(bvec), file(b0s_corrected),
-        file(field), file(movpar)\
+        file(field), file(movpar), readout, encoding\
         from dwi_gradients_mask_topup_files_for_eddy_topup
     val(rev_b0_count) from rev_b0_counter
 
@@ -416,8 +517,8 @@ process Eddy_Topup {
         scil_prepare_eddy_command.py $dwi $bval $bvec ${sid}__b0_bet_mask.nii.gz\
             --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
             --b0_thr $params.b0_thr_extract_b0\
-            --encoding_direction $params.encoding_direction\
-            --readout $params.readout --output_script --fix_seed\
+            --encoding_direction $encoding\
+            --readout $readout --output_script --fix_seed\
             $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
@@ -481,7 +582,7 @@ process Bet_DWI {
     output:
     set sid, "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask.nii.gz" into\
         b0_and_mask_for_crop
-    set sid, "${sid}__dwi_bet.nii.gz", "${sid}__b0_bet.nii.gz", 
+    set sid, "${sid}__dwi_bet.nii.gz", "${sid}__b0_bet.nii.gz",
         "${sid}__b0_bet_mask.nii.gz" into dwi_b0_b0_mask_for_n4
 
     script:
@@ -1098,7 +1199,7 @@ process PFT_Maps {
 wm_mask_for_seeding_mask
     .join(interface_for_seeding_mask)
     .set{wm_interface_for_seeding_mask}
-    
+
 process Seeding_Mask {
     cpus 1
 
