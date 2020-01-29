@@ -189,6 +189,7 @@ else if (params.bids || params.bids_config){
             scratch = false
             stageInMode = 'symlink'
             tag = {"Read_BIDS"}
+            errorStrategy = { task.attempt <= 3 ? 'retry' : 'terminate' }
 
             input:
             file(bids_folder) from bids
@@ -222,7 +223,7 @@ else if (params.bids || params.bids_config){
                 if(item[key] == 'todo'){
                     error "Error ~ Please look at your tractoflow_bids_struct.json " +
                     "in Read_BIDS folder.\nPlease fix todo fields and give " +
-                    "this file in input using --bids_config option instead " +
+                    "this file in input using --bids_config option instead of" +
                     "using --bids."
                 }
                 else if (item[key] == 'error_readout'){
@@ -230,7 +231,7 @@ else if (params.bids || params.bids_config){
                     "in Read_BIDS folder.\nPlease fix error_readout fields. "+
                     "This error indicate that readout time looks wrong.\n"+
                     "Please correct the value or remove the subject in the json and " +
-                    "give the updated file in input using --bids_config option instead " +
+                    "give the updated file in input using --bids_config option instead of" +
                     "using --bids."
                 }
             }
@@ -276,8 +277,8 @@ if (number_subj_for_null_check == 0){
 number_subj_for_compare.count()
     .concat(number_rev_b0_for_compare)
     .toList()
-    .subscribe{a, b -> if (a != b && b > 0)
-    error "Error ~ Some subjects have a reversed phase encoded b=0 and others no.\n" +
+    .subscribe{a, b -> if (a != b && b > 0) 
+    error "Error ~ Some subjects have a reversed phase encoded b=0 and others don't.\n" +
           "Please be sure to have the same acquisitions for all subjects."}
 
 dwi.into{dwi_for_prelim_bet; dwi_for_denoise}
