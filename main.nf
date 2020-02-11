@@ -217,8 +217,15 @@ else if (params.bids || params.bids_config){
     jsonSlurper = new JsonSlurper()
         data = jsonSlurper.parseText(it.getText())
         for (item in data){
-            sid = "sub-" + item.subject + "_ses-" + item.session + "_run-" + item.run
+            sid = "sub-" + item.subject
 
+            if (item.session){
+                sid += "_ses-" + item.session
+            }
+
+            if (item.run){
+                sid += "_run-" + item.run
+            }
             for (key in item.keySet()){
                 if(item[key] == 'todo'){
                     error "Error ~ Please look at your tractoflow_bids_struct.json " +
