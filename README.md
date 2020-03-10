@@ -16,6 +16,15 @@ This documentation presents how to install and launch TractoFlow on a local comp
 
 If you are a user and NOT A DEVELOPER, we HIGHLY RECOMMEND following the instructions on the documentation website.
 
+
+Support:
+--------
+
+For questions or help on TractoFlow, please create a topic on [Neurostars](https://neurostars.org) with the `tractoflow` tag.
+
+Before posting, please [check the topics](https://neurostars.org/tags/tractoflow) already created.
+
+
 Singularity
 -----------
 If you are on Linux, we recommend using the Singularity container to run TractoFlow
