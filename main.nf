@@ -281,7 +281,7 @@ if (number_subj_for_null_check == 0){
     error "Error ~ No subjects found. Please check the naming convention or your BIDS folder."
 }
 
-number_subj_for_compare.count()
+number_subj_for_compare
     .concat(number_rev_b0_for_compare)
     .toList()
     .subscribe{a, b -> if (a != b && b > 0) 
