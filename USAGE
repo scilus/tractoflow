@@ -43,7 +43,8 @@ OPTIONAL ARGUMENTS (current value)
 
 --b0_thr_extract_b0                         All b-values below b0_thr_extract_b0 are considered b=0 images ($b0_thr_extract_b0).
 --dwi_shell_tolerance                       All b-values to +-dwi_shell_tolerance are considered as the same b-value ($dwi_shell_tolerance).
---random_seed                               Random seed number for the random number generator ($random_seed)
+--random_seed                               List of random seed numbers for the random number generator ($random_seed).
+                                            Please write them as list separated using commat WITHOUT SPACE e.g. (--random_seed 0,1,2)
 
 --bet_prelim_f                              Fractional Intensity threshold for preliminary BET ($bet_prelim_f).
 --dilate_b0_mask_prelim_brain_extraction    Dilation factor to keep the whole brain.
@@ -112,6 +113,7 @@ OPTIONAL ARGUMENTS (current value)
 --pft_max_len                               [PFT] Maximum length ($pft_max_len).
 --pft_compress_streamlines                  [PFT] Compress streamlines ($pft_compress_streamlines).
 --pft_compress_value                        [PFT] Compression error threshold ($pft_compress_value).
+--pft_save_seeds                            [PFT] Save tracking seeds ($pft_save_seeds).
 
 --run_local_tracking                        Run Local Tracking ($run_local_tracking).
 
@@ -130,6 +132,7 @@ OPTIONAL ARGUMENTS (current value)
 --local_max_len                             [LOCAL] Maximum length ($local_max_len).
 --local_compress_streamlines                [LOCAL] Compress streamlines ($local_compress_streamlines).
 --local_compress_value                      [LOCAL] Compression error threshold ($local_compress_value).
+--local_save_seeds                          [LOCAL] Save tracking seeds ($local_save_seeds).
 
 --template_t1                               Path to the template T1 directory for antsBrainExtraction.
                                             The folder must contain t1_template.nii.gz and t1_brain_probability_map.nii.gz.

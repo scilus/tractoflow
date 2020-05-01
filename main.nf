@@ -61,6 +61,7 @@ if(params.help) {
                 "pft_max_len":"$params.pft_max_len",
                 "pft_compress_streamlines":"$params.pft_compress_streamlines",
                 "pft_compress_value":"$params.pft_compress_value",
+                "pft_save_seeds":"$params.pft_save_seeds",
                 "local_seeding_mask_type":"$params.local_seeding_mask_type",
                 "local_fa_seeding_mask_theshold":"$params.local_fa_seeding_mask_theshold",
                 "local_tracking_mask_type":"$params.local_tracking_mask_type",
@@ -77,6 +78,7 @@ if(params.help) {
                 "local_min_len":"$params.local_min_len",
                 "local_max_len":"$params.local_max_len",
                 "local_compress_value":"$params.local_compress_value",
+                "local_save_seeds":"$params.local_save_seeds",
                 "cpu_count":"$cpu_count",
                 "template_t1":"$params.template_t1",
                 "processes_brain_extraction_t1":"$params.processes_brain_extraction_t1",
@@ -254,6 +256,8 @@ number_subj_for_compare.count()
           "Please be sure to have the same acquisitions for all subjects."}
 
 dwi.into{dwi_for_prelim_bet; dwi_for_denoise}
+
+random_seed = params.random_seed?.tokenize(',')
 
 gradients
     .into{gradients_for_prelim_bet; gradients_for_eddy; gradients_for_topup;
@@ -1220,9 +1224,10 @@ process PFT_Tracking {
     input:
     set sid, file(fodf), file(include), file(exclude), file(seed)\
         from fodf_maps_for_pft_tracking
+    each curr_seed from random_seed
 
     output:
-    file "${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}.trk"
+    file "${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}_seed_${seed}.trk"
 
     when:
         params.run_pft_tracking
@@ -1230,18 +1235,19 @@ process PFT_Tracking {
     script:
     compress =\
         params.pft_compress_streamlines ? '--compress ' + params.pft_compress_value : ''
+    save_seeds = params.pft_save_seeds ? '--save_seeds ' : ''
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
         scil_compute_pft.py $fodf $seed $include $exclude\
-            ${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}.trk\
+            ${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}_seed_${seed}.trk\
             --algo $params.pft_algo --$params.pft_seeding $params.pft_nbr_seeds\
-            --seed $params.random_seed --step $params.pft_step --theta $params.pft_theta\
+            --seed $curr_seed --step $params.pft_step --theta $params.pft_theta\
             --sfthres $params.pft_sfthres --sfthres_init $params.pft_sfthres_init\
             --min_length $params.pft_min_len --max_length $params.pft_max_len\
             --particles $params.pft_particles --back $params.pft_back\
-            --forward $params.pft_front $compress --sh_basis $params.basis
+            --forward $params.pft_front $compress --sh_basis $params.basis $save_seeds
         """
 }
 
@@ -1316,9 +1322,10 @@ process Local_Tracking {
     input:
     set sid, file(fodf), file(tracking_mask), file(seed)\
         from fodf_maps_for_local_tracking
+    each curr_seed from random_seed
 
     output:
-    file "${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask.trk"
+    file "${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask_seed_${seed}.trk"
 
     when:
         params.run_local_tracking
@@ -1326,15 +1333,16 @@ process Local_Tracking {
     script:
     compress =\
         params.local_compress_streamlines ? '--compress ' + params.local_compress_value : ''
+    save_seeds = params.local_save_seeds ? '--save_seeds ' : ''
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
         scil_compute_local_tracking.py $fodf $seed $tracking_mask\
-            ${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask.trk\
+            ${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask_seed_${seed}.trk\
             --algo $params.local_algo --$params.local_seeding $params.local_nbr_seeds\
-            --seed $params.random_seed --step $params.local_step --theta $params.local_theta\
+            --seed $curr_seed --step $params.local_step --theta $params.local_theta\
             --sfthres $params.local_sfthres --min_length $params.local_min_len\
-            --max_length $params.local_max_len $compress --sh_basis $params.basis
+            --max_length $params.local_max_len $compress --sh_basis $params.basis $save_seeds
         """
 }
