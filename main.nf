@@ -217,8 +217,15 @@ else if (params.bids || params.bids_config){
     jsonSlurper = new JsonSlurper()
         data = jsonSlurper.parseText(it.getText())
         for (item in data){
-            sid = "sub-" + item.subject + "_ses-" + item.session + "_run-" + item.run
+            sid = "sub-" + item.subject
 
+            if (item.session){
+                sid += "_ses-" + item.session
+            }
+
+            if (item.run){
+                sid += "_run-" + item.run
+            }
             for (key in item.keySet()){
                 if(item[key] == 'todo'){
                     error "Error ~ Please look at your tractoflow_bids_struct.json " +
@@ -274,7 +281,7 @@ if (number_subj_for_null_check == 0){
     error "Error ~ No subjects found. Please check the naming convention or your BIDS folder."
 }
 
-number_subj_for_compare.count()
+number_subj_for_compare
     .concat(number_rev_b0_for_compare)
     .toList()
     .subscribe{a, b -> if (a != b && b > 0) 
