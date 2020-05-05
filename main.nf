@@ -59,6 +59,7 @@ if(params.help) {
                 "max_len":"$params.max_len",
                 "compress_streamlines":"$params.compress_streamlines",
                 "compress_value":"$params.compress_value",
+                "save_seeds":"$params.save_seeds",
                 "cpu_count":"$cpu_count",
                 "template_t1":"$params.template_t1",
                 "processes_brain_extraction_t1":"$params.processes_brain_extraction_t1",
@@ -1215,7 +1216,8 @@ process Seeding_Mask {
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
-        scil_mask_math.py union $wm $interface_mask ${sid}__seeding_mask.nii.gz
+        scil_image_math.py union $wm $interface_mask ${sid}__seeding_mask.nii.gz\
+            --data_type uint8
         """
     else
         """
@@ -1241,6 +1243,7 @@ process Tracking {
     script:
     compress =\
         params.compress_streamlines ? '--compress ' + params.compress_value : ''
+        save_seeds = params.save_seeds ? '--save_seeds ' : ''
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
@@ -1252,6 +1255,6 @@ process Tracking {
             --sfthres $params.sfthres --sfthres_init $params.sfthres_init\
             --min_length $params.min_len --max_length $params.max_len\
             --particles $params.particles --back $params.back\
-            --forward $params.front $compress --sh_basis $params.basis
+            --forward $params.front $compress --sh_basis $params.basis $save_seeds
         """
 }
