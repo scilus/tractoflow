@@ -409,8 +409,8 @@ process Topup {
     scil_prepare_topup_command.py $dwi $bval $bvec ${sid}__rev_b0_warped.nii.gz\
         --config $params.config_topup --b0_thr $params.b0_thr_extract_b0\
         --encoding_direction $encoding\
-        --readout $readout --output_prefix $params.prefix_topup\
-        --output_script
+        --readout $readout --out_prefix $params.prefix_topup\
+        --out_script
     sh topup.sh
     cp corrected_b0s.nii.gz ${sid}__corrected_b0s.nii.gz
     """
@@ -456,7 +456,7 @@ process Eddy {
         scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
             --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $encoding\
-            --readout $readout --output_script --fix_seed\
+            --readout $readout --out_script --fix_seed\
             $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
@@ -519,7 +519,7 @@ process Eddy_Topup {
             --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
             --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $encoding\
-            --readout $readout --output_script --fix_seed\
+            --readout $readout --out_script --fix_seed\
             $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
