@@ -275,10 +275,10 @@ if (number_subj_for_null_check == 0){
     error "Error ~ No subjects found. Please check the naming convention or your BIDS folder."
 }
 
-number_subj_for_compare.count()
+number_subj_for_compare
     .concat(number_rev_b0_for_compare)
     .toList()
-    .subscribe{a, b -> if (a != b && b > 0) 
+    .subscribe{a, b -> if (a != b && b > 0)
     error "Error ~ Some subjects have a reversed phase encoded b=0 and others don't.\n" +
           "Please be sure to have the same acquisitions for all subjects."}
 
