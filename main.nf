@@ -59,6 +59,7 @@ if(params.help) {
                 "max_len":"$params.max_len",
                 "compress_streamlines":"$params.compress_streamlines",
                 "compress_value":"$params.compress_value",
+                "save_seeds":"$params.save_seeds",
                 "cpu_count":"$cpu_count",
                 "template_t1":"$params.template_t1",
                 "processes_brain_extraction_t1":"$params.processes_brain_extraction_t1",
@@ -281,10 +282,14 @@ if (number_subj_for_null_check == 0){
     error "Error ~ No subjects found. Please check the naming convention or your BIDS folder."
 }
 
+if (params.set_frf && params.mean_frf){
+    error "Error ~ --set_frf and --mean_frf are activated. Please choose only one of these options. "
+}
+
 number_subj_for_compare
     .concat(number_rev_b0_for_compare)
     .toList()
-    .subscribe{a, b -> if (a != b && b > 0) 
+    .subscribe{a, b -> if (a != b && b > 0)
     error "Error ~ Some subjects have a reversed phase encoded b=0 and others don't.\n" +
           "Please be sure to have the same acquisitions for all subjects."}
 
@@ -415,8 +420,8 @@ process Topup {
     scil_prepare_topup_command.py $dwi $bval $bvec ${sid}__rev_b0_warped.nii.gz\
         --config $params.config_topup --b0_thr $params.b0_thr_extract_b0\
         --encoding_direction $encoding\
-        --readout $readout --output_prefix $params.prefix_topup\
-        --output_script
+        --readout $readout --out_prefix $params.prefix_topup\
+        --out_script
     sh topup.sh
     cp corrected_b0s.nii.gz ${sid}__corrected_b0s.nii.gz
     """
@@ -462,7 +467,7 @@ process Eddy {
         scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
             --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $encoding\
-            --readout $readout --output_script --fix_seed\
+            --readout $readout --out_script --fix_seed\
             $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
@@ -525,7 +530,7 @@ process Eddy_Topup {
             --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
             --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $encoding\
-            --readout $readout --output_script --fix_seed\
+            --readout $readout --out_script --fix_seed\
             $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
@@ -1116,7 +1121,7 @@ process Mean_FRF {
     file "mean_frf.txt" into mean_frf
 
     when:
-    params.mean_frf
+    params.mean_frf && !params.set_frf
 
     script:
     """
@@ -1222,7 +1227,8 @@ process Seeding_Mask {
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
-        scil_mask_math.py union $wm $interface_mask ${sid}__seeding_mask.nii.gz
+        scil_image_math.py union $wm $interface_mask ${sid}__seeding_mask.nii.gz\
+            --data_type uint8
         """
     else
         """
@@ -1248,6 +1254,7 @@ process Tracking {
     script:
     compress =\
         params.compress_streamlines ? '--compress ' + params.compress_value : ''
+        save_seeds = params.save_seeds ? '--save_seeds ' : ''
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
@@ -1259,6 +1266,6 @@ process Tracking {
             --sfthres $params.sfthres --sfthres_init $params.sfthres_init\
             --min_length $params.min_len --max_length $params.max_len\
             --particles $params.particles --back $params.back\
-            --forward $params.front $compress --sh_basis $params.basis
+            --forward $params.front $compress --sh_basis $params.basis $save_seeds
         """
 }
