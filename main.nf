@@ -283,7 +283,7 @@ if (number_subj_for_null_check == 0){
 }
 
 if (params.set_frf && params.mean_frf){
-    Error "Error ~ --set_frf and --mean_frf are activated. Please choose only one of these options. "
+    error "Error ~ --set_frf and --mean_frf are activated. Please choose only one of these options. "
 }
 
 number_subj_for_compare
