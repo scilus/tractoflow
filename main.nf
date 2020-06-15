@@ -278,7 +278,7 @@ check_rev_b0.count().into{ rev_b0_counter; number_rev_b0_for_compare }
 
 check_subjects_number.count().into{ number_subj_for_null_check; number_subj_for_compare }
 
-if (number_subj_for_null_check == 0){
+if (number_subj_for_null_check.value == 0){
     error "Error ~ No subjects found. Please check the naming convention or your BIDS folder."
 }
 
@@ -1254,7 +1254,6 @@ process Tracking {
     script:
     compress =\
         params.compress_streamlines ? '--compress ' + params.compress_value : ''
-        save_seeds = params.save_seeds ? '--save_seeds ' : ''
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
@@ -1266,6 +1265,6 @@ process Tracking {
             --sfthres $params.sfthres --sfthres_init $params.sfthres_init\
             --min_length $params.min_len --max_length $params.max_len\
             --particles $params.particles --back $params.back\
-            --forward $params.front $compress --sh_basis $params.basis $save_seeds
+            --forward $params.front $compress --sh_basis $params.basis
         """
 }
