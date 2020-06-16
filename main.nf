@@ -59,7 +59,6 @@ if(params.help) {
                 "max_len":"$params.max_len",
                 "compress_streamlines":"$params.compress_streamlines",
                 "compress_value":"$params.compress_value",
-                "save_seeds":"$params.save_seeds",
                 "cpu_count":"$cpu_count",
                 "template_t1":"$params.template_t1",
                 "processes_brain_extraction_t1":"$params.processes_brain_extraction_t1",
