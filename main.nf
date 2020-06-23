@@ -277,7 +277,7 @@ check_rev_b0.count().into{ rev_b0_counter; number_rev_b0_for_compare }
 
 check_subjects_number.count().into{ number_subj_for_null_check; number_subj_for_compare }
 
-if (number_subj_for_null_check.value == 0 || number_subj_for_null_check.value == null){
+if (number_subj_for_null_check.value == 0){
     error "Error ~ No subjects found. Please check the naming convention, your --root path or your BIDS folder."
 }
 
