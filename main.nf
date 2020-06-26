@@ -61,7 +61,6 @@ if(params.help) {
                 "pft_max_len":"$params.pft_max_len",
                 "pft_compress_streamlines":"$params.pft_compress_streamlines",
                 "pft_compress_value":"$params.pft_compress_value",
-                "pft_save_seeds":"$params.pft_save_seeds",
                 "local_seeding_mask_type":"$params.local_seeding_mask_type",
                 "local_fa_seeding_mask_theshold":"$params.local_fa_seeding_mask_theshold",
                 "local_tracking_mask_type":"$params.local_tracking_mask_type",
@@ -78,7 +77,6 @@ if(params.help) {
                 "local_min_len":"$params.local_min_len",
                 "local_max_len":"$params.local_max_len",
                 "local_compress_value":"$params.local_compress_value",
-                "local_save_seeds":"$params.local_save_seeds",
                 "cpu_count":"$cpu_count",
                 "template_t1":"$params.template_t1",
                 "processes_brain_extraction_t1":"$params.processes_brain_extraction_t1",
@@ -163,8 +161,15 @@ else if (params.bids || params.bids_config){
     jsonSlurper = new JsonSlurper()
         data = jsonSlurper.parseText(it.getText())
         for (item in data){
-            sid = "sub-" + item.subject + "_ses-" + item.session + "_run-" + item.run
+            sid = "sub-" + item.subject
 
+            if (item.session){
+                sid += "_ses-" + item.session
+            }
+
+            if (item.run){
+                sid += "_run-" + item.run
+            }
             for (key in item.keySet()){
                 if(item[key] == 'todo'){
                     error "Error ~ Please look at your tractoflow_bids_struct.json " +
@@ -244,14 +249,18 @@ check_rev_b0.count().into{ rev_b0_counter; number_rev_b0_for_compare }
 
 check_subjects_number.count().into{ number_subj_for_null_check; number_subj_for_compare }
 
-if (number_subj_for_null_check == 0){
+if (number_subj_for_null_check.value == 0){
     error "Error ~ No subjects found. Please check the naming convention or your BIDS folder."
 }
 
-number_subj_for_compare.count()
+if (params.set_frf && params.mean_frf){
+    error "Error ~ --set_frf and --mean_frf are activated. Please choose only one of these options. "
+}
+
+number_subj_for_compare
     .concat(number_rev_b0_for_compare)
     .toList()
-    .subscribe{a, b -> if (a != b && b > 0) 
+    .subscribe{a, b -> if (a != b && b > 0)
     error "Error ~ Some subjects have a reversed phase encoded b=0 and others don't.\n" +
           "Please be sure to have the same acquisitions for all subjects."}
 
@@ -384,8 +393,8 @@ process Topup {
     scil_prepare_topup_command.py $dwi $bval $bvec ${sid}__rev_b0_warped.nii.gz\
         --config $params.config_topup --b0_thr $params.b0_thr_extract_b0\
         --encoding_direction $encoding\
-        --readout $readout --output_prefix $params.prefix_topup\
-        --output_script
+        --readout $readout --out_prefix $params.prefix_topup\
+        --out_script
     sh topup.sh
     cp corrected_b0s.nii.gz ${sid}__corrected_b0s.nii.gz
     """
@@ -431,7 +440,7 @@ process Eddy {
         scil_prepare_eddy_command.py $dwi $bval $bvec $mask\
             --eddy_cmd $params.eddy_cmd --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $encoding\
-            --readout $readout --output_script --fix_seed\
+            --readout $readout --out_script --fix_seed\
             $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
@@ -494,7 +503,7 @@ process Eddy_Topup {
             --topup $params.prefix_topup --eddy_cmd $params.eddy_cmd\
             --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $encoding\
-            --readout $readout --output_script --fix_seed\
+            --readout $readout --out_script --fix_seed\
             $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
@@ -1085,7 +1094,7 @@ process Mean_FRF {
     file "mean_frf.txt" into mean_frf
 
     when:
-    params.mean_frf
+    params.mean_frf && !params.set_frf
 
     script:
     """
@@ -1198,7 +1207,8 @@ process PFT_Seeding_Mask {
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
-        scil_mask_math.py union $wm $interface_mask ${sid}__pft_seeding_mask.nii.gz
+        scil_image_math.py union $wm $interface_mask ${sid}__pft_seeding_mask.nii.gz\
+            --data_type uint8
         """
     else if (params.pft_seeding_mask_type == "interface")
         """
@@ -1235,7 +1245,6 @@ process PFT_Tracking {
     script:
     compress =\
         params.pft_compress_streamlines ? '--compress ' + params.pft_compress_value : ''
-    save_seeds = params.pft_save_seeds ? '--save_seeds ' : ''
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
@@ -1247,7 +1256,7 @@ process PFT_Tracking {
             --sfthres $params.pft_sfthres --sfthres_init $params.pft_sfthres_init\
             --min_length $params.pft_min_len --max_length $params.pft_max_len\
             --particles $params.pft_particles --back $params.pft_back\
-            --forward $params.pft_front $compress --sh_basis $params.basis $save_seeds
+            --forward $params.pft_front $compress --sh_basis $params.basis
         """
 }
 
@@ -1333,7 +1342,6 @@ process Local_Tracking {
     script:
     compress =\
         params.local_compress_streamlines ? '--compress ' + params.local_compress_value : ''
-    save_seeds = params.local_save_seeds ? '--save_seeds ' : ''
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
@@ -1343,6 +1351,6 @@ process Local_Tracking {
             --algo $params.local_algo --$params.local_seeding $params.local_nbr_seeds\
             --seed $curr_seed --step $params.local_step --theta $params.local_theta\
             --sfthres $params.local_sfthres --min_length $params.local_min_len\
-            --max_length $params.local_max_len $compress --sh_basis $params.basis $save_seeds
+            --max_length $params.local_max_len $compress --sh_basis $params.basis
         """
 }

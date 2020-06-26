@@ -1,7 +1,13 @@
 TractoFlow pipeline
 ===================
 
+Theaud, G., Houde, J.-C., Boré, A., Rheault, F., Morency, F., Descoteaux, M.,
+TractoFlow: A robust, efficient and reproducible diffusion MRI pipeline
+leveraging Nextflow & Singularity, NeuroImage,
+https://doi.org/10.1016/j.neuroimage.2020.116889.
+
 Run TractoFlow pipeline
+
 
 USAGE
 
@@ -113,7 +119,6 @@ OPTIONAL ARGUMENTS (current value)
 --pft_max_len                               [PFT] Maximum length ($pft_max_len).
 --pft_compress_streamlines                  [PFT] Compress streamlines ($pft_compress_streamlines).
 --pft_compress_value                        [PFT] Compression error threshold ($pft_compress_value).
---pft_save_seeds                            [PFT] Save tracking seeds ($pft_save_seeds).
 
 --run_local_tracking                        Run Local Tracking ($run_local_tracking).
 
@@ -132,7 +137,6 @@ OPTIONAL ARGUMENTS (current value)
 --local_max_len                             [LOCAL] Maximum length ($local_max_len).
 --local_compress_streamlines                [LOCAL] Compress streamlines ($local_compress_streamlines).
 --local_compress_value                      [LOCAL] Compression error threshold ($local_compress_value).
---local_save_seeds                          [LOCAL] Save tracking seeds ($local_save_seeds).
 
 --template_t1                               Path to the template T1 directory for antsBrainExtraction.
                                             The folder must contain t1_template.nii.gz and t1_brain_probability_map.nii.gz.
@@ -150,6 +154,16 @@ OPTIONAL ARGUMENTS (current value)
 
 --processes                                 The number of parallel processes to launch ($cpu_count).
                                             Only affects the local scheduler.
+
+AVAILABLE PROFILES (using -profile option (e.g. -profile use_cuda,fully_reproducible))
+
+macos                                       When this profile is used, TractoFlow will modify a parameter (scratch) for MacOS users.
+
+use_cuda                                    When this profile is used, TractoFlow will use eddy_cuda for Eddy process.
+                                            This feature is available with NVidia GPUs only. Without this profile, TractoFlow will run eddy_openmp.
+
+fully_reproducible                          When this profile is used, all the parameters will be set to have 100% reproducible results.
+                                            This profile consist to set multi-thread parameters to be fully reproducible [Theaud20].
 
 NOTES
 

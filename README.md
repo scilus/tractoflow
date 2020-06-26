@@ -1,3 +1,5 @@
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/scilus/tractoflow)](https://github.com/scilus/tractoflow/releases)
+
 TractoFlow pipeline
 ===================
 
@@ -33,8 +35,8 @@ Prebuild Singularity images are available here:
 
 [http://scil.usherbrooke.ca/en/containers_list/](http://scil.usherbrooke.ca/en/containers_list/)
 
-FOR DEVELOPERS: The Singularity repository is available here:
-[singularity-TractoFlow](https://github.com/scilus/singularity-tractoflow)
+FOR DEVELOPERS: The containers repository is available here:
+[containers-TractoFlow](https://github.com/scilus/containers-tractoflow)
 
 Docker
 ------
@@ -43,6 +45,9 @@ If you are on MacOS or Windows, we recommend using the Docker container to run T
 Prebuilt Docker images are available here:
 
 [http://scil.usherbrooke.ca/en/containers_list/](http://scil.usherbrooke.ca/en/containers_list/)
+
+FOR DEVELOPERS: The containers repository is available here:
+[containers-TractoFlow](https://github.com/scilus/containers-tractoflow)
 
 Steps
 -----
