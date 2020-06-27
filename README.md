@@ -1,7 +1,8 @@
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/scilus/tractoflow)](https://github.com/scilus/tractoflow/releases)
-
 TractoFlow pipeline
 ===================
+[![DOI](https://img.shields.io/badge/DOI-10.1016%2Fj.neuroimage.2020.116889-blue)](https://doi.org/10.1016/j.neuroimage.2020.116889)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/scilus/tractoflow)](https://github.com/scilus/tractoflow/releases)
+[![Nextflow](https://img.shields.io/badge/nextflow-19.04.0-brightgreen.svg)](https://www.nextflow.io/)
 
 The TractoFlow pipeline is a fully automated and reproducible dMRI processing pipeline.
 TractoFlow takes raw DWI, b-values, b-vectors, T1 weighted image (and a reversed

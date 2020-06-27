@@ -15,7 +15,6 @@ if(params.help) {
     cpu_count = Runtime.runtime.availableProcessors()
     bindings = ["b0_thr_extract_b0":"$params.b0_thr_extract_b0",
                 "dwi_shell_tolerance":"$params.dwi_shell_tolerance",
-                "random_seed":"$params.random_seed",
                 "dilate_b0_mask_prelim_brain_extraction":"$params.dilate_b0_mask_prelim_brain_extraction",
                 "bet_prelim_f":"$params.bet_prelim_f",
                 "run_dwi_denoising":"$params.run_dwi_denoising",
@@ -67,6 +66,7 @@ if(params.help) {
                 "local_fa_tracking_mask_theshold":"$params.local_fa_tracking_mask_theshold",
                 "run_local_tracking":"$params.run_local_tracking",
                 "local_compress_streamlines":"$params.local_compress_streamlines",
+                "pft_random_seed":"$params.pft_random_seed",
                 "local_algo":"$params.local_algo",
                 "local_seeding":"$params.local_seeding",
                 "local_nbr_seeds":"$params.local_nbr_seeds",
@@ -77,6 +77,7 @@ if(params.help) {
                 "local_min_len":"$params.local_min_len",
                 "local_max_len":"$params.local_max_len",
                 "local_compress_value":"$params.local_compress_value",
+                "local_random_seed":"$params.local_random_seed",
                 "cpu_count":"$cpu_count",
                 "template_t1":"$params.template_t1",
                 "processes_brain_extraction_t1":"$params.processes_brain_extraction_t1",
@@ -266,7 +267,8 @@ number_subj_for_compare
 
 dwi.into{dwi_for_prelim_bet; dwi_for_denoise}
 
-random_seed = params.random_seed?.tokenize(',')
+pft_random_seed = params.pft_random_seed?.tokenize(',')
+local_random_seed = params.local_random_seed?.tokenize(',')
 
 gradients
     .into{gradients_for_prelim_bet; gradients_for_eddy; gradients_for_topup;
@@ -1234,10 +1236,10 @@ process PFT_Tracking {
     input:
     set sid, file(fodf), file(include), file(exclude), file(seed)\
         from fodf_maps_for_pft_tracking
-    each curr_seed from random_seed
+    each curr_seed from pft_random_seed
 
     output:
-    file "${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}_seed_${seed}.trk"
+    file "${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}_seed_${curr_seed}.trk"
 
     when:
         params.run_pft_tracking
@@ -1250,7 +1252,7 @@ process PFT_Tracking {
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
         scil_compute_pft.py $fodf $seed $include $exclude\
-            ${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}_seed_${seed}.trk\
+            ${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}_seed_${curr_seed}.trk\
             --algo $params.pft_algo --$params.pft_seeding $params.pft_nbr_seeds\
             --seed $curr_seed --step $params.pft_step --theta $params.pft_theta\
             --sfthres $params.pft_sfthres --sfthres_init $params.pft_sfthres_init\
@@ -1331,10 +1333,10 @@ process Local_Tracking {
     input:
     set sid, file(fodf), file(tracking_mask), file(seed)\
         from fodf_maps_for_local_tracking
-    each curr_seed from random_seed
+    each curr_seed from local_random_seed
 
     output:
-    file "${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask_seed_${seed}.trk"
+    file "${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask_seed_${curr_seed}.trk"
 
     when:
         params.run_local_tracking
@@ -1347,7 +1349,7 @@ process Local_Tracking {
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
         scil_compute_local_tracking.py $fodf $seed $tracking_mask\
-            ${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask_seed_${seed}.trk\
+            ${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask_seed_${curr_seed}.trk\
             --algo $params.local_algo --$params.local_seeding $params.local_nbr_seeds\
             --seed $curr_seed --step $params.local_step --theta $params.local_theta\
             --sfthres $params.local_sfthres --min_length $params.local_min_len\
