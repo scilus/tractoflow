@@ -1,0 +1,24 @@
+name: TractoFlow CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    env:
+      NXF_VER: ${{ matrix.nxf_ver }}
+      NXF_ANSI_LOG: false
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        nxf_ver: ['19.04.0', '20.04.1']
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Nextflow
+        run: |
+          wget -qO- get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+      - name: Pull docker image
+        run: |
+          docker pull scilus/docker-tractoflow:latest
+      - name: Run pipeline
+        run: |
+          nextflow run ${GITHUB_WORKSPACE} --help -with-docker scilus/docker-tractoflow:latest
