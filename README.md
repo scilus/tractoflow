@@ -7,7 +7,7 @@ TractoFlow pipeline
 ![TractoFlow CI](https://github.com/scilus/tractoflow/workflows/TractoFlow%20CI/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/tractoflow-documentation/badge/?version=latest)](https://tractoflow-documentation.readthedocs.io/en/latest/?badge=latest)
 
-<img src="https://tractoflow-documentation.readthedocs.io/en/latest/_static/logo.png" width="250" height="250">
+<img src="https://tractoflow-documentation.readthedocs.io/en/latest/logo_bg.png" width="250" height="250">
 
 The TractoFlow pipeline is a fully automated and reproducible dMRI processing pipeline.
 TractoFlow takes raw DWI, b-values, b-vectors, T1 weighted image (and a reversed
