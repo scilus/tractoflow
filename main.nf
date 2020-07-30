@@ -390,6 +390,7 @@ process Topup {
     export OPENBLAS_NUM_THREADS=1
     scil_extract_b0.py $dwi $bval $bvec b0_mean.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0
+    scil_image_math.py mean $rev_b0 $rev_b0 -f
     antsRegistrationSyNQuick.sh -d 3 -f b0_mean.nii.gz -m $rev_b0 -o output -t r -e 1
     mv outputWarped.nii.gz ${sid}__rev_b0_warped.nii.gz
     scil_prepare_topup_command.py $dwi $bval $bvec ${sid}__rev_b0_warped.nii.gz\
