@@ -267,8 +267,19 @@ number_subj_for_compare
 
 dwi.into{dwi_for_prelim_bet; dwi_for_denoise}
 
-pft_random_seed = params.pft_random_seed?.tokenize(',')
-local_random_seed = params.local_random_seed?.tokenize(',')
+if (params.pft_random_seed instanceof String){
+    pft_random_seed = params.pft_random_seed?.tokenize(',')
+}
+else{
+    pft_random_seed = params.pft_random_seed
+}
+
+if (params.local_random_seed instanceof String){
+    local_random_seed = params.local_random_seed?.tokenize(',')
+}
+else{
+    local_random_seed = params.local_random_seed
+}
 
 gradients
     .into{gradients_for_prelim_bet; gradients_for_eddy; gradients_for_topup;
