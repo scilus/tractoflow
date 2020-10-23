@@ -326,6 +326,7 @@ process Bet_Prelim_DWI {
     scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0
     bet ${sid}__b0.nii.gz ${sid}__b0_bet.nii.gz -m -R -f $params.bet_prelim_f
+    scil_image_math.py convert ${sid}__b0_bet_mask.nii.gz ${sid}__b0_bet_mask.nii.gz --data_type uint8 -f
     maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz\
         --npass $params.dilate_b0_mask_prelim_brain_extraction -nthreads 1
     mrcalc ${sid}__b0.nii.gz ${sid}__b0_bet_mask_dilated.nii.gz\
@@ -390,7 +391,7 @@ process Topup {
     export OPENBLAS_NUM_THREADS=1
     scil_extract_b0.py $dwi $bval $bvec b0_mean.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0
-    scil_image_math.py mean $rev_b0 $rev_b0 -f
+    scil_image_math.py mean $rev_b0 $rev_b0 --data_type float32 -f
     antsRegistrationSyNQuick.sh -d 3 -f b0_mean.nii.gz -m $rev_b0 -o output -t r -e 1
     mv outputWarped.nii.gz ${sid}__rev_b0_warped.nii.gz
     scil_prepare_topup_command.py $dwi $bval $bvec ${sid}__rev_b0_warped.nii.gz\
@@ -579,6 +580,7 @@ process Bet_DWI {
     export OMP_NUM_THREADS=1
     export OPENBLAS_NUM_THREADS=1
     bet $b0 ${sid}__b0_bet.nii.gz -m -R -f $params.bet_dwi_final_f
+    scil_image_math.py convert ${sid}__b0_bet_mask.nii.gz ${sid}__b0_bet_mask.nii.gz --data_type uint8 -f
     mrcalc $dwi ${sid}__b0_bet_mask.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet -nthreads 1
     """
 }
@@ -633,6 +635,7 @@ process Crop_DWI {
         --input_bbox dwi_boundingBox.pkl -f
     scil_crop_volume.py $b0_mask ${sid}__b0_mask_cropped.nii.gz\
         --input_bbox dwi_boundingBox.pkl -f
+    scil_image_math.py convert ${sid}__b0_mask_cropped.nii.gz ${sid}__b0_mask_cropped.nii.gz --data_type uint8 -f
     """
 }
 
@@ -722,8 +725,8 @@ process Bet_T1 {
     export OPENBLAS_NUM_THREADS=1
     antsBrainExtraction.sh -d 3 -a $t1 -e $params.template_t1/t1_template.nii.gz\
         -o bet/ -m $params.template_t1/t1_brain_probability_map.nii.gz -u 0
-    mrcalc $t1 bet/BrainExtractionMask.nii.gz -mult ${sid}__t1_bet.nii.gz -nthreads 1
-    mv bet/BrainExtractionMask.nii.gz ${sid}__t1_bet_mask.nii.gz
+    scil_image_math.py convert bet/BrainExtractionMask.nii.gz ${sid}__t1_bet_mask.nii.gz --data_type uint8
+    mrcalc $t1 ${sid}__t1_bet_mask.nii.gz -mult ${sid}__t1_bet.nii.gz -nthreads 1
     """
 }
 
@@ -746,6 +749,7 @@ process Crop_T1 {
         --output_bbox t1_boundingBox.pkl -f
     scil_crop_volume.py $t1_mask ${sid}__t1_bet_mask_cropped.nii.gz\
         --input_bbox t1_boundingBox.pkl -f
+    scil_image_math.py convert ${sid}__t1_bet_mask_cropped.nii.gz ${sid}__t1_bet_mask_cropped.nii.gz --data_type uint8 -f
     """
 }
 
@@ -1012,6 +1016,7 @@ process Register_T1 {
     antsApplyTransforms -d 3 -i $t1_mask -r ${sid}__t1_warped.nii.gz \
         -o ${sid}__t1_mask_warped.nii.gz -n NearestNeighbor \
         -t ${sid}__output1Warp.nii.gz ${sid}__output0GenericAffine.mat
+    scil_image_math.py convert ${sid}__t1_mask_warped.nii.gz ${sid}__t1_mask_warped.nii.gz --data_type uint8 -f
     """
 }
 
@@ -1035,9 +1040,9 @@ process Segment_Tissues {
     export OPENBLAS_NUM_THREADS=1
     fast -t 1 -n $params.number_of_tissues\
          -H 0.1 -I 4 -l 20.0 -g -o t1.nii.gz $t1
-    mv t1_seg_2.nii.gz ${sid}__mask_wm.nii.gz
-    mv t1_seg_1.nii.gz ${sid}__mask_gm.nii.gz
-    mv t1_seg_0.nii.gz ${sid}__mask_csf.nii.gz
+    scil_image_math.py convert t1_seg_2.nii.gz ${sid}__mask_wm.nii.gz --data_type uint8
+    scil_image_math.py convert t1_seg_1.nii.gz ${sid}__mask_gm.nii.gz --data_type uint8
+    scil_image_math.py convert t1_seg_0.nii.gz ${sid}__mask_csf.nii.gz --data_type uint8
     mv t1_pve_2.nii.gz ${sid}__map_wm.nii.gz
     mv t1_pve_1.nii.gz ${sid}__map_gm.nii.gz
     mv t1_pve_0.nii.gz ${sid}__map_csf.nii.gz
@@ -1067,7 +1072,7 @@ process Compute_FRF {
         export OPENBLAS_NUM_THREADS=1
         scil_compute_ssst_frf.py $dwi $bval $bvec frf.txt --mask $b0_mask\
         --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
-        --roi_radius $params.roi_radius
+        --roi_radii $params.roi_radius
         scil_set_response_function.py frf.txt $params.manual_frf ${sid}__frf.txt
         """
     else
@@ -1077,7 +1082,7 @@ process Compute_FRF {
         export OPENBLAS_NUM_THREADS=1
         scil_compute_ssst_frf.py $dwi $bval $bvec ${sid}__frf.txt --mask $b0_mask\
         --fa $params.fa --min_fa $params.min_fa --min_nvox $params.min_nvox\
-        --roi_radius $params.roi_radius
+        --roi_radii $params.roi_radius
         """
 }
 
@@ -1143,10 +1148,9 @@ process FODF_Metrics {
     export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
     export OMP_NUM_THREADS=1
     export OPENBLAS_NUM_THREADS=1
-    scil_compute_fodf.py $dwi $bval $bvec $frf --sh_order $params.sh_order\
-        --sh_basis $params.basis --force_b0_threshold --mask $b0_mask\
-        --fodf ${sid}__fodf.nii.gz --peaks ${sid}__peaks.nii.gz\
-        --peak_indices ${sid}__peak_indices.nii.gz --processes $task.cpus
+    scil_compute_ssst_fodf.py $dwi $bval $bvec $frf ${sid}__fodf.nii.gz\
+        --sh_order $params.sh_order --sh_basis $params.basis --force_b0_threshold\
+        --mask $b0_mask --processes $task.cpus
 
     scil_compute_fodf_max_in_ventricles.py ${sid}__fodf.nii.gz $fa $md\
         --max_value_output ventricles_fodf_max_value.txt --sh_basis $params.basis\
@@ -1155,10 +1159,12 @@ process FODF_Metrics {
 
     a_threshold=\$(echo $params.fodf_metrics_a_factor*\$(cat ventricles_fodf_max_value.txt)|bc)
 
-    scil_compute_fodf_metrics.py ${sid}__fodf.nii.gz \${a_threshold}\
-        --mask $b0_mask --sh_basis $params.basis --afd ${sid}__afd_max.nii.gz\
-        --afd_total ${sid}__afd_total.nii.gz --afd_sum ${sid}__afd_sum.nii.gz\
-        --nufo ${sid}__nufo.nii.gz --rt $params.relative_threshold -f
+    scil_compute_fodf_metrics.py ${sid}__fodf.nii.gz\
+        --mask $b0_mask --sh_basis $params.basis\
+        --peaks ${sid}__peaks.nii.gz --peak_indices ${sid}__peak_indices.nii.gz\
+        --afd_max ${sid}__afd_max.nii.gz --afd_total ${sid}__afd_total.nii.gz\
+        --afd_sum ${sid}__afd_sum.nii.gz --nufo ${sid}__nufo.nii.gz\
+        --rt $params.relative_threshold --at \${a_threshold}
     """
 }
 
