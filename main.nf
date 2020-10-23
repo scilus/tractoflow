@@ -2,7 +2,7 @@
 
 import groovy.json.*
 
-params.root = false
+params.input = false
 params.bids = false
 params.bids_config = false
 params.help = false
@@ -106,9 +106,9 @@ workflow.onComplete {
     log.info "Execution duration: $workflow.duration"
 }
 
-if (params.root && !(params.bids && params.bids_config)){
-    log.info "Input: $params.root"
-    root = file(params.root)
+if (params.input && !(params.bids && params.bids_config)){
+    log.info "Input: $params.input"
+    root = file(params.input)
     data = Channel
         .fromFilePairs("$root/**/*{bval,bvec,dwi.nii.gz,t1.nii.gz}",
                        size: 4,
@@ -204,7 +204,7 @@ else if (params.bids || params.bids_config){
     ch_rev_b0.into{rev_b0; check_rev_b0}
 }
 else {
-    error "Error ~ Please use --root, --bids or --bids_config for the input data."
+    error "Error ~ Please use --input, --bids or --bids_config for the input data."
 }
 
 if (!params.dti_shells || !params.fodf_shells){
@@ -252,7 +252,7 @@ check_subjects_number.count().into{ number_subj_for_null_check; number_subj_for_
 
 number_subj_for_null_check
 .subscribe{a -> if (a == 0)
-    error "Error ~ No subjects found. Please check the naming convention, your --root path or your BIDS folder."}
+    error "Error ~ No subjects found. Please check the naming convention, your --input path or your BIDS folder."}
 
 if (params.set_frf && params.mean_frf){
     error "Error ~ --set_frf and --mean_frf are activated. Please choose only one of these options. "

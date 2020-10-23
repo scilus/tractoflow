@@ -11,11 +11,11 @@ Run TractoFlow pipeline
 
 USAGE
 
-nextflow run main.nf [OPTIONAL_ARGUMENTS] (--root, --bids or --bids_config)
+nextflow run main.nf [OPTIONAL_ARGUMENTS] (--input, --bids or --bids_config)
 
 DESCRIPTION
 
-    --root=/path/to/[root]              Root folder containing multiple subjects
+    --input=/path/to/[root]             Root folder containing multiple subjects
 
                                         [root]
                                         ├── S1
