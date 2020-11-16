@@ -11,11 +11,11 @@ Run TractoFlow pipeline
 
 USAGE
 
-nextflow run main.nf [OPTIONAL_ARGUMENTS] (--root, --bids or --bids_config)
+nextflow run main.nf [OPTIONAL_ARGUMENTS] (--input, --bids or --bids_config)
 
 DESCRIPTION
 
-    --root=/path/to/[root]              Root folder containing multiple subjects
+    --input=/path/to/[root]             Root folder containing multiple subjects
 
                                         [root]
                                         ├── S1
@@ -97,25 +97,48 @@ OPTIONAL ARGUMENTS (current value)
 --sh_order                                  Spherical harmonics order ($sh_order).
                                             Rules :-sh_order=8 for 45 directions
                                                    -sh_order=6 for 28 directions
---basis                                     fODF basis [descoteaux07, tournier07] ($basis)
+--basis                                     fODF basis [descoteaux07, tournier07] ($basis).
 --fodf_metrics_a_factor                     Multiplicative factor for AFD max in ventricles ($fodf_metrics_a_factor).
---relative_threshold                        Relative threshold on fODF amplitude in ]0,1] ($relative_threshold)
---max_fa_in_ventricle                       Maximal threshold of FA to be considered as ventricule voxel ($max_fa_in_ventricle)
---min_md_in_ventricle                       Minimal threshold of MD in mm2/s to be considered as ventricule voxel ($min_md_in_ventricle)
+--relative_threshold                        Relative threshold on fODF amplitude in ]0,1] ($relative_threshold).
+--max_fa_in_ventricle                       Maximal threshold of FA to be considered as ventricule voxel ($max_fa_in_ventricle).
+--min_md_in_ventricle                       Minimal threshold of MD in mm2/s to be considered as ventricule voxel ($min_md_in_ventricle).
 
---wm_seeding                                If 'wm_seeding=true', use the WM-GM interface and the WM mask as seeding mask,
-                                            else use the WM-GM interface as seeding mask ($wm_seeding).
+--run_pft_tracking                          Run Particle Filter Tracking (PFT) ($run_pft_tracking).
 
---algo                                      Tracking algorithm [prob, det] ($algo).
---seeding                                   Seeding type [npv, nt] ($seeding).
---nbr_seeds                                 Number of seeds related to the seeding type param ($nbr_seeds).
---random                                    Random seed ($random).
---step                                      Step size ($step).
---theta                                     Maximum angle between 2 steps ($theta).
---min_len                                   Minimum length ($min_len).
---max_len                                   Maximum length ($max_len).
---compress_streamlines                      Compress streamlines ($compress_streamlines).
---compress_value                            Compression error threshold ($compress_value).
+--pft_seeding_mask_type                     [PFT] seeding mask type [wm, interface, fa] ($pft_seeding_mask_type).
+--pft_fa_seeding_mask_theshold              [PFT] FA threshold for FA seeding mask ($pft_fa_seeding_mask_theshold).
+
+--pft_algo                                  [PFT] Tracking algorithm [prob, det] ($pft_algo).
+--pft_seeding                               [PFT] Seeding type [npv, nt] ($pft_seeding).
+--pft_nbr_seeds                             [PFT] Number of seeds related to the seeding type param ($pft_nbr_seeds).
+--pft_step                                  [PFT] Step size ($pft_step).
+--pft_theta                                 [PFT] Maximum angle between 2 steps ($pft_theta).
+--pft_min_len                               [PFT] Minimum length ($pft_min_len).
+--pft_max_len                               [PFT] Maximum length ($pft_max_len).
+--pft_compress_streamlines                  [PFT] Compress streamlines ($pft_compress_streamlines).
+--pft_compress_value                        [PFT] Compression error threshold ($pft_compress_value).
+--pft_random_seed                           [PFT] List of random seed numbers for the random number generator ($pft_random_seed).
+                                            Please write them as list separated using commat WITHOUT SPACE e.g. (--pft_random_seed 0,1,2)
+
+--run_local_tracking                        Run Local Tracking ($run_local_tracking).
+
+--local_seeding_mask_type                   [LOCAL] seeding mask type [wm, fa] ($local_seeding_mask_type).
+--local_fa_seeding_mask_theshold            [LOCAL] FA threshold for FA seeding mask ($local_fa_seeding_mask_theshold).
+
+--local_tracking_mask_type                  [LOCAL] tracking mask type [wm, fa] ($local_tracking_mask_type).
+--local_fa_tracking_mask_theshold           [LOCAL] FA threshold for FA tracking mask ($local_fa_tracking_mask_theshold).
+
+--local_algo                                [LOCAL] Tracking algorithm [prob, det] ($local_algo).
+--local_seeding                             [LOCAL] Seeding type [npv, nt] ($local_seeding).
+--local_nbr_seeds                           [LOCAL] Number of seeds related to the seeding type param ($local_nbr_seeds).
+--local_step                                [LOCAL] Step size ($local_step).
+--local_theta                               [LOCAL] Maximum angle between 2 steps ($local_theta).
+--local_min_len                             [LOCAL] Minimum length ($local_min_len).
+--local_max_len                             [LOCAL] Maximum length ($local_max_len).
+--local_compress_streamlines                [LOCAL] Compress streamlines ($local_compress_streamlines).
+--local_compress_value                      [LOCAL] Compression error threshold ($local_compress_value).
+--local_random_seed                         [LOCAL] List of random seed numbers for the random number generator ($local_random_seed).
+                                            Please write them as list separated using commat WITHOUT SPACE e.g. (--local_random_seed 0,1,2)
 
 --template_t1                               Path to the template T1 directory for antsBrainExtraction.
                                             The folder must contain t1_template.nii.gz and t1_brain_probability_map.nii.gz.
