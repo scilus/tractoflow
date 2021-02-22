@@ -13,7 +13,9 @@ if(params.help) {
     usage = file("$baseDir/USAGE")
 
     cpu_count = Runtime.runtime.availableProcessors()
-    bindings = ["b0_thr_extract_b0":"$params.b0_thr_extract_b0",
+    bindings = ["participants_label":"$params.participants_label",
+                "clean_bids":"$params.clean_bids",
+                "b0_thr_extract_b0":"$params.b0_thr_extract_b0",
                 "dwi_shell_tolerance":"$params.dwi_shell_tolerance",
                 "dilate_b0_mask_prelim_brain_extraction":"$params.dilate_b0_mask_prelim_brain_extraction",
                 "bet_prelim_f":"$params.bet_prelim_f",
@@ -129,6 +131,17 @@ else if (params.bids || params.bids_config){
     if (!params.bids_config) {
         log.info "Input BIDS: $params.bids"
         bids = file(params.bids)
+
+        participants_flag=""
+        if (params.participants_label) {
+            participants_flag="--participants_label "+params.participants_label
+        }
+
+        clean_flag=""
+        if (params.clean_bids) {
+            clean_flag="--clean"
+        }
+
         process Read_BIDS {
             publishDir = params.Read_BIDS_Publish_Dir
             scratch = false
@@ -145,7 +158,7 @@ else if (params.bids || params.bids_config){
             script:
             """
             scil_validate_bids.py $bids_folder tractoflow_bids_struct.json\
-                --readout $params.readout
+                --readout $params.readout $participants_flag $clean_flag
             """
         }
     }
@@ -790,7 +803,7 @@ process Normalize_DWI {
         bval_dti bvec_dti -t $params.dwi_shell_tolerance
     scil_compute_dti_metrics.py dwi_dti.nii.gz bval_dti bvec_dti --mask $mask\
         --not_all --fa fa.nii.gz --force_b0_threshold
-    mrthreshold fa.nii.gz ${sid}_fa_wm_mask.nii.gz -abs $params.fa_mask_threshold -nthreads 1    
+    mrthreshold fa.nii.gz ${sid}_fa_wm_mask.nii.gz -abs $params.fa_mask_threshold -nthreads 1
     dwinormalise $dwi ${sid}_fa_wm_mask.nii.gz ${sid}__dwi_normalized.nii.gz\
         -fslgrad $bvec $bval -nthreads 1
     """
