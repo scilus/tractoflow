@@ -108,6 +108,8 @@ workflow.onComplete {
     log.info "Execution duration: $workflow.duration"
 }
 
+
+
 if (params.input && !(params.bids && params.bids_config)){
     log.info "Input: $params.input"
     root = file(params.input)
@@ -130,6 +132,9 @@ if (params.input && !(params.bids && params.bids_config)){
 else if (params.bids || params.bids_config){
     if (!params.bids_config) {
         log.info "Input BIDS: $params.bids"
+        log.info "Participants: $params.participants_label"
+        log.info "Clean_bids: $params.clean_bids"
+
         bids = file(params.bids)
 
         process Read_BIDS {
@@ -147,7 +152,7 @@ else if (params.bids || params.bids_config){
 
             script:
             participants_flag =\
-            params.participants_label ? '--participant_label ' + params.participants_label : ''
+            params.participants_label ? '--participants_label ' + params.participants_label.replace('sub-','') : ''
 
             clean_flag = params.clean_bids ? '--clean ' : ''
 
