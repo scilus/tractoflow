@@ -132,16 +132,6 @@ else if (params.bids || params.bids_config){
         log.info "Input BIDS: $params.bids"
         bids = file(params.bids)
 
-        participants_flag=""
-        if (params.participants_label) {
-            participants_flag="--participants_label "+params.participants_label
-        }
-
-        clean_flag=""
-        if (params.clean_bids) {
-            clean_flag="--clean"
-        }
-
         process Read_BIDS {
             publishDir = params.Read_BIDS_Publish_Dir
             scratch = false
@@ -156,6 +146,11 @@ else if (params.bids || params.bids_config){
             file "tractoflow_bids_struct.json" into bids_struct
 
             script:
+            participants_flag =\
+            params.participants_label ? '--participant_label ' + params.participants_label : ''
+
+            clean_flag = params.clean_bids ? '--clean ' : ''
+
             """
             scil_validate_bids.py $bids_folder tractoflow_bids_struct.json\
                 --readout $params.readout $participants_flag $clean_flag
