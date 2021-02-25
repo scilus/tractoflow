@@ -108,6 +108,8 @@ workflow.onComplete {
     log.info "Execution duration: $workflow.duration"
 }
 
+
+
 if (params.input && !(params.bids && params.bids_config)){
     log.info "Input: $params.input"
     root = file(params.input)
@@ -130,17 +132,10 @@ if (params.input && !(params.bids && params.bids_config)){
 else if (params.bids || params.bids_config){
     if (!params.bids_config) {
         log.info "Input BIDS: $params.bids"
+        log.info "Participants: $params.participants_label"
+        log.info "Clean_bids: $params.clean_bids"
+
         bids = file(params.bids)
-
-        participants_flag=""
-        if (params.participants_label) {
-            participants_flag="--participants_label "+params.participants_label
-        }
-
-        clean_flag=""
-        if (params.clean_bids) {
-            clean_flag="--clean"
-        }
 
         process Read_BIDS {
             publishDir = params.Read_BIDS_Publish_Dir
@@ -156,6 +151,11 @@ else if (params.bids || params.bids_config){
             file "tractoflow_bids_struct.json" into bids_struct
 
             script:
+            participants_flag =\
+            params.participants_label ? '--participants_label ' + params.participants_label.replace('sub-','') : ''
+
+            clean_flag = params.clean_bids ? '--clean ' : ''
+
             """
             scil_validate_bids.py $bids_folder tractoflow_bids_struct.json\
                 --readout $params.readout $participants_flag $clean_flag
