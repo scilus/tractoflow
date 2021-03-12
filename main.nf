@@ -14,6 +14,7 @@ if(params.help) {
 
     cpu_count = Runtime.runtime.availableProcessors()
     bindings = ["clean_bids":"$params.clean_bids",
+                "compute_sh":"$params.compute_sh",
                 "b0_thr_extract_b0":"$params.b0_thr_extract_b0",
                 "dwi_shell_tolerance":"$params.dwi_shell_tolerance",
                 "dilate_b0_mask_prelim_brain_extraction":"$params.dilate_b0_mask_prelim_brain_extraction",
@@ -284,7 +285,11 @@ number_subj_for_compare
           "Please be sure to have the same acquisitions for all subjects."}
 }
 
-dwi.into{dwi_for_prelim_bet; dwi_for_denoise}
+dwi.into{dwi_for_prelim_bet; dwi_for_denoise; dwi_for_sh}
+gradients.into{gradients; gradients_for_sh}
+dwi_for_sh
+    .join(gradients_for_sh)
+    .set{dwi_and_gradients_for_sh}
 
 if (params.pft_random_seed instanceof String){
     pft_random_seed = params.pft_random_seed?.tokenize(',')
@@ -333,6 +338,27 @@ process README {
     echo "$workflow.repository - $workflow.revision [$workflow.commitId]\n" >> readme.txt
     echo "[Options]\n" >> readme.txt
     echo "$list_options" >> readme.txt
+    """
+}
+
+process DWI_SH {
+    cpus 1
+
+    input:
+    set sid, file(dwi), file(bval), file(bvec) from dwi_and_gradients_for_sh
+
+    output:
+    file "${sid}__dwi_sh.nii.gz"
+
+    when:
+    params.compute_sh
+
+    script:
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    scil_compute_sh_from_signal.py --sh_order $params.sh_order --sh_basis $params.basis $dwi $bval $bvec ${sid}__dwi_sh.nii.gz
     """
 }
 

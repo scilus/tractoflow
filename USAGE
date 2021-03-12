@@ -57,6 +57,8 @@ OPTIONAL BIDS ARGUMENTS (current value)
 
 OPTIONAL ARGUMENTS (current value)
 
+--compute_sh                                Compute DWI ODF as SH using the provided --basis and --sh_order ($compute_sh).
+
 --b0_thr_extract_b0                         All b-values below b0_thr_extract_b0 are considered b=0 images ($b0_thr_extract_b0).
 --dwi_shell_tolerance                       All b-values to +-dwi_shell_tolerance are considered as the same b-value ($dwi_shell_tolerance).
 
