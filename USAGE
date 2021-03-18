@@ -49,6 +49,7 @@ OPTIONAL BIDS ARGUMENTS (current value)
 
 --participants_label                        The label(s) of the specific participant(s) you want to analyzed.
                                             It does not include "sub-".
+                                            Please write one or more subjects between quotes e.g. (--participants_label "01 02 04")
                                             If this parameter is not provided all subjects should be analyzed.
 
 --clean_bids                                If set, it will remove all the participants that are missing any information.
