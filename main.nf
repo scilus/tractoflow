@@ -52,7 +52,7 @@ if(params.help) {
                 "min_md_in_ventricle":"$params.min_md_in_ventricle",
                 "run_pft_tracking":"$params.run_pft_tracking",
                 "pft_seeding_mask_type":"$params.pft_seeding_mask_type",
-                "pft_fa_seeding_mask_theshold":"$params.pft_fa_seeding_mask_theshold",
+                "pft_fa_seeding_mask_threshold":"$params.pft_fa_seeding_mask_threshold",
                 "pft_algo":"$params.pft_algo",
                 "pft_seeding":"$params.pft_seeding",
                 "pft_nbr_seeds":"$params.pft_nbr_seeds",
@@ -63,9 +63,9 @@ if(params.help) {
                 "pft_compress_streamlines":"$params.pft_compress_streamlines",
                 "pft_compress_value":"$params.pft_compress_value",
                 "local_seeding_mask_type":"$params.local_seeding_mask_type",
-                "local_fa_seeding_mask_theshold":"$params.local_fa_seeding_mask_theshold",
+                "local_fa_seeding_mask_threshold":"$params.local_fa_seeding_mask_threshold",
                 "local_tracking_mask_type":"$params.local_tracking_mask_type",
-                "local_fa_tracking_mask_theshold":"$params.local_fa_tracking_mask_theshold",
+                "local_fa_tracking_mask_threshold":"$params.local_fa_tracking_mask_threshold",
                 "run_local_tracking":"$params.run_local_tracking",
                 "local_compress_streamlines":"$params.local_compress_streamlines",
                 "pft_random_seed":"$params.pft_random_seed",
@@ -1259,7 +1259,7 @@ process PFT_Seeding_Mask {
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
-        mrcalc $fa $params.pft_fa_seeding_mask_theshold -ge ${sid}__pft_seeding_mask.nii.gz
+        mrcalc $fa $params.pft_fa_seeding_mask_threshold -ge ${sid}__pft_seeding_mask.nii.gz
         """
 }
 
@@ -1326,7 +1326,7 @@ process Local_Tracking_Mask {
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
-        mrcalc $fa $params.local_fa_tracking_mask_theshold -ge ${sid}__local_tracking_mask.nii.gz -datatype uint8
+        mrcalc $fa $params.local_fa_tracking_mask_threshold -ge ${sid}__local_tracking_mask.nii.gz -datatype uint8
         """
 }
 
@@ -1356,7 +1356,7 @@ process Local_Seeding_Mask {
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
-        mrcalc $fa $params.pft_fa_seeding_mask_theshold -ge ${sid}__local_seeding_mask.nii.gz -datatype uint8
+        mrcalc $fa $params.local_fa_seeding_mask_threshold -ge ${sid}__local_seeding_mask.nii.gz -datatype uint8
         """
 }
 
