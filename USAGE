@@ -116,7 +116,7 @@ OPTIONAL ARGUMENTS (current value)
 --run_pft_tracking                          Run Particle Filter Tracking (PFT) ($run_pft_tracking).
 
 --pft_seeding_mask_type                     [PFT] seeding mask type [wm, interface, fa] ($pft_seeding_mask_type).
---pft_fa_seeding_mask_theshold              [PFT] FA threshold for FA seeding mask ($pft_fa_seeding_mask_theshold).
+--pft_fa_seeding_mask_threshold             [PFT] FA threshold for FA seeding mask ($pft_fa_seeding_mask_threshold).
 
 --pft_algo                                  [PFT] Tracking algorithm [prob, det] ($pft_algo).
 --pft_seeding                               [PFT] Seeding type [npv, nt] ($pft_seeding).
@@ -133,10 +133,10 @@ OPTIONAL ARGUMENTS (current value)
 --run_local_tracking                        Run Local Tracking ($run_local_tracking).
 
 --local_seeding_mask_type                   [LOCAL] seeding mask type [wm, fa] ($local_seeding_mask_type).
---local_fa_seeding_mask_theshold            [LOCAL] FA threshold for FA seeding mask ($local_fa_seeding_mask_theshold).
+--local_fa_seeding_mask_threshold           [LOCAL] FA threshold for FA seeding mask ($local_fa_seeding_mask_threshold).
 
 --local_tracking_mask_type                  [LOCAL] tracking mask type [wm, fa] ($local_tracking_mask_type).
---local_fa_tracking_mask_theshold           [LOCAL] FA threshold for FA tracking mask ($local_fa_tracking_mask_theshold).
+--local_fa_tracking_mask_threshold          [LOCAL] FA threshold for FA tracking mask ($local_fa_tracking_mask_threshold).
 
 --local_algo                                [LOCAL] Tracking algorithm [prob, det] ($local_algo).
 --local_seeding                             [LOCAL] Seeding type [npv, nt] ($local_seeding).
