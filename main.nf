@@ -8,14 +8,12 @@ params.bids_config = false
 params.help = false
 params.dti_shells = false
 params.fodf_shells = false
-params.participant_cleaned = false
 
 if(params.help) {
     usage = file("$baseDir/USAGE")
 
     cpu_count = Runtime.runtime.availableProcessors()
-    bindings = ["participants_label":"$params.participants_label",
-                "clean_bids":"$params.clean_bids",
+    bindings = ["clean_bids":"$params.clean_bids",
                 "b0_thr_extract_b0":"$params.b0_thr_extract_b0",
                 "dwi_shell_tolerance":"$params.dwi_shell_tolerance",
                 "dilate_b0_mask_prelim_brain_extraction":"$params.dilate_b0_mask_prelim_brain_extraction",
@@ -135,8 +133,8 @@ else if (params.bids || params.bids_config){
         log.info "Input BIDS: $params.bids"
         if (params.participants_label) {
             Integer start = workflow.commandLine.indexOf("participants_label") + "participants_label".length();
-            params.participant_cleaned = workflow.commandLine.substring(start, workflow.commandLine.indexOf("--", start) == -1 ? workflow.commandLine.length() : workflow.commandLine.indexOf("--", start)).replace("=", "").replace("\'", "")
-            log.info "Participants: $params.participant_cleaned"
+            participant_cleaned = workflow.commandLine.substring(start, workflow.commandLine.indexOf("--", start) == -1 ? workflow.commandLine.length() : workflow.commandLine.indexOf("--", start)).replace("=", "").replace("\'", "")
+            log.info "Participants: $participant_cleaned"
         }
         log.info "Clean_bids: $params.clean_bids"
         log.info ""
@@ -158,7 +156,7 @@ else if (params.bids || params.bids_config){
 
             script:
             participants_flag =\
-            params.participants_label ? '--participants_label ' + params.participant_cleaned : ""
+            params.participants_label ? '--participants_label ' + participant_cleaned : ""
 
             clean_flag = params.clean_bids ? '--clean ' : ''
 
