@@ -8,6 +8,7 @@ params.bids_config = false
 params.help = false
 params.dti_shells = false
 params.fodf_shells = false
+params.participant_cleaned = false
 
 if(params.help) {
     usage = file("$baseDir/USAGE")
