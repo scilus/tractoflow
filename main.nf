@@ -134,8 +134,8 @@ else if (params.bids || params.bids_config){
         log.info "Input BIDS: $params.bids"
         if (params.participants_label) {
             Integer start = workflow.commandLine.indexOf("participants_label") + "participants_label".length();
-            params.participant_cleaned = workflow.commandLine.substring(start, workflow.commandLine.indexOf("--", start) == -1 ? workflow.commandLine.length() : workflow.commandLine.indexOf("--", start)).replace("=", "").replace("\'", "")
-            log.info "Participants: $params.participant_cleaned"
+            participant_cleaned = workflow.commandLine.substring(start, workflow.commandLine.indexOf("--", start) == -1 ? workflow.commandLine.length() : workflow.commandLine.indexOf("--", start)).replace("=", "").replace("\'", "")
+            log.info "Participants: $participant_cleaned"
         }
         log.info "Clean_bids: $params.clean_bids"
         log.info ""
@@ -157,7 +157,7 @@ else if (params.bids || params.bids_config){
 
             script:
             participants_flag =\
-            params.participants_label ? '--participants_label ' + params.participant_cleaned : ""
+            params.participants_label ? '--participants_label ' + participant_cleaned : ""
 
             clean_flag = params.clean_bids ? '--clean ' : ''
 
