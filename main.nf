@@ -419,6 +419,7 @@ process Topup {
     export OMP_NUM_THREADS=$task.cpus
     export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
     export OPENBLAS_NUM_THREADS=1
+    export ANTS_RANDOM_SEED=1234
     scil_extract_b0.py $dwi $bval $bvec b0_mean.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0 --force_b0_threshold
     scil_image_math.py mean $rev_b0 $rev_b0 --data_type float32 -f
@@ -753,6 +754,7 @@ process Bet_T1 {
     export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     export OMP_NUM_THREADS=1
     export OPENBLAS_NUM_THREADS=1
+    export ANTS_RANDOM_SEED=1234
     antsBrainExtraction.sh -d 3 -a $t1 -e $params.template_t1/t1_template.nii.gz\
         -o bet/ -m $params.template_t1/t1_brain_probability_map.nii.gz -u 0
     scil_image_math.py convert bet/BrainExtractionMask.nii.gz ${sid}__t1_bet_mask.nii.gz --data_type uint8
@@ -1021,6 +1023,7 @@ process Register_T1 {
     export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
     export OMP_NUM_THREADS=1
     export OPENBLAS_NUM_THREADS=1
+    export ANTS_RANDOM_SEED=1234
     antsRegistration --dimensionality 3 --float 0\
         --output [output,outputWarped.nii.gz,outputInverseWarped.nii.gz]\
         --interpolation Linear --use-histogram-matching 0\
