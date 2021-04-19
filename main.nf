@@ -359,8 +359,8 @@ process Bet_Prelim_DWI {
     scil_image_math.py convert ${sid}__b0_bet_mask.nii.gz ${sid}__b0_bet_mask.nii.gz --data_type uint8 -f
     maskfilter ${sid}__b0_bet_mask.nii.gz dilate ${sid}__b0_bet_mask_dilated.nii.gz\
         --npass $params.dilate_b0_mask_prelim_brain_extraction -nthreads 1
-    mrcalc ${sid}__b0.nii.gz ${sid}__b0_bet_mask_dilated.nii.gz\
-        -mult ${sid}__b0_bet.nii.gz -quiet -force -nthreads 1
+    scil_image_math.py multiplication ${sid}__b0.nii.gz ${sid}__b0_bet_mask_dilated.nii.gz\
+      ${sid}__b0_bet.nii.gz -f
     """
 }
 
@@ -385,7 +385,7 @@ process Denoise_DWI {
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
         dwidenoise $dwi dwi_denoised.nii.gz -extent $params.extent -nthreads $task.cpus
-        fslmaths dwi_denoised.nii.gz -thr 0 ${sid}__dwi_denoised.nii.gz
+        scil_image_math.py upper_threshold dwi_denoised.nii.gz 0 ${sid}__dwi_denoised.nii.gz -f
         """
     else
         """
@@ -478,7 +478,7 @@ process Eddy {
             --readout $readout --out_script --fix_seed\
             $slice_drop_flag
         sh eddy.sh
-        fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
+        scil_image_math.py upper_threshold dwi_eddy_corrected.nii.gz 0 ${sid}__dwi_corrected.nii.gz -f
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
@@ -541,7 +541,7 @@ process Eddy_Topup {
             --readout $readout --out_script --fix_seed\
             $slice_drop_flag
         sh eddy.sh
-        fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
+        scil_image_math.py upper_threshold dwi_eddy_corrected.nii.gz 0 ${sid}__dwi_corrected.nii.gz -f
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
@@ -612,7 +612,8 @@ process Bet_DWI {
     export OPENBLAS_NUM_THREADS=1
     bet $b0 ${sid}__b0_bet.nii.gz -m -R -f $params.bet_dwi_final_f
     scil_image_math.py convert ${sid}__b0_bet_mask.nii.gz ${sid}__b0_bet_mask.nii.gz --data_type uint8 -f
-    mrcalc $dwi ${sid}__b0_bet_mask.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet -nthreads 1
+    scil_image_math.py multiplication $dwi ${sid}__b0_bet_mask.nii.gz\
+      ${sid}__dwi_bet.nii.gz -f
     """
 }
 
@@ -758,7 +759,8 @@ process Bet_T1 {
     antsBrainExtraction.sh -d 3 -a $t1 -e $params.template_t1/t1_template.nii.gz\
         -o bet/ -m $params.template_t1/t1_brain_probability_map.nii.gz -u 0
     scil_image_math.py convert bet/BrainExtractionMask.nii.gz ${sid}__t1_bet_mask.nii.gz --data_type uint8
-    mrcalc $t1 ${sid}__t1_bet_mask.nii.gz -mult ${sid}__t1_bet.nii.gz -nthreads 1
+    scil_image_math.py multiplication $t1 ${sid}__t1_bet_mask.nii.gz\
+      ${sid}__t1_bet.nii.gz -f
     """
 }
 
@@ -833,21 +835,18 @@ process Resample_DWI {
     script:
     if (params.run_resample_dwi)
         """
-        export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
-        export OMP_NUM_THREADS=1
-        export OPENBLAS_NUM_THREADS=1
         scil_resample_volume.py $dwi \
             dwi_resample.nii.gz \
             --resolution $params.dwi_resolution \
             --interp  $params.dwi_interpolation
-        fslmaths dwi_resample.nii.gz -thr 0 dwi_resample_clipped.nii.gz
+        scil_image_math.py upper_threshold dwi_resample.nii.gz 0 dwi_resample_clipped.nii.gz
         scil_resample_volume.py $mask \
             mask_resample.nii.gz \
             --ref dwi_resample.nii.gz \
             --enforce_dimensions \
             --interp nn
-        mrcalc dwi_resample_clipped.nii.gz mask_resample.nii.gz\
-            -mult ${sid}__dwi_resampled.nii.gz -quiet -nthreads 1
+        scil_image_math.py multiplication dwi_resample_clipped.nii.gz mask_resample.nii.gz\
+          ${sid}__dwi_resampled.nii.gz -f
         """
     else
         """
@@ -1326,10 +1325,8 @@ process Local_Tracking_Mask {
         """
     else if (params.local_tracking_mask_type == "fa")
         """
-        export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
-        export OMP_NUM_THREADS=1
-        export OPENBLAS_NUM_THREADS=1
-        mrcalc $fa $params.local_fa_tracking_mask_threshold -ge ${sid}__local_tracking_mask.nii.gz -datatype uint8
+        scil_image_math.py lower_threshold_eq $fa $params.local_fa_tracking_mask_threshold ${sid}__local_tracking_mask.nii.gz\
+            --data_type uint8
         """
 }
 
@@ -1359,7 +1356,8 @@ process Local_Seeding_Mask {
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
-        mrcalc $fa $params.local_fa_seeding_mask_threshold -ge ${sid}__local_seeding_mask.nii.gz -datatype uint8
+        scil_image_math.py lower_threshold_eq $fa $params.local_fa_seeding_mask_threshold ${sid}__local_seeding_mask.nii.gz\
+            --data_type uint8
         """
 }
 
