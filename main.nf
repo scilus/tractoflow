@@ -1076,7 +1076,7 @@ process Register_Freesurfer {
 
     input:
     set sid, file(aparc), file(wmparc), file(t1), file(affine),
-        file(warp) from labels_for_reg
+        file(warp) from labels_mat_for_reg
 
     output:
     set sid, "${sid}__aparc_warped.nii.gz", "${sid}__wmparc_warped.nii.gz" \
