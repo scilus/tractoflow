@@ -23,12 +23,16 @@ DESCRIPTION
                                         │   ├── bval
                                         │   ├── bvec
                                         │   ├── rev_b0.nii.gz  (optional)
+                                        │   ├── aparc+aseg.nii.gz  (optional)
+                                        │   ├── wmparc.nii.gz  (optional)
                                         │   └── t1.nii.gz
                                         └── S2
                                             ├── dwi.nii.gz
                                             ├── bval
                                             ├── bvec
                                             ├── rev_b0.nii.gz  (optional)
+                                            ├── aparc+aseg.nii.gz  (optional)
+                                            ├── wmparc.nii.gz  (optional)
                                             └── t1.nii.gz
 
     --bids=/path/to/[bids]              BIDS folder following the BIDS convention.
@@ -178,6 +182,10 @@ fully_reproducible                          When this profile is used, all the p
                                             This profile consist to set multi-thread parameters to be fully reproducible [Theaud20].
 
 cbrain                                      When this profile is used, Nextflow will copy all the output files in publishDir and not use symlinks.
+
+ABS                                         When this profile is used, TractoFlow-ABS (Atlas Based Segmentation) is used.
+                                            This profile must be used for pathological data.
+                                            The aparc+aseg.nii.gz and wmparc.nii.gz must be in the same space than t1.nii.gz
 
 NOTES
 
