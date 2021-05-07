@@ -1090,10 +1090,10 @@ process Register_Freesurfer {
     export ANTS_RANDOM_SEED=1234
     antsApplyTransforms -d 3 -i $aparc -r ${sid}__t1_warped.nii.gz \
         -o ${sid}__aparc_warped.nii.gz -n NearestNeighbor \
-        -t ${sid}__output1Warp.nii.gz ${sid}__output0GenericAffine.mat
+        -t ${warp} ${affine}
     antsApplyTransforms -d 3 -i $wmparc -r ${sid}__t1_warped.nii.gz \
         -o ${sid}__wmparc_warped.nii.gz -n NearestNeighbor \
-        -t ${sid}__output1Warp.nii.gz ${sid}__output0GenericAffine.mat
+        -t ${warp} ${affine}
     """
 }
 
