@@ -1149,11 +1149,15 @@ process Segment_Freesurfer {
                              wmparc_subcortical/cerebrospinal-fluid.nii.gz\
                              wmparc_subcortical/*th-ventricle.nii.gz\
                              mask_csf_1_m.nii.gz -f
-    mrthreshold mask_wm_m.nii.gz ${sid}__mask_wm_bin.nii.gz -abs 0.1 -force -nthreads 1 -datatype int16
-    mrthreshold mask_cortex_m.nii.gz ${sid}__mask_gm.nii.gz -abs 0.1 -force -nthreads 1 -datatype int16
-    mrthreshold mask_nuclei_m.nii.gz ${sid}__mask_nuclei_bin.nii.gz -abs 0.1 -force -nthreads 1 -datatype int16
-    mrthreshold mask_csf_1_m.nii.gz ${sid}__mask_csf.nii.gz -abs 0.1 -force -nthreads 1 -datatype int16
+    mrthreshold mask_wm_m.nii.gz ${sid}__mask_wm_bin.nii.gz -abs 0.1 -force -nthreads 1
+    mrthreshold mask_cortex_m.nii.gz ${sid}__mask_gm.nii.gz -abs 0.1 -force -nthreads 1
+    mrthreshold mask_nuclei_m.nii.gz ${sid}__mask_nuclei_bin.nii.gz -abs 0.1 -force -nthreads 1
+    mrthreshold mask_csf_1_m.nii.gz ${sid}__mask_csf.nii.gz -abs 0.1 -force -nthreads 1
     mrcalc ${sid}__mask_wm_bin.nii.gz ${sid}__mask_nuclei_bin.nii.gz -add ${sid}__mask_wm.nii.gz -datatype int16
+
+    scil_image_math.py convert ${sid}__mask_wm.nii.gz ${sid}__mask_wm.nii.gz --data_type uint8 -f
+    scil_image_math.py convert ${sid}__mask_gm.nii.gz ${sid}__mask_gm.nii.gz --data_type uint8 -f
+    scil_image_math.py convert ${sid}__mask_csf.nii.gz ${sid}__mask_csf.nii.gz --data_type uint8 -f
     """
 }
 
