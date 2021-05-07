@@ -1122,9 +1122,9 @@ process Segment_Freesurfer {
     mrconvert $aparc aparc+aseg_int16.nii.gz -datatype int16 -force -nthreads 1
     mrconvert $wmparc wmparc_int16.nii.gz -datatype int16 -force -nthreads 1
 
-    scil_split_volume_by_labels.py ../wmparc_int16.nii.gz --scilpy_lut freesurfer_desikan_killiany --out_dir wmparc_desikan
-    scil_split_volume_by_labels.py ../wmparc_int16.nii.gz --scilpy_lut freesurfer_subcortical --out_dir wmparc_subcortical
-    scil_split_volume_by_labels.py ../aparc+aseg_int16.nii.gz --scilpy_lut freesurfer_subcortical --out_dir aparc+aseg_subcortical
+    scil_split_volume_by_labels.py wmparc_int16.nii.gz --scilpy_lut freesurfer_desikan_killiany --out_dir wmparc_desikan
+    scil_split_volume_by_labels.py wmparc_int16.nii.gz --scilpy_lut freesurfer_subcortical --out_dir wmparc_subcortical
+    scil_split_volume_by_labels.py aparc+aseg_int16.nii.gz --scilpy_lut freesurfer_subcortical --out_dir aparc+aseg_subcortical
 
     scil_image_math.py union wmparc_desikan/*\
                              wmparc_subcortical/right-cerebellum-cortex.nii.gz\
