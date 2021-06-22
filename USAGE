@@ -57,7 +57,11 @@ OPTIONAL BIDS ARGUMENTS (current value)
 
 OPTIONAL ARGUMENTS (current value)
 
---compute_sh                                Compute DWI ODF as SH using the provided --basis and --sh_order ($compute_sh).
+--sh_fitting                                Compute a Spherical Harmonics fitting onto the DWI, and output the SH coefficients in a Nifti file ($compute_sh).
+--sh_fitting_basis                          SH basis used for the optional SH fitting [descoteaux07, tournier07] ($sh_fitting_basis).
+--sh_fitting_order                          SH order used for the optional SH fitting; must be an even number ($sh_fitting_order).
+                                            Rules :-sh_order=8 for 45 directions
+                                                   -sh_order=6 for 28 directions
 
 --b0_thr_extract_b0                         All b-values below b0_thr_extract_b0 are considered b=0 images ($b0_thr_extract_b0).
 --dwi_shell_tolerance                       All b-values to +-dwi_shell_tolerance are considered as the same b-value ($dwi_shell_tolerance).

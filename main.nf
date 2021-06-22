@@ -14,7 +14,9 @@ if(params.help) {
 
     cpu_count = Runtime.runtime.availableProcessors()
     bindings = ["clean_bids":"$params.clean_bids",
-                "compute_sh":"$params.compute_sh",
+                "sh_fitting":"$params.sh_fitting",
+                "sh_fitting_basis":"$params.sh_fitting_basis",
+                "sh_fitting_order":"$params.sh_fitting_order",
                 "b0_thr_extract_b0":"$params.b0_thr_extract_b0",
                 "dwi_shell_tolerance":"$params.dwi_shell_tolerance",
                 "dilate_b0_mask_prelim_brain_extraction":"$params.dilate_b0_mask_prelim_brain_extraction",
@@ -341,7 +343,7 @@ process README {
     """
 }
 
-process DWI_SH {
+process SH_Fitting {
     cpus 1
 
     input:
@@ -351,14 +353,14 @@ process DWI_SH {
     file "${sid}__dwi_sh.nii.gz"
 
     when:
-    params.compute_sh
+    params.sh_fitting
 
     script:
     """
     export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
     export OMP_NUM_THREADS=1
     export OPENBLAS_NUM_THREADS=1
-    scil_compute_sh_from_signal.py --sh_order $params.sh_order --sh_basis $params.basis $dwi $bval $bvec ${sid}__dwi_sh.nii.gz
+    scil_compute_sh_from_signal.py --sh_order $params.sh_fitting_order --sh_basis $params.sh_fitting_basis $dwi $bval $bvec ${sid}__dwi_sh.nii.gz
     """
 }
 
