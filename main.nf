@@ -915,7 +915,7 @@ process Extract_SH_Fitting_Shell {
     export OMP_NUM_THREADS=1
     export OPENBLAS_NUM_THREADS=1
     scil_extract_dwi_shell.py $dwi \
-        $bval $bvec 0 $params.sh_fitting_shell ${sid}__dwi_sh_fittting.nii.gz \
+        $bval $bvec 0 $params.sh_fitting_shell ${sid}__dwi_sh_fitting.nii.gz \
         ${sid}__bval_sh_fitting ${sid}__bvec_sh_fitting -t $params.dwi_shell_tolerance -f
     """
 }
