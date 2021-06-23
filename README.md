@@ -69,6 +69,7 @@ Diffusion processes
 - crop DWI (Scilpy)
 - upsample DWI (Scilpy)
 - upsample B0 (Scilpy)
+- extract SH fitted to DWI (Scilpy)
 
 T1 processes
 - denoise T1 (Scilpy)
