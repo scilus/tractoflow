@@ -256,12 +256,15 @@ if (params.pft_seeding != "nt" && params.pft_seeding != "npv"){
     error "Error ~ --pft_seeding can only take nt or npv. Please select one of these choices"
 }
 
-(dwi, gradients, t1_for_denoise, readout_encoding) = in_data
+(dwi, gradients, t1, readout_encoding) = in_data
     .map{sid, bvals, bvecs, dwi, t1, readout, encoding -> [tuple(sid, dwi),
                                         tuple(sid, bvals, bvecs),
                                         tuple(sid, t1),
                                         tuple(sid, readout, encoding)]}
     .separate(4)
+
+t1
+    .into{t1_for_denoise; t1_for_test_denoise}
 
 check_rev_b0.count().into{ rev_b0_counter; number_rev_b0_for_compare }
 
@@ -544,7 +547,7 @@ dwi_from_eddy
 gradients_from_eddy
     .mix(gradients_from_eddy_topup)
     .mix(gradients_for_skip_eddy_topup)
-    .into{gradients_for_resample_b0;
+    .into{gradients_for_extract_b0;
           gradients_for_dti_shell;
           gradients_for_fodf_shell;
           gradients_for_normalize;
@@ -663,20 +666,22 @@ process Denoise_T1 {
     output:
     set sid, "${sid}__t1_denoised.nii.gz" into t1_for_n4
 
+    when:
+    params.t1_for_test_denoise
+
     script:
-    if(params.run_t1_denoising)
-        """
-        export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
-        export OMP_NUM_THREADS=1
-        export OPENBLAS_NUM_THREADS=1
-        scil_run_nlmeans.py $t1 ${sid}__t1_denoised.nii.gz 1 \
-            --processes $task.cpus -f
-        """
-    else
-        """
-        mv $t1 ${sid}__t1_denoised.nii.gz
-        """
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    scil_run_nlmeans.py $t1 ${sid}__t1_denoised.nii.gz 1 \
+        --processes $task.cpus -f
+    """
 }
+
+t1_for_test_denoise
+    .map{it -> if(!params.t1_for_test_denoise){it}}
+    .set{t1_for_n4}
 
 process N4_T1 {
     cpus 1
@@ -685,7 +690,7 @@ process N4_T1 {
     set sid, file(t1) from t1_for_n4
 
     output:
-    set sid, "${sid}__t1_n4.nii.gz" into t1_for_resample
+    set sid, "${sid}__t1_n4.nii.gz" into t1_for_resample, t1_for_test_resample
 
     script:
     """
@@ -707,21 +712,23 @@ process Resample_T1 {
     output:
     set sid, "${sid}__t1_resampled.nii.gz" into t1_for_bet
 
+    when:
+    params.run_resample_t1
+
     script:
-    if(params.run_resample_t1)
-        """
-        export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
-        export OMP_NUM_THREADS=1
-        export OPENBLAS_NUM_THREADS=1
-        scil_resample_volume.py $t1 ${sid}__t1_resampled.nii.gz \
-            --resolution $params.t1_resolution \
-            --interp  $params.t1_interpolation
-        """
-    else
-        """
-        mv $t1 ${sid}__t1_resampled.nii.gz
-        """
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    scil_resample_volume.py $t1 ${sid}__t1_resampled.nii.gz \
+        --resolution $params.t1_resolution \
+        --interp  $params.t1_interpolation
+    """
 }
+
+t1_for_test_resample
+    .map{it -> if(!params.run_resample_t1){it}}
+    .set{t1_for_bet}
 
 process Bet_T1 {
     cpus params.processes_brain_extraction_t1
@@ -780,7 +787,7 @@ process Normalize_DWI {
     set sid, file(dwi), file(mask), file(bval), file(bvec) from dwi_mask_grad_for_normalize
 
     output:
-    set sid, "${sid}__dwi_normalized.nii.gz" into dwi_for_resample
+    set sid, "${sid}__dwi_normalized.nii.gz" into dwi_for_resample, dwi_for_test_resample
     file "${sid}_fa_wm_mask.nii.gz"
 
     script:
@@ -810,44 +817,46 @@ process Resample_DWI {
 
     output:
     set sid, "${sid}__dwi_resampled.nii.gz" into\
-        dwi_for_resample_b0,
+        dwi_for_extract_b0,
         dwi_for_extract_dti_shell,
         dwi_for_extract_fodf_shell
 
+    when:
+    params.run_resample_dwi
+
     script:
-    if (params.run_resample_dwi)
-        """
-        export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
-        export OMP_NUM_THREADS=1
-        export OPENBLAS_NUM_THREADS=1
-        scil_resample_volume.py $dwi \
-            dwi_resample.nii.gz \
-            --resolution $params.dwi_resolution \
-            --interp  $params.dwi_interpolation
-        fslmaths dwi_resample.nii.gz -thr 0 dwi_resample_clipped.nii.gz
-        scil_resample_volume.py $mask \
-            mask_resample.nii.gz \
-            --ref dwi_resample.nii.gz \
-            --enforce_dimensions \
-            --interp nn
-        mrcalc dwi_resample_clipped.nii.gz mask_resample.nii.gz\
-            -mult ${sid}__dwi_resampled.nii.gz -quiet -nthreads 1
-        """
-    else
-        """
-        mv $dwi ${sid}__dwi_resampled.nii.gz
-        """
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    scil_resample_volume.py $dwi \
+        dwi_resample.nii.gz \
+        --resolution $params.dwi_resolution \
+        --interp  $params.dwi_interpolation
+    fslmaths dwi_resample.nii.gz -thr 0 dwi_resample_clipped.nii.gz
+    scil_resample_volume.py $mask \
+        mask_resample.nii.gz \
+        --ref dwi_resample.nii.gz \
+        --enforce_dimensions \
+        --interp nn
+    mrcalc dwi_resample_clipped.nii.gz mask_resample.nii.gz\
+        -mult ${sid}__dwi_resampled.nii.gz -quiet -nthreads 1
+    """
 }
 
-dwi_for_resample_b0
-    .join(gradients_for_resample_b0)
-    .set{dwi_and_grad_for_resample_b0}
+dwi_for_test_resample
+    .map{it -> if(!params.run_resample_dwi){it}}
+    .into{dwi_for_extract_b0; dwi_for_extract_dti_shell; dwi_for_extract_fodf_shell}
 
-process Resample_B0 {
+dwi_for_extract_b0
+    .join(gradients_for_extract_b0)
+    .set{dwi_and_grad_for_extract_b0}
+
+process Extract_B0 {
     cpus 3
 
     input:
-    set sid, file(dwi), file(bval), file(bvec) from dwi_and_grad_for_resample_b0
+    set sid, file(dwi), file(bval), file(bvec) from dwi_and_grad_for_extract_b0
 
     output:
     set sid, "${sid}__b0_resampled.nii.gz" into b0_for_reg
