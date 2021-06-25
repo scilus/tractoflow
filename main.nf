@@ -551,53 +551,33 @@ gradients_from_eddy
           gradients_for_dti_shell;
           gradients_for_fodf_shell;
           gradients_for_normalize;
-          gradients_for_extract_b0}
-
-dwi_for_extract_b0
-    .join(gradients_for_extract_b0)
-    .set{dwi_gradients_for_extract_b0}
-
-process Extract_B0 {
-    cpus 2
-
-    input:
-    set sid, file(dwi), file(bval), file(bvec) from dwi_gradients_for_extract_b0
-
-    output:
-    set sid, "${sid}__b0.nii.gz" into b0_for_bet
-
-    script:
-    """
-    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
-    export OMP_NUM_THREADS=1
-    export OPENBLAS_NUM_THREADS=1
-    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean\
-        --b0_thr $params.b0_thr_extract_b0 --force_b0_threshold
-    """
-}
+          gradients_for_bet}
 
 dwi_for_bet
-    .join(b0_for_bet)
-    .set{dwi_b0_for_bet}
+    .join(gradients_for_bet)
+    .set{dwi_gradients_for_bet}
 
 process Bet_DWI {
     cpus 2
 
     input:
-    set sid, file(dwi), file(b0) from dwi_b0_for_bet
+    set sid, file(dwi), file(bval), file(bvec) from dwi_gradients_for_bet
 
     output:
     set sid, "${sid}__b0_bet.nii.gz", "${sid}__b0_bet_mask.nii.gz" into\
         b0_and_mask_for_crop
     set sid, "${sid}__dwi_bet.nii.gz", "${sid}__b0_bet.nii.gz",
         "${sid}__b0_bet_mask.nii.gz" into dwi_b0_b0_mask_for_n4
+    file "${sid}__b0_no_bet.nii.gz"
 
     script:
     """
     export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
     export OMP_NUM_THREADS=1
     export OPENBLAS_NUM_THREADS=1
-    bet $b0 ${sid}__b0_bet.nii.gz -m -R -f $params.bet_dwi_final_f
+    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0_no_bet.nii.gz --mean\
+            --b0_thr $params.b0_thr_extract_b0 --force_b0_threshold
+    bet ${sid}__b0_no_bet.nii.gz ${sid}__b0_bet.nii.gz -m -R -f $params.bet_dwi_final_f
     scil_image_math.py convert ${sid}__b0_bet_mask.nii.gz ${sid}__b0_bet_mask.nii.gz --data_type uint8 -f
     mrcalc $dwi ${sid}__b0_bet_mask.nii.gz -mult ${sid}__dwi_bet.nii.gz -quiet -nthreads 1
     """
