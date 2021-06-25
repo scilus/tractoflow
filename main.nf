@@ -284,7 +284,7 @@ number_subj_for_compare
           "Please be sure to have the same acquisitions for all subjects."}
 }
 
-dwi.into{dwi_for_prelim_bet; dwi_for_denoise}
+dwi.into{dwi_for_prelim_bet; dwi_for_denoise; dwi_for_skip_denoise}
 
 if (params.pft_random_seed instanceof String){
     pft_random_seed = params.pft_random_seed?.tokenize(',')
@@ -379,18 +379,18 @@ process Denoise_DWI {
     script:
     // The denoised DWI is clipped to 0 since negative values
     // could have been introduced.
-    if(params.run_dwi_denoising)
-        """
-        export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
-        export OMP_NUM_THREADS=1
-        export OPENBLAS_NUM_THREADS=1
-        dwidenoise $dwi dwi_denoised.nii.gz -extent $params.extent -nthreads $task.cpus
-        fslmaths dwi_denoised.nii.gz -thr 0 ${sid}__dwi_denoised.nii.gz
-        """
-    else
-        """
-        mv $dwi ${sid}__dwi_denoised.nii.gz
-        """
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    dwidenoise $dwi dwi_denoised.nii.gz -extent $params.extent -nthreads $task.cpus
+    fslmaths dwi_denoised.nii.gz -thr 0 ${sid}__dwi_denoised.nii.gz
+    """
+}
+
+if(!params.run_dwi_denoising){
+    dwi_for_skip_denoise
+    .into{dwi_for_eddy; dwi_for_topup; dwi_for_eddy_topup}
 }
 
 dwi_for_topup
