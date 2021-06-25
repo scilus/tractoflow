@@ -375,6 +375,8 @@ process Denoise_DWI {
         dwi_for_eddy,
         dwi_for_topup,
         dwi_for_eddy_topup
+    when:
+    params.run_dwi_denoising
 
     script:
     // The denoised DWI is clipped to 0 since negative values
