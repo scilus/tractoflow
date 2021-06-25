@@ -392,7 +392,7 @@ process Denoise_DWI {
 }
 
 dwi_for_test_denoise
-    .map{it, params -> if(!params.run_dwi_denoising){it}}
+    .map{it -> if(!params.run_dwi_denoising){it}}
     .into{dwi_for_eddy; dwi_for_topup; dwi_for_eddy_topup; dwi_for_test_eddy_topup}
 
 dwi_for_topup
@@ -533,8 +533,8 @@ process Eddy_Topup {
         """
 }
 
-dwi_for_test_eddy_topup.map{it, params -> if(!params.run_eddy){it}}.set{dwi_for_skip_eddy_topup}
-gradients_for_test_eddy_topup.map{it, params -> if(!params.run_eddy){it}}.set{gradients_for_skip_eddy_topup}
+dwi_for_test_eddy_topup.map{it -> if(!params.run_eddy){it}}.set{dwi_for_skip_eddy_topup}
+gradients_for_test_eddy_topup.map{it -> if(!params.run_eddy){it}}.set{gradients_for_skip_eddy_topup}
 
 dwi_from_eddy
     .mix(dwi_from_eddy_topup)
