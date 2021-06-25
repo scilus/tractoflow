@@ -542,7 +542,7 @@ gradients_for_test_eddy_topup.map{it -> if(!params.run_eddy){it}}.set{gradients_
 dwi_from_eddy
     .mix(dwi_from_eddy_topup)
     .mix(dwi_for_skip_eddy_topup)
-    .into{dwi_for_bet;dwi_for_extract_b0}
+    .set{dwi_for_bet}
 
 gradients_from_eddy
     .mix(gradients_from_eddy_topup)
@@ -647,7 +647,7 @@ process Denoise_T1 {
     set sid, "${sid}__t1_denoised.nii.gz" into t1_for_n4
 
     when:
-    params.t1_for_test_denoise
+    params.run_t1_denoising
 
     script:
     """
@@ -660,7 +660,7 @@ process Denoise_T1 {
 }
 
 t1_for_test_denoise
-    .map{it -> if(!params.t1_for_test_denoise){it}}
+    .map{it -> if(!params.run_t1_denoising){it}}
     .set{t1_for_n4}
 
 process N4_T1 {
