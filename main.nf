@@ -284,7 +284,7 @@ number_subj_for_compare
           "Please be sure to have the same acquisitions for all subjects."}
 }
 
-dwi.into{dwi_for_prelim_bet; dwi_for_denoise; dwi_for_skip_denoise}
+dwi.into{dwi_for_prelim_bet; dwi_for_denoise; dwi_for_test_denoise}
 
 if (params.pft_random_seed instanceof String){
     pft_random_seed = params.pft_random_seed?.tokenize(',')
@@ -302,7 +302,7 @@ else{
 
 gradients
     .into{gradients_for_prelim_bet; gradients_for_eddy; gradients_for_topup;
-          gradients_for_eddy_topup}
+          gradients_for_eddy_topup; gradients_for_test_eddy_topup}
 
 readout_encoding
     .into{readout_encoding_for_topup; readout_encoding_for_eddy;
@@ -374,7 +374,8 @@ process Denoise_DWI {
     set sid, "${sid}__dwi_denoised.nii.gz" into\
         dwi_for_eddy,
         dwi_for_topup,
-        dwi_for_eddy_topup
+        dwi_for_eddy_topup,
+        dwi_for_test_eddy_topup
     when:
     params.run_dwi_denoising
 
@@ -390,10 +391,9 @@ process Denoise_DWI {
     """
 }
 
-if(!params.run_dwi_denoising){
-    dwi_for_skip_denoise
-    .into{dwi_for_eddy; dwi_for_topup; dwi_for_eddy_topup}
-}
+dwi_for_test_denoise
+    .map{it -> if(!params.run_dwi_denoising){it}}
+    .into{dwi_for_eddy; dwi_for_topup; dwi_for_eddy_topup; dwi_for_test_eddy_topup}
 
 dwi_for_topup
     .join(gradients_for_topup)
@@ -452,20 +452,16 @@ process Eddy {
     val(rev_b0_count) from rev_b0_counter
 
     output:
-    set sid, "${sid}__dwi_corrected.nii.gz", "${sid}__bval_eddy",
-        "${sid}__dwi_eddy_corrected.bvec" into\
-        dwi_gradients_from_eddy
     set sid, "${sid}__dwi_corrected.nii.gz" into\
         dwi_from_eddy
     set sid, "${sid}__bval_eddy", "${sid}__dwi_eddy_corrected.bvec" into\
         gradients_from_eddy
 
     when:
-    rev_b0_count == 0 || !params.run_topup || (!params.run_eddy && params.run_topup)
+    rev_b0_count == 0 || !params.run_topup && params.run_eddy
 
     // Corrected DWI is clipped to 0 since Eddy can introduce negative values.
     script:
-    if (params.run_eddy) {
         slice_drop_flag=""
         if (params.use_slice_drop_correction) {
             slice_drop_flag="--slice_drop_correction"
@@ -484,14 +480,6 @@ process Eddy {
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
-    }
-    else {
-        """
-        mv $dwi ${sid}__dwi_corrected.nii.gz
-        mv $bvec ${sid}__dwi_eddy_corrected.bvec
-        mv $bval ${sid}__bval_eddy
-        """
-    }
 }
 
 dwi_for_eddy_topup
@@ -510,9 +498,6 @@ process Eddy_Topup {
     val(rev_b0_count) from rev_b0_counter
 
     output:
-    set sid, "${sid}__dwi_corrected.nii.gz", "${sid}__bval_eddy",
-        "${sid}__dwi_eddy_corrected.bvec" into\
-        dwi_gradients_from_eddy_topup
     set sid, "${sid}__dwi_corrected.nii.gz" into\
         dwi_from_eddy_topup
     set sid, "${sid}__bval_eddy", "${sid}__dwi_eddy_corrected.bvec" into\
@@ -520,12 +505,11 @@ process Eddy_Topup {
     file "${sid}__b0_bet_mask.nii.gz"
 
     when:
-    rev_b0_count > 0 && params.run_topup
+    rev_b0_count > 0 && params.run_topup && params.run_eddy
 
     // Corrected DWI is clipped to ensure there are no negative values
     // introduced by Eddy.
     script:
-    if (params.run_eddy) {
         slice_drop_flag=""
         if (params.use_slice_drop_correction)
             slice_drop_flag="--slice_drop_correction"
@@ -548,29 +532,28 @@ process Eddy_Topup {
         mv $bval ${sid}__bval_eddy
         """
     }
-    else {
-        """
-        mv $dwi ${sid}__dwi_corrected.nii.gz
-        mv $bvec ${sid}__dwi_eddy_corrected.bvec
-        mv $bval ${sid}__bval_eddy
-        """
-    }
 }
 
-dwi_gradients_from_eddy
-    .mix(dwi_gradients_from_eddy_topup)
-    .set{dwi_gradients_for_extract_b0}
+dwi_for_test_eddy_topup.map{it -> if(!params.run_eddy){it}}.set{dwi_for_skip_eddy_topup}
+gradients_for_test_eddy_topup.map{it -> if(!params.run_eddy){it}}.set{gradients_for_skip_eddy_topup}
 
 dwi_from_eddy
     .mix(dwi_from_eddy_topup)
-    .set{dwi_for_bet}
+    .mix(dwi_for_skip_eddy_topup)
+    .into{dwi_for_bet;dwi_for_extract_b0}
 
 gradients_from_eddy
     .mix(gradients_from_eddy_topup)
+    .mix(gradients_for_skip_eddy_topup)
     .into{gradients_for_resample_b0;
           gradients_for_dti_shell;
           gradients_for_fodf_shell;
-          gradients_for_normalize}
+          gradients_for_normalize;
+          gradients_for_extract_b0}
+
+dwi_for_extract_b0
+    .join(gradients_for_extract_b0)
+    .set{dwi_gradients_for_extract_b0}
 
 process Extract_B0 {
     cpus 2
