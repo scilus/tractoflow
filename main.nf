@@ -531,7 +531,6 @@ process Eddy_Topup {
         mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
         mv $bval ${sid}__bval_eddy
         """
-    }
 }
 
 dwi_for_test_eddy_topup.map{it -> if(!params.run_eddy){it}}.set{dwi_for_skip_eddy_topup}
