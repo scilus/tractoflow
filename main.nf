@@ -351,6 +351,9 @@ process Bet_Prelim_DWI {
     file "${sid}__b0_bet.nii.gz"
     file "${sid}__b0_bet_mask.nii.gz"
 
+    when:
+    !params.run_topup && params.run_eddy
+
     script:
     """
     export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
