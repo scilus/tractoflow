@@ -379,10 +379,8 @@ process Denoise_DWI {
 
     output:
     set sid, "${sid}__dwi_denoised.nii.gz" into\
-        dwi_for_eddy,
-        dwi_for_topup,
-        dwi_for_eddy_topup,
-        dwi_for_test_eddy_topup
+        dwi_denoised_for_mix
+
     when:
     params.run_dwi_denoising
 
@@ -400,6 +398,7 @@ process Denoise_DWI {
 
 dwi_for_test_denoise
     .map{it -> if(!params.run_dwi_denoising){it}}
+    .mix(dwi_denoised_for_mix)
     .into{dwi_for_eddy; dwi_for_topup; dwi_for_eddy_topup; dwi_for_test_eddy_topup}
 
 dwi_for_topup
@@ -698,7 +697,7 @@ process Resample_T1 {
     set sid, file(t1) from t1_for_resample
 
     output:
-    set sid, "${sid}__t1_resampled.nii.gz" into t1_for_bet
+    set sid, "${sid}__t1_resampled.nii.gz" into t1_resampled_for_mix
 
     when:
     params.run_resample_t1
@@ -716,6 +715,7 @@ process Resample_T1 {
 
 t1_for_test_resample
     .map{it -> if(!params.run_resample_t1){it}}
+    .mix(t1_resampled_for_mix)
     .set{t1_for_bet}
 
 process Bet_T1 {
@@ -806,9 +806,7 @@ process Resample_DWI {
 
     output:
     set sid, "${sid}__dwi_resampled.nii.gz" into\
-        dwi_for_extract_b0,
-        dwi_for_extract_dti_shell,
-        dwi_for_extract_fodf_shell
+        dwi_resampled_for_mix
 
     when:
     params.run_resample_dwi
@@ -835,6 +833,7 @@ process Resample_DWI {
 
 dwi_for_test_resample
     .map{it -> if(!params.run_resample_dwi){it}}
+    .mix(dwi_resampled_for_mix)
     .into{dwi_for_extract_b0; dwi_for_extract_dti_shell; dwi_for_extract_fodf_shell}
 
 dwi_for_extract_b0
