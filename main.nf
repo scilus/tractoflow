@@ -651,7 +651,7 @@ process Denoise_T1 {
     set sid, file(t1) from t1_for_denoise
 
     output:
-    set sid, "${sid}__t1_denoised.nii.gz" into t1_for_n4
+    set sid, "${sid}__t1_denoised.nii.gz" into t1_for_mix_n4
 
     when:
     params.run_t1_denoising
@@ -668,7 +668,7 @@ process Denoise_T1 {
 
 t1_for_test_denoise
     .map{it -> if(!params.run_t1_denoising){it}}
-    .toList()
+    .mix(t1_for_mix_n4)
     .set{t1_for_n4}
 
 process N4_T1 {
