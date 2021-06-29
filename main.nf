@@ -668,6 +668,7 @@ process Denoise_T1 {
 
 t1_for_test_denoise
     .map{it -> if(!params.run_t1_denoising){it}}
+    .toList()
     .set{t1_for_n4}
 
 process N4_T1 {
