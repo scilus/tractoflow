@@ -1028,7 +1028,7 @@ process Register_T1 {
     output:
     set sid, "${sid}__t1_warped.nii.gz" into t1_for_seg
     set sid, "${sid}__t1_warped.nii.gz", "${sid}__output0GenericAffine.mat",
-        "${sid}__output1InverseWarp.nii.gz" into t1_for_freesurfer_reg
+        "${sid}__output1Warp.nii.gz" into t1_for_freesurfer_reg
     file "${sid}__output1InverseWarp.nii.gz"
     file "${sid}__t1_mask_warped.nii.gz"
 
@@ -1119,8 +1119,8 @@ process Segment_Freesurfer {
     mkdir wmparc_desikan/
     mkdir wmparc_subcortical/
     mkdir aparc+aseg_subcortical/
-    mrconvert $aparc aparc+aseg_int16.nii.gz -datatype int16 -force -nthreads 1
-    mrconvert $wmparc wmparc_int16.nii.gz -datatype int16 -force -nthreads 1
+    scil_image_math.py convert $aparc aparc+aseg_int16.nii.gz --data_type int16 -f
+    scil_image_math.py convert $wmparc wmparc_int16.nii.gz --data_type int16 -f
 
     scil_split_volume_by_labels.py wmparc_int16.nii.gz --scilpy_lut freesurfer_desikan_killiany --out_dir wmparc_desikan
     scil_split_volume_by_labels.py wmparc_int16.nii.gz --scilpy_lut freesurfer_subcortical --out_dir wmparc_subcortical
@@ -1149,11 +1149,17 @@ process Segment_Freesurfer {
                              wmparc_subcortical/cerebrospinal-fluid.nii.gz\
                              wmparc_subcortical/*th-ventricle.nii.gz\
                              mask_csf_1_m.nii.gz -f
-    mrthreshold mask_wm_m.nii.gz ${sid}__mask_wm_bin.nii.gz -abs 0.1 -force -nthreads 1
-    mrthreshold mask_cortex_m.nii.gz ${sid}__mask_gm.nii.gz -abs 0.1 -force -nthreads 1
-    mrthreshold mask_nuclei_m.nii.gz ${sid}__mask_nuclei_bin.nii.gz -abs 0.1 -force -nthreads 1
-    mrthreshold mask_csf_1_m.nii.gz ${sid}__mask_csf.nii.gz -abs 0.1 -force -nthreads 1
-    mrcalc ${sid}__mask_wm_bin.nii.gz ${sid}__mask_nuclei_bin.nii.gz -add ${sid}__mask_wm.nii.gz -datatype int16
+    scil_image_math.py lower_threshold mask_wm_m.nii.gz 0.1\
+                                          ${sid}__mask_wm_bin.nii.gz -f
+    scil_image_math.py lower_threshold mask_cortex_m.nii.gz 0.1\
+                                          ${sid}__mask_gm.nii.gz -f
+    scil_image_math.py lower_threshold mask_nuclei_m.nii.gz 0.1\
+                                          ${sid}__mask_nuclei_bin.nii.gz -f
+    scil_image_math.py lower_threshold mask_csf_1_m.nii.gz 0.1\
+                                          ${sid}__mask_csf.nii.gz -f
+    scil_image_math.py addition ${sid}__mask_wm_bin.nii.gz\
+                                ${sid}__mask_nuclei_bin.nii.gz\
+                                ${sid}__mask_wm.nii.gz --data_type int16
 
     scil_image_math.py convert ${sid}__mask_wm.nii.gz ${sid}__mask_wm.nii.gz --data_type uint8 -f
     scil_image_math.py convert ${sid}__mask_gm.nii.gz ${sid}__mask_gm.nii.gz --data_type uint8 -f
