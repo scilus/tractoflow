@@ -118,6 +118,12 @@ if (params.input && !(params.bids && params.bids_config)){
                        maxDepth:1,
                        flat: true) {it.parent.name}
 
+    labels_for_reg = Channel
+            .fromFilePairs("$root/**/*{aparc+aseg.nii.gz,wmparc.nii.gz}",
+                           size: 2,
+                           maxDepth:1,
+                           flat: true) {it.parent.name}
+
     data
         .map{[it, params.readout, params.encoding_direction].flatten()}
         .into{in_data; check_subjects_number}
@@ -254,6 +260,14 @@ if (params.local_seeding != "nt" && params.local_seeding != "npv"){
 
 if (params.pft_seeding != "nt" && params.pft_seeding != "npv"){
     error "Error ~ --pft_seeding can only take nt or npv. Please select one of these choices"
+}
+
+if (params.run_pft_tracking && workflow.profile.contains("ABS")){
+    error "Error ~ PFT tracking cannot be run with Atlas Based Segmentation (ABS) profile"
+}
+
+if (params.bids && workflow.profile.contains("ABS")){
+    error "Error ~ --bids parameter cannot be run with Atlas Based Segmentation (ABS) profile"
 }
 
 (dwi, gradients, t1_for_denoise, readout_encoding) = in_data
@@ -1013,9 +1027,9 @@ process Register_T1 {
 
     output:
     set sid, "${sid}__t1_warped.nii.gz" into t1_for_seg
-    file "${sid}__output0GenericAffine.mat"
+    set sid, "${sid}__t1_warped.nii.gz", "${sid}__output0GenericAffine.mat",
+        "${sid}__output1Warp.nii.gz" into t1_for_freesurfer_reg
     file "${sid}__output1InverseWarp.nii.gz"
-    file "${sid}__output1Warp.nii.gz"
     file "${sid}__t1_mask_warped.nii.gz"
 
     script:
@@ -1053,6 +1067,106 @@ process Register_T1 {
     """
 }
 
+labels_for_reg
+    .join(t1_for_freesurfer_reg)
+    .set{labels_mat_for_reg}
+
+process Register_Freesurfer {
+    cpus 1
+
+    input:
+    set sid, file(aparc), file(wmparc), file(t1), file(affine),
+        file(warp) from labels_mat_for_reg
+
+    output:
+    set sid, "${sid}__aparc_warped.nii.gz", "${sid}__wmparc_warped.nii.gz" \
+        into labels_for_segmentation
+
+    script:
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    export ANTS_RANDOM_SEED=1234
+    antsApplyTransforms -d 3 -i $aparc -r ${sid}__t1_warped.nii.gz \
+        -o ${sid}__aparc_warped.nii.gz -n NearestNeighbor \
+        -t ${warp} ${affine}
+    antsApplyTransforms -d 3 -i $wmparc -r ${sid}__t1_warped.nii.gz \
+        -o ${sid}__wmparc_warped.nii.gz -n NearestNeighbor \
+        -t ${warp} ${affine}
+    """
+}
+
+process Segment_Freesurfer {
+    cpus 1
+
+    input:
+    set sid, file(aparc), file(wmparc) from labels_for_segmentation
+
+    output:
+    set sid, "${sid}__mask_wm.nii.gz" into wm_mask_freesurfer
+    file "${sid}__mask_gm.nii.gz"
+    file "${sid}__mask_csf.nii.gz"
+
+    when:
+        params.run_tractoflow_abs
+
+    script:
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    mkdir wmparc_desikan/
+    mkdir wmparc_subcortical/
+    mkdir aparc+aseg_subcortical/
+    scil_image_math.py convert $aparc aparc+aseg_int16.nii.gz --data_type int16 -f
+    scil_image_math.py convert $wmparc wmparc_int16.nii.gz --data_type int16 -f
+
+    scil_split_volume_by_labels.py wmparc_int16.nii.gz --scilpy_lut freesurfer_desikan_killiany --out_dir wmparc_desikan
+    scil_split_volume_by_labels.py wmparc_int16.nii.gz --scilpy_lut freesurfer_subcortical --out_dir wmparc_subcortical
+    scil_split_volume_by_labels.py aparc+aseg_int16.nii.gz --scilpy_lut freesurfer_subcortical --out_dir aparc+aseg_subcortical
+
+    scil_image_math.py union wmparc_desikan/*\
+                             wmparc_subcortical/right-cerebellum-cortex.nii.gz\
+                             wmparc_subcortical/left-cerebellum-cortex.nii.gz\
+                             mask_cortex_m.nii.gz -f
+    scil_image_math.py union wmparc_subcortical/corpus-callosum-*\
+                             aparc+aseg_subcortical/*white-matter*\
+                             wmparc_subcortical/brain-stem.nii.gz\
+                             aparc+aseg_subcortical/*ventraldc*\
+                             mask_wm_m.nii.gz -f
+    scil_image_math.py union wmparc_subcortical/*thalamus*\
+                             wmparc_subcortical/*putamen*\
+                             wmparc_subcortical/*pallidum*\
+                             wmparc_subcortical/*hippocampus*\
+                             wmparc_subcortical/*caudate*\
+                             wmparc_subcortical/*amygdala*\
+                             wmparc_subcortical/*accumbens*\
+                             wmparc_subcortical/*plexus*\
+                             mask_nuclei_m.nii.gz -f
+    scil_image_math.py union wmparc_subcortical/*-lateral-ventricle.nii.gz\
+                             wmparc_subcortical/*-inferior-lateral-ventricle.nii.gz\
+                             wmparc_subcortical/cerebrospinal-fluid.nii.gz\
+                             wmparc_subcortical/*th-ventricle.nii.gz\
+                             mask_csf_1_m.nii.gz -f
+    scil_image_math.py lower_threshold mask_wm_m.nii.gz 0.1\
+                                          ${sid}__mask_wm_bin.nii.gz -f
+    scil_image_math.py lower_threshold mask_cortex_m.nii.gz 0.1\
+                                          ${sid}__mask_gm.nii.gz -f
+    scil_image_math.py lower_threshold mask_nuclei_m.nii.gz 0.1\
+                                          ${sid}__mask_nuclei_bin.nii.gz -f
+    scil_image_math.py lower_threshold mask_csf_1_m.nii.gz 0.1\
+                                          ${sid}__mask_csf.nii.gz -f
+    scil_image_math.py addition ${sid}__mask_wm_bin.nii.gz\
+                                ${sid}__mask_nuclei_bin.nii.gz\
+                                ${sid}__mask_wm.nii.gz --data_type int16
+
+    scil_image_math.py convert ${sid}__mask_wm.nii.gz ${sid}__mask_wm.nii.gz --data_type uint8 -f
+    scil_image_math.py convert ${sid}__mask_gm.nii.gz ${sid}__mask_gm.nii.gz --data_type uint8 -f
+    scil_image_math.py convert ${sid}__mask_csf.nii.gz ${sid}__mask_csf.nii.gz --data_type uint8 -f
+    """
+}
+
 process Segment_Tissues {
     cpus 1
 
@@ -1062,9 +1176,12 @@ process Segment_Tissues {
     output:
     set sid, "${sid}__map_wm.nii.gz", "${sid}__map_gm.nii.gz",
         "${sid}__map_csf.nii.gz" into map_wm_gm_csf_for_pft_maps
-    set sid, "${sid}__mask_wm.nii.gz" into wm_mask_for_pft_tracking, wm_mask_for_local_tracking_mask, wm_mask_for_local_seeding_mask
+    set sid, "${sid}__mask_wm.nii.gz" into wm_mask_for_pft_tracking, wm_mask_fast
     file "${sid}__mask_gm.nii.gz"
     file "${sid}__mask_csf.nii.gz"
+
+    when:
+        !params.run_tractoflow_abs
 
     script:
     """
@@ -1081,6 +1198,10 @@ process Segment_Tissues {
     mv t1_pve_0.nii.gz ${sid}__map_csf.nii.gz
     """
 }
+
+wm_mask_freesurfer
+    .concat(wm_mask_fast)
+    .into{wm_mask_for_local_tracking_mask;wm_mask_for_local_seeding_mask}
 
 dwi_and_grad_for_rf
     .join(b0_mask_for_rf)
