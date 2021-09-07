@@ -14,6 +14,9 @@ if(params.help) {
 
     cpu_count = Runtime.runtime.availableProcessors()
     bindings = ["clean_bids":"$params.clean_bids",
+                "sh_fitting":"$params.sh_fitting",
+                "sh_fitting_basis":"$params.sh_fitting_basis",
+                "sh_fitting_order":"$params.sh_fitting_order",
                 "b0_thr_extract_b0":"$params.b0_thr_extract_b0",
                 "dwi_shell_tolerance":"$params.dwi_shell_tolerance",
                 "dilate_b0_mask_prelim_brain_extraction":"$params.dilate_b0_mask_prelim_brain_extraction",
@@ -232,6 +235,10 @@ else {
 
 if (!params.dti_shells || !params.fodf_shells){
     error "Error ~ Please set the DTI and fODF shells to use."
+}
+
+if (params.sh_fitting && !params.sh_fitting_shells){
+    error "Error ~ Please set the SH fitting shell to use."
 }
 
 if (params.pft_seeding_mask_type != "wm" && params.pft_seeding_mask_type != "interface" && params.pft_seeding_mask_type != "fa"){
@@ -582,6 +589,7 @@ gradients_from_eddy
     .into{gradients_for_resample_b0;
           gradients_for_dti_shell;
           gradients_for_fodf_shell;
+          gradients_for_sh_fitting_shell;
           gradients_for_normalize}
 
 process Extract_B0 {
@@ -842,7 +850,8 @@ process Resample_DWI {
     set sid, "${sid}__dwi_resampled.nii.gz" into\
         dwi_for_resample_b0,
         dwi_for_extract_dti_shell,
-        dwi_for_extract_fodf_shell
+        dwi_for_extract_fodf_shell,
+        dwi_for_extract_sh_fitting_shell
 
     script:
     if (params.run_resample_dwi)
@@ -895,6 +904,57 @@ process Resample_B0 {
         --b0_thr $params.b0_thr_extract_b0 --force_b0_threshold
     mrthreshold ${sid}__b0_resampled.nii.gz ${sid}__b0_mask_resampled.nii.gz\
         --abs 0.00001 -nthreads 1
+    """
+}
+
+dwi_for_extract_sh_fitting_shell
+    .join(gradients_for_sh_fitting_shell)
+    .set{dwi_and_grad_for_extract_sh_fitting_shell}
+
+process Extract_SH_Fitting_Shell {
+    cpus 3
+
+    input:
+    set sid, file(dwi), file(bval), file(bvec)\
+        from dwi_and_grad_for_extract_sh_fitting_shell
+
+    output:
+    set sid, "${sid}__dwi_sh_fitting.nii.gz", "${sid}__bval_sh_fitting",
+        "${sid}__bvec_sh_fitting" into \
+        dwi_and_grad_for_sh_fitting
+
+    when:
+    params.sh_fitting
+
+    script:
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    scil_extract_dwi_shell.py $dwi \
+        $bval $bvec $params.sh_fitting_shells ${sid}__dwi_sh_fitting.nii.gz \
+        ${sid}__bval_sh_fitting ${sid}__bvec_sh_fitting -t $params.dwi_shell_tolerance -f
+    """
+}
+
+process SH_Fitting {
+    cpus 1
+
+    input:
+    set sid, file(dwi), file(bval), file(bvec) from dwi_and_grad_for_sh_fitting
+
+    output:
+    file "${sid}__dwi_sh.nii.gz"
+
+    when:
+    params.sh_fitting
+
+    script:
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    scil_compute_sh_from_signal.py --sh_order $params.sh_fitting_order --sh_basis $params.sh_fitting_basis $dwi $bval $bvec ${sid}__dwi_sh.nii.gz
     """
 }
 
