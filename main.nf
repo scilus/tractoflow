@@ -231,7 +231,7 @@ if (!params.dti_shells || !params.fodf_shells){
     error "Error ~ Please set the DTI and fODF shells to use."
 }
 
-if (params.sh_fitting && !params.sh_fitting_shell){
+if (params.sh_fitting && !params.sh_fitting_shells){
     error "Error ~ Please set the SH fitting shell to use."
 }
 
@@ -918,7 +918,7 @@ process Extract_SH_Fitting_Shell {
     export OMP_NUM_THREADS=1
     export OPENBLAS_NUM_THREADS=1
     scil_extract_dwi_shell.py $dwi \
-        $bval $bvec $params.sh_fitting_shell ${sid}__dwi_sh_fitting.nii.gz \
+        $bval $bvec $params.sh_fitting_shells ${sid}__dwi_sh_fitting.nii.gz \
         ${sid}__bval_sh_fitting ${sid}__bvec_sh_fitting -t $params.dwi_shell_tolerance -f
     """
 }
