@@ -17,7 +17,6 @@ if(params.help) {
                 "sh_fitting":"$params.sh_fitting",
                 "sh_fitting_basis":"$params.sh_fitting_basis",
                 "sh_fitting_order":"$params.sh_fitting_order",
-                "sh_fitting_shell":"$params.sh_fitting_shell",
                 "b0_thr_extract_b0":"$params.b0_thr_extract_b0",
                 "dwi_shell_tolerance":"$params.dwi_shell_tolerance",
                 "dilate_b0_mask_prelim_brain_extraction":"$params.dilate_b0_mask_prelim_brain_extraction",
@@ -230,6 +229,10 @@ else {
 
 if (!params.dti_shells || !params.fodf_shells){
     error "Error ~ Please set the DTI and fODF shells to use."
+}
+
+if (params.sh_fitting && !params.sh_fitting_shell){
+    error "Error ~ Please set the SH fitting shell to use."
 }
 
 if (params.pft_seeding_mask_type != "wm" && params.pft_seeding_mask_type != "interface" && params.pft_seeding_mask_type != "fa"){
@@ -915,7 +918,7 @@ process Extract_SH_Fitting_Shell {
     export OMP_NUM_THREADS=1
     export OPENBLAS_NUM_THREADS=1
     scil_extract_dwi_shell.py $dwi \
-        $bval $bvec 0 $params.sh_fitting_shell ${sid}__dwi_sh_fitting.nii.gz \
+        $bval $bvec $params.sh_fitting_shell ${sid}__dwi_sh_fitting.nii.gz \
         ${sid}__bval_sh_fitting ${sid}__bvec_sh_fitting -t $params.dwi_shell_tolerance -f
     """
 }

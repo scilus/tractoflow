@@ -119,8 +119,10 @@ OPTIONAL ARGUMENTS (current value)
 --sh_fitting_order                          SH order used for the optional SH fitting; must be an even number ($sh_fitting_order).
                                             Rules :-sh_order=8 for 45 directions
                                                    -sh_order=6 for 28 directions
---sh_fitting_shell                          Shell selected to compute the SH fitting ($sh_fitting_shell).
+--sh_fitting_shell                          Shell selected to compute the SH fitting.
+                                            Please write them between quotes e.g. (--sh_fitting_shell "0 1000").
                                             NOTE: SH fitting works only on single shell.
+
 
 --run_pft_tracking                          Run Particle Filter Tracking (PFT) ($run_pft_tracking).
 
