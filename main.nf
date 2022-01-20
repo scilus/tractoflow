@@ -434,7 +434,7 @@ process Gibbs_correction {
         """
     else
         """
-        mv $dwi ${sid}__dwi_gibss_corrected.nii.gz
+        mv $dwi ${sid}__dwi_gibbs_corrected.nii.gz
         """
 }
 
