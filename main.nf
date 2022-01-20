@@ -112,7 +112,7 @@ workflow.onComplete {
 }
 
 
-
+labels_for_reg = Channel.empty()
 if (params.input && !(params.bids && params.bids_config)){
     log.info "Input: $params.input"
     root = file(params.input)
