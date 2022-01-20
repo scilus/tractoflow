@@ -23,6 +23,7 @@ if(params.help) {
                 "bet_prelim_f":"$params.bet_prelim_f",
                 "run_dwi_denoising":"$params.run_dwi_denoising",
                 "extent":"$params.extent",
+                "run_gibbs_correction": "$params.run_gibbs_correction",
                 "run_topup":"$params.run_topup",
                 "encoding_direction":"$params.encoding_direction",
                 "readout":"$params.readout",
