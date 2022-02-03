@@ -23,6 +23,7 @@ if(params.help) {
                 "bet_prelim_f":"$params.bet_prelim_f",
                 "run_dwi_denoising":"$params.run_dwi_denoising",
                 "extent":"$params.extent",
+                "run_gibbs_correction": "$params.run_gibbs_correction",
                 "run_topup":"$params.run_topup",
                 "encoding_direction":"$params.encoding_direction",
                 "readout":"$params.readout",
@@ -111,7 +112,7 @@ workflow.onComplete {
 }
 
 
-
+labels_for_reg = Channel.empty()
 if (params.input && !(params.bids && params.bids_config)){
     log.info "Input: $params.input"
     root = file(params.input)
@@ -392,10 +393,7 @@ process Denoise_DWI {
     set sid, file(dwi) from dwi_for_denoise
 
     output:
-    set sid, "${sid}__dwi_denoised.nii.gz" into\
-        dwi_for_eddy,
-        dwi_for_topup,
-        dwi_for_eddy_topup
+    set sid, "${sid}__dwi_denoised.nii.gz" into dwi_for_gibbs
 
     script:
     // The denoised DWI is clipped to 0 since negative values
@@ -411,6 +409,32 @@ process Denoise_DWI {
     else
         """
         mv $dwi ${sid}__dwi_denoised.nii.gz
+        """
+}
+
+process Gibbs_correction {
+    cpus params.processes_denoise_dwi
+
+    input:
+    set sid, file(dwi) from dwi_for_gibbs
+
+    output:
+    set sid, "${sid}__dwi_gibbs_corrected.nii.gz" into\
+        dwi_for_eddy,
+        dwi_for_topup,
+        dwi_for_eddy_topup
+
+    script:
+    if(params.run_gibbs_correction)
+        """
+        export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+        export OMP_NUM_THREADS=1
+        export OPENBLAS_NUM_THREADS=1
+        mrdegibbs $dwi ${sid}__dwi_gibbs_corrected.nii.gz -nthreads $task.cpus
+        """
+    else
+        """
+        mv $dwi ${sid}__dwi_gibbs_corrected.nii.gz
         """
 }
 

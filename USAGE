@@ -72,6 +72,8 @@ OPTIONAL ARGUMENTS (current value)
 --extent                                    Denoising block size ($extent).
                                             Rule: extent^3 >= number of directions.
 
+--run_gibbs_correction                      Run Gibbs correction ($run_gibbs_correction)
+
 --run_topup                                 Run Topup ($run_topup).
 --encoding_direction                        Encoding direction of the DWI [x, y, z] ($encoding_direction).
 --readout                                   Readout time ($readout).
