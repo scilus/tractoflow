@@ -23,12 +23,16 @@ DESCRIPTION
                                         │   ├── bval
                                         │   ├── bvec
                                         │   ├── rev_b0.nii.gz  (optional)
+                                        │   ├── aparc+aseg.nii.gz  (optional)
+                                        │   ├── wmparc.nii.gz  (optional)
                                         │   └── t1.nii.gz
                                         └── S2
                                             ├── dwi.nii.gz
                                             ├── bval
                                             ├── bvec
                                             ├── rev_b0.nii.gz  (optional)
+                                            ├── aparc+aseg.nii.gz  (optional)
+                                            ├── wmparc.nii.gz  (optional)
                                             └── t1.nii.gz
 
     --bids=/path/to/[bids]              BIDS folder following the BIDS convention.
@@ -67,6 +71,8 @@ OPTIONAL ARGUMENTS (current value)
 --run_dwi_denoising                         Run dwi denoising ($run_dwi_denoising).
 --extent                                    Denoising block size ($extent).
                                             Rule: extent^3 >= number of directions.
+
+--run_gibbs_correction                      Run Gibbs correction ($run_gibbs_correction)
 
 --run_topup                                 Run Topup ($run_topup).
 --encoding_direction                        Encoding direction of the DWI [x, y, z] ($encoding_direction).
@@ -112,6 +118,17 @@ OPTIONAL ARGUMENTS (current value)
 --relative_threshold                        Relative threshold on fODF amplitude in ]0,1] ($relative_threshold).
 --max_fa_in_ventricle                       Maximal threshold of FA to be considered as ventricule voxel ($max_fa_in_ventricle).
 --min_md_in_ventricle                       Minimal threshold of MD in mm2/s to be considered as ventricule voxel ($min_md_in_ventricle).
+
+
+--sh_fitting                                Compute a Spherical Harmonics fitting onto the DWI, and output the SH coefficients in a Nifti file ($sh_fitting).
+--sh_fitting_basis                          SH basis used for the optional SH fitting [descoteaux07, tournier07] ($sh_fitting_basis).
+--sh_fitting_order                          SH order used for the optional SH fitting; must be an even number ($sh_fitting_order).
+                                            Rules :-sh_order=8 for 45 directions
+                                                   -sh_order=6 for 28 directions
+--sh_fitting_shells                         Shells selected to compute the SH fitting.
+                                            Please write them between quotes e.g. (--sh_fitting_shells "0 1000").
+                                            NOTE: SH fitting works only on single shell. You must include the b0 shell as well.
+
 
 --run_pft_tracking                          Run Particle Filter Tracking (PFT) ($run_pft_tracking).
 
@@ -180,6 +197,10 @@ fully_reproducible                          When this profile is used, all the p
 hcp                                         When this profile is used, TractoFlow will adapt the pipeline for Human Connectome Project (HCP) data.
 
 cbrain                                      When this profile is used, Nextflow will copy all the output files in publishDir and not use symlinks.
+
+ABS                                         When this profile is used, TractoFlow-ABS (Atlas Based Segmentation) is used.
+                                            This profile must be used for pathological data.
+                                            The aparc+aseg.nii.gz and wmparc.nii.gz must be in the same space than t1.nii.gz
 
 NOTES
 
