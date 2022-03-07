@@ -14,12 +14,16 @@ if(params.help) {
 
     cpu_count = Runtime.runtime.availableProcessors()
     bindings = ["clean_bids":"$params.clean_bids",
+                "sh_fitting":"$params.sh_fitting",
+                "sh_fitting_basis":"$params.sh_fitting_basis",
+                "sh_fitting_order":"$params.sh_fitting_order",
                 "b0_thr_extract_b0":"$params.b0_thr_extract_b0",
                 "dwi_shell_tolerance":"$params.dwi_shell_tolerance",
                 "dilate_b0_mask_prelim_brain_extraction":"$params.dilate_b0_mask_prelim_brain_extraction",
                 "bet_prelim_f":"$params.bet_prelim_f",
                 "run_dwi_denoising":"$params.run_dwi_denoising",
                 "extent":"$params.extent",
+                "run_gibbs_correction": "$params.run_gibbs_correction",
                 "run_topup":"$params.run_topup",
                 "encoding_direction":"$params.encoding_direction",
                 "readout":"$params.readout",
@@ -108,7 +112,7 @@ workflow.onComplete {
 }
 
 
-
+labels_for_reg = Channel.empty()
 if (params.input && !(params.bids && params.bids_config)){
     log.info "Input: $params.input"
     root = file(params.input)
@@ -117,6 +121,12 @@ if (params.input && !(params.bids && params.bids_config)){
                        size: 4,
                        maxDepth:1,
                        flat: true) {it.parent.name}
+
+    labels_for_reg = Channel
+            .fromFilePairs("$root/**/*{aparc+aseg.nii.gz,wmparc.nii.gz}",
+                           size: 2,
+                           maxDepth:1,
+                           flat: true) {it.parent.name}
 
     data
         .map{[it, params.readout, params.encoding_direction].flatten()}
@@ -228,6 +238,10 @@ if (!params.dti_shells || !params.fodf_shells){
     error "Error ~ Please set the DTI and fODF shells to use."
 }
 
+if (params.sh_fitting && !params.sh_fitting_shells){
+    error "Error ~ Please set the SH fitting shell to use."
+}
+
 if (params.pft_seeding_mask_type != "wm" && params.pft_seeding_mask_type != "interface" && params.pft_seeding_mask_type != "fa"){
     error "Error ~ --pft_seeding_mask_type can only take wm, interface or fa. Please select one of these choices"
 }
@@ -254,6 +268,14 @@ if (params.local_seeding != "nt" && params.local_seeding != "npv"){
 
 if (params.pft_seeding != "nt" && params.pft_seeding != "npv"){
     error "Error ~ --pft_seeding can only take nt or npv. Please select one of these choices"
+}
+
+if (params.run_pft_tracking && workflow.profile.contains("ABS")){
+    error "Error ~ PFT tracking cannot be run with Atlas Based Segmentation (ABS) profile"
+}
+
+if (params.bids && workflow.profile.contains("ABS")){
+    error "Error ~ --bids parameter cannot be run with Atlas Based Segmentation (ABS) profile"
 }
 
 (dwi, gradients, t1, readout_encoding) = in_data
@@ -399,6 +421,33 @@ process Denoise_DWI {
 dwi_for_test_denoise
     .map{it -> if(!params.run_dwi_denoising){it}}
     .mix(dwi_denoised_for_mix)
+    .into{dwi_for_gibbs; dwi_for_eddy; dwi_for_topup; dwi_for_eddy_topup; dwi_for_test_gibbs}
+
+process Gibbs_correction {
+    cpus params.processes_denoise_dwi
+
+    input:
+    set sid, file(dwi) from dwi_for_gibbs
+
+    output:
+    set sid, "${sid}__dwi_gibbs_corrected.nii.gz" into\
+        dwi_gibbs_for_mix
+
+    when:
+        params.run_gibbs_correction
+
+    script:
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    mrdegibbs $dwi ${sid}__dwi_gibbs_corrected.nii.gz -nthreads $task.cpus
+    """
+}
+
+dwi_for_test_gibbs
+    .map{it -> if(!params.run_gibbs_correction){it}}
+    .mix(dwi_gibbs_for_mix)
     .into{dwi_for_eddy; dwi_for_topup; dwi_for_eddy_topup; dwi_for_test_eddy_topup}
 
 dwi_for_topup
@@ -554,7 +603,8 @@ gradients_from_eddy
           gradients_for_dti_shell;
           gradients_for_fodf_shell;
           gradients_for_normalize;
-          gradients_for_bet}
+          gradients_for_bet;
+          gradients_for_sh_fitting_shell}
 
 dwi_for_bet
     .join(gradients_for_bet)
@@ -834,7 +884,7 @@ process Resample_DWI {
 dwi_for_test_resample
     .map{it -> if(!params.run_resample_dwi){it}}
     .mix(dwi_resampled_for_mix)
-    .into{dwi_for_extract_b0; dwi_for_extract_dti_shell; dwi_for_extract_fodf_shell}
+    .into{dwi_for_extract_b0; dwi_for_extract_dti_shell; dwi_for_extract_fodf_shell; dwi_for_extract_sh_fitting_shell}
 
 dwi_for_extract_b0
     .join(gradients_for_extract_b0)
@@ -863,6 +913,57 @@ process Extract_B0 {
         --b0_thr $params.b0_thr_extract_b0 --force_b0_threshold
     mrthreshold ${sid}__b0_resampled.nii.gz ${sid}__b0_mask_resampled.nii.gz\
         --abs 0.00001 -nthreads 1
+    """
+}
+
+dwi_for_extract_sh_fitting_shell
+    .join(gradients_for_sh_fitting_shell)
+    .set{dwi_and_grad_for_extract_sh_fitting_shell}
+
+process Extract_SH_Fitting_Shell {
+    cpus 3
+
+    input:
+    set sid, file(dwi), file(bval), file(bvec)\
+        from dwi_and_grad_for_extract_sh_fitting_shell
+
+    output:
+    set sid, "${sid}__dwi_sh_fitting.nii.gz", "${sid}__bval_sh_fitting",
+        "${sid}__bvec_sh_fitting" into \
+        dwi_and_grad_for_sh_fitting
+
+    when:
+    params.sh_fitting
+
+    script:
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    scil_extract_dwi_shell.py $dwi \
+        $bval $bvec $params.sh_fitting_shells ${sid}__dwi_sh_fitting.nii.gz \
+        ${sid}__bval_sh_fitting ${sid}__bvec_sh_fitting -t $params.dwi_shell_tolerance -f
+    """
+}
+
+process SH_Fitting {
+    cpus 1
+
+    input:
+    set sid, file(dwi), file(bval), file(bvec) from dwi_and_grad_for_sh_fitting
+
+    output:
+    file "${sid}__dwi_sh.nii.gz"
+
+    when:
+    params.sh_fitting
+
+    script:
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    scil_compute_sh_from_signal.py --sh_order $params.sh_fitting_order --sh_basis $params.sh_fitting_basis $dwi $bval $bvec ${sid}__dwi_sh.nii.gz
     """
 }
 
@@ -998,9 +1099,9 @@ process Register_T1 {
 
     output:
     set sid, "${sid}__t1_warped.nii.gz" into t1_for_seg
-    file "${sid}__output0GenericAffine.mat"
+    set sid, "${sid}__t1_warped.nii.gz", "${sid}__output0GenericAffine.mat",
+        "${sid}__output1Warp.nii.gz" into t1_for_freesurfer_reg
     file "${sid}__output1InverseWarp.nii.gz"
-    file "${sid}__output1Warp.nii.gz"
     file "${sid}__t1_mask_warped.nii.gz"
 
     script:
@@ -1038,6 +1139,106 @@ process Register_T1 {
     """
 }
 
+labels_for_reg
+    .join(t1_for_freesurfer_reg)
+    .set{labels_mat_for_reg}
+
+process Register_Freesurfer {
+    cpus 1
+
+    input:
+    set sid, file(aparc), file(wmparc), file(t1), file(affine),
+        file(warp) from labels_mat_for_reg
+
+    output:
+    set sid, "${sid}__aparc_warped.nii.gz", "${sid}__wmparc_warped.nii.gz" \
+        into labels_for_segmentation
+
+    script:
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=$task.cpus
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    export ANTS_RANDOM_SEED=1234
+    antsApplyTransforms -d 3 -i $aparc -r ${sid}__t1_warped.nii.gz \
+        -o ${sid}__aparc_warped.nii.gz -n NearestNeighbor \
+        -t ${warp} ${affine}
+    antsApplyTransforms -d 3 -i $wmparc -r ${sid}__t1_warped.nii.gz \
+        -o ${sid}__wmparc_warped.nii.gz -n NearestNeighbor \
+        -t ${warp} ${affine}
+    """
+}
+
+process Segment_Freesurfer {
+    cpus 1
+
+    input:
+    set sid, file(aparc), file(wmparc) from labels_for_segmentation
+
+    output:
+    set sid, "${sid}__mask_wm.nii.gz" into wm_mask_freesurfer
+    file "${sid}__mask_gm.nii.gz"
+    file "${sid}__mask_csf.nii.gz"
+
+    when:
+        params.run_tractoflow_abs
+
+    script:
+    """
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+    export OMP_NUM_THREADS=1
+    export OPENBLAS_NUM_THREADS=1
+    mkdir wmparc_desikan/
+    mkdir wmparc_subcortical/
+    mkdir aparc+aseg_subcortical/
+    scil_image_math.py convert $aparc aparc+aseg_int16.nii.gz --data_type int16 -f
+    scil_image_math.py convert $wmparc wmparc_int16.nii.gz --data_type int16 -f
+
+    scil_split_volume_by_labels.py wmparc_int16.nii.gz --scilpy_lut freesurfer_desikan_killiany --out_dir wmparc_desikan
+    scil_split_volume_by_labels.py wmparc_int16.nii.gz --scilpy_lut freesurfer_subcortical --out_dir wmparc_subcortical
+    scil_split_volume_by_labels.py aparc+aseg_int16.nii.gz --scilpy_lut freesurfer_subcortical --out_dir aparc+aseg_subcortical
+
+    scil_image_math.py union wmparc_desikan/*\
+                             wmparc_subcortical/right-cerebellum-cortex.nii.gz\
+                             wmparc_subcortical/left-cerebellum-cortex.nii.gz\
+                             mask_cortex_m.nii.gz -f
+    scil_image_math.py union wmparc_subcortical/corpus-callosum-*\
+                             aparc+aseg_subcortical/*white-matter*\
+                             wmparc_subcortical/brain-stem.nii.gz\
+                             aparc+aseg_subcortical/*ventraldc*\
+                             mask_wm_m.nii.gz -f
+    scil_image_math.py union wmparc_subcortical/*thalamus*\
+                             wmparc_subcortical/*putamen*\
+                             wmparc_subcortical/*pallidum*\
+                             wmparc_subcortical/*hippocampus*\
+                             wmparc_subcortical/*caudate*\
+                             wmparc_subcortical/*amygdala*\
+                             wmparc_subcortical/*accumbens*\
+                             wmparc_subcortical/*plexus*\
+                             mask_nuclei_m.nii.gz -f
+    scil_image_math.py union wmparc_subcortical/*-lateral-ventricle.nii.gz\
+                             wmparc_subcortical/*-inferior-lateral-ventricle.nii.gz\
+                             wmparc_subcortical/cerebrospinal-fluid.nii.gz\
+                             wmparc_subcortical/*th-ventricle.nii.gz\
+                             mask_csf_1_m.nii.gz -f
+    scil_image_math.py lower_threshold mask_wm_m.nii.gz 0.1\
+                                          ${sid}__mask_wm_bin.nii.gz -f
+    scil_image_math.py lower_threshold mask_cortex_m.nii.gz 0.1\
+                                          ${sid}__mask_gm.nii.gz -f
+    scil_image_math.py lower_threshold mask_nuclei_m.nii.gz 0.1\
+                                          ${sid}__mask_nuclei_bin.nii.gz -f
+    scil_image_math.py lower_threshold mask_csf_1_m.nii.gz 0.1\
+                                          ${sid}__mask_csf.nii.gz -f
+    scil_image_math.py addition ${sid}__mask_wm_bin.nii.gz\
+                                ${sid}__mask_nuclei_bin.nii.gz\
+                                ${sid}__mask_wm.nii.gz --data_type int16
+
+    scil_image_math.py convert ${sid}__mask_wm.nii.gz ${sid}__mask_wm.nii.gz --data_type uint8 -f
+    scil_image_math.py convert ${sid}__mask_gm.nii.gz ${sid}__mask_gm.nii.gz --data_type uint8 -f
+    scil_image_math.py convert ${sid}__mask_csf.nii.gz ${sid}__mask_csf.nii.gz --data_type uint8 -f
+    """
+}
+
 process Segment_Tissues {
     cpus 1
 
@@ -1047,9 +1248,12 @@ process Segment_Tissues {
     output:
     set sid, "${sid}__map_wm.nii.gz", "${sid}__map_gm.nii.gz",
         "${sid}__map_csf.nii.gz" into map_wm_gm_csf_for_pft_maps
-    set sid, "${sid}__mask_wm.nii.gz" into wm_mask_for_pft_tracking, wm_mask_for_local_tracking_mask, wm_mask_for_local_seeding_mask
+    set sid, "${sid}__mask_wm.nii.gz" into wm_mask_for_pft_tracking, wm_mask_fast
     file "${sid}__mask_gm.nii.gz"
     file "${sid}__mask_csf.nii.gz"
+
+    when:
+        !params.run_tractoflow_abs
 
     script:
     """
@@ -1066,6 +1270,10 @@ process Segment_Tissues {
     mv t1_pve_0.nii.gz ${sid}__map_csf.nii.gz
     """
 }
+
+wm_mask_freesurfer
+    .concat(wm_mask_fast)
+    .into{wm_mask_for_local_tracking_mask;wm_mask_for_local_seeding_mask}
 
 dwi_and_grad_for_rf
     .join(b0_mask_for_rf)
