@@ -194,6 +194,9 @@ use_cuda                                    When this profile is used, TractoFlo
 fully_reproducible                          When this profile is used, all the parameters will be set to have 100% reproducible results.
                                             This profile consist to set multi-thread parameters to be fully reproducible [Theaud20].
 
+skip_preprocessing                          When this profile is used, TractoFlow will skip some preprocessing steps (Resampling, Eddy/Topup and DWI denoising).
+                                            This profile is useful to process the Human Connectome Project (HCP) data.
+
 cbrain                                      When this profile is used, Nextflow will copy all the output files in publishDir and not use symlinks.
 
 ABS                                         When this profile is used, TractoFlow-ABS (Atlas Based Segmentation) is used.
