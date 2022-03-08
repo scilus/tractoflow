@@ -366,6 +366,7 @@ process Bet_Prelim_DWI {
 
     input:
     set sid, file(dwi), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
+    val(rev_b0_count) from rev_b0_counter
 
     output:
     set sid, "${sid}__b0_bet_mask_dilated.nii.gz" into\
@@ -374,7 +375,7 @@ process Bet_Prelim_DWI {
     file "${sid}__b0_bet_mask.nii.gz"
 
     when:
-    !params.run_topup && params.run_eddy
+    rev_b0_count == 0 || (!params.run_topup && params.run_eddy)
 
     script:
     """
@@ -513,7 +514,7 @@ process Eddy {
         gradients_from_eddy
 
     when:
-    rev_b0_count == 0 || !params.run_topup && params.run_eddy
+    rev_b0_count == 0 || (!params.run_topup && params.run_eddy)
 
     // Corrected DWI is clipped to 0 since Eddy can introduce negative values.
     script:
