@@ -515,7 +515,7 @@ process Eddy {
         gradients_from_eddy
 
     when:
-    rev_b0_count == 0 || (!params.run_topup && params.run_eddy)
+    (rev_b0_count == 0 && params.run_eddy) || (!params.run_topup && params.run_eddy)
 
     // Corrected DWI is clipped to 0 since Eddy can introduce negative values.
     script:
