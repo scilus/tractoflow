@@ -468,6 +468,7 @@ process Topup {
     set sid, "${sid}__corrected_b0s.nii.gz", "${params.prefix_topup}_fieldcoef.nii.gz",
     "${params.prefix_topup}_movpar.txt" into topup_files_for_eddy_topup
     file "${sid}__rev_b0_warped.nii.gz"
+    file "${sid}__b0_mean.nii.gz"
 
     when:
     params.run_topup && params.run_eddy
@@ -478,13 +479,13 @@ process Topup {
     export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
     export OPENBLAS_NUM_THREADS=1
     export ANTS_RANDOM_SEED=1234
-    scil_extract_b0.py $dwi $bval $bvec b0_mean.nii.gz --mean\
+    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0_mean.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0 --force_b0_threshold
     scil_image_math.py mean $rev_b0 $rev_b0 --data_type float32 -f
-    antsRegistrationSyNQuick.sh -d 3 -f b0_mean.nii.gz -m $rev_b0 -o output -t r -e 1
+    antsRegistrationSyNQuick.sh -d 3 -f ${sid}__b0_mean.nii.gz -m $rev_b0 -o output -t r -e 1
     mv outputWarped.nii.gz ${sid}__rev_b0_warped.nii.gz
-    scil_prepare_topup_command.py $dwi $bval $bvec ${sid}__rev_b0_warped.nii.gz\
-        --config $params.config_topup --b0_thr $params.b0_thr_extract_b0\
+    scil_prepare_topup_command.py ${sid}__b0_mean.nii.gz ${sid}__rev_b0_warped.nii.gz\
+        --config $params.config_topup\
         --encoding_direction $encoding\
         --readout $readout --out_prefix $params.prefix_topup\
         --out_script
@@ -514,7 +515,7 @@ process Eddy {
         gradients_from_eddy
 
     when:
-    rev_b0_count == 0 || (!params.run_topup && params.run_eddy)
+    (rev_b0_count == 0 && params.run_eddy) || (!params.run_topup && params.run_eddy)
 
     // Corrected DWI is clipped to 0 since Eddy can introduce negative values.
     script:
@@ -759,7 +760,7 @@ process Resample_T1 {
     export OMP_NUM_THREADS=1
     export OPENBLAS_NUM_THREADS=1
     scil_resample_volume.py $t1 ${sid}__t1_resampled.nii.gz \
-        --resolution $params.t1_resolution \
+        --voxel_size $params.t1_resolution \
         --interp  $params.t1_interpolation
     """
 }
@@ -869,7 +870,7 @@ process Resample_DWI {
     export OPENBLAS_NUM_THREADS=1
     scil_resample_volume.py $dwi \
         dwi_resample.nii.gz \
-        --resolution $params.dwi_resolution \
+        --voxel_size $params.dwi_resolution \
         --interp  $params.dwi_interpolation
     fslmaths dwi_resample.nii.gz -thr 0 dwi_resample_clipped.nii.gz
     scil_resample_volume.py $mask \
