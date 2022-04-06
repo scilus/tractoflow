@@ -42,7 +42,7 @@ Prebuild Singularity images are available here:
 [http://scil.usherbrooke.ca/en/containers_list/](http://scil.usherbrooke.ca/en/containers_list/)
 
 FOR DEVELOPERS: The containers repository is available here:
-[containers-TractoFlow](https://github.com/scilus/containers-tractoflow)
+[containers-scilus](https://github.com/scilus/containers-scilus)
 
 Docker
 ------
@@ -53,7 +53,7 @@ Prebuilt Docker images are available here:
 [http://scil.usherbrooke.ca/en/containers_list/](http://scil.usherbrooke.ca/en/containers_list/)
 
 FOR DEVELOPERS: The containers repository is available here:
-[containers-TractoFlow](https://github.com/scilus/containers-tractoflow)
+[containers-scilus](https://github.com/scilus/containers-scilus)
 
 Steps
 -----
@@ -61,6 +61,7 @@ Steps
 Diffusion processes
 - preliminary DWI brain extraction (FSL)
 - denoise DWI (Mrtrix3)
+- gibbs correction (Mrtrix3)
 - topup (FSL)
 - eddy (FSL)
 - extract B0 (Scilpy)
