@@ -204,7 +204,7 @@ ABS                                         When this profile is used, TractoFlo
                                             The aparc+aseg.nii.gz and wmparc.nii.gz must be in the same space than t1.nii.gz
 
 bundling                                    When this profile is used, it will activate custom tracking parameters to improve recobundle results.
-                                            Local tracking will be enable with fa seeding mask.
+                                            Local tracking will be enable with fa seeding mask and tracking mask.
 
 connectomics                                When this profile is used, it will activate custom tracking parameters to improve connectomics analysis.
 
