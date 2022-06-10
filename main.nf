@@ -241,7 +241,7 @@ if (params.dti_shells && params.max_dti_shell_value){
 }
 
 if (params.fodf_shells && params.min_fodf_shell_value){
-    error "Error ~ Please set either the min fODF shell value or the list of fODF shells."
+    error "Error ~ Please set the min fODF shell value or the list of fODF shells."
 }
 
 if (params.sh_fitting && !params.sh_fitting_shells){
