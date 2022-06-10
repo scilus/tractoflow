@@ -113,6 +113,20 @@ workflow.onComplete {
     log.info "Execution duration: $workflow.duration"
 }
 
+if (params.dti_shells){
+    log.info "DTI shells extracted: $params.dti_shells"
+}
+else{
+  log.info "Max DTI shell extracted: $params.max_dti_shell_value"
+}
+
+if (params.fodf_shells){
+    log.info "DTI shells extracted: $params.fodf_shells"
+}
+else{
+  log.info "Min FODF shell extracted: $params.min_fodf_shell_value"
+}
+
 
 labels_for_reg = Channel.empty()
 if (params.input && !(params.bids && params.bids_config)){
@@ -234,14 +248,6 @@ else if (params.bids || params.bids_config){
 }
 else {
     error "Error ~ Please use --input, --bids or --bids_config for the input data."
-}
-
-if (params.dti_shells && params.max_dti_shell_value){
-    error "Error ~ Please set the max dti shell value or the list of DTI shells."
-}
-
-if (params.fodf_shells && params.min_fodf_shell_value){
-    error "Error ~ Please set the min fODF shell value or the list of fODF shells."
 }
 
 if (params.sh_fitting && !params.sh_fitting_shells){
