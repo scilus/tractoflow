@@ -36,8 +36,8 @@ if(params.help) {
                 "run_resample_dwi":"$params.run_resample_dwi",
                 "dwi_resolution":"$params.dwi_resolution",
                 "dwi_interpolation":"$params.dwi_interpolation",
-                "maximum_dti_shell_value":"$params.maximum_dti_shell_value",
-                "minimum_fodf_shell_value":"$params.minimum_fodf_shell_value",
+                "max_dti_shell_value":"$params.max_dti_shell_value",
+                "min_fodf_shell_value":"$params.min_fodf_shell_value",
                 "run_t1_denoising":"$params.run_t1_denoising",
                 "run_resample_t1":"$params.run_resample_t1",
                 "t1_resolution":"$params.t1_resolution",
@@ -234,6 +234,14 @@ else if (params.bids || params.bids_config){
 }
 else {
     error "Error ~ Please use --input, --bids or --bids_config for the input data."
+}
+
+if (params.dti_shells && params.max_dti_shell_value){
+    error "Error ~ Please set the max dti shell value or the list of DTI shells."
+}
+
+if (params.fodf_shells && params.min_fodf_shell_value){
+    error "Error ~ Please set either the min fODF shell value or the list of fODF shells."
 }
 
 if (params.sh_fitting && !params.sh_fitting_shells){
@@ -850,11 +858,10 @@ process Normalize_DWI {
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
 
-        shells=\$(cut -d ' ' --output-delimiter=\$'\n' -f 1- $bval | \
-        awk -F' ' '{v=int(\$1)}{if(v<=$params.maximum_dti_shell_value)print v}' | uniq)
+        shells=\$(cut -d ' ' --output-delimiter=\$'\\n' -f 1- $bval | awk -F' ' '{v=int(\$1)}{if(v<=$params.max_dti_shell_value)print v}' | uniq)
 
         scil_extract_dwi_shell.py $dwi \
-            $bval $bvec $params.dti_shells dwi_dti.nii.gz \
+            $bval $bvec \$shells dwi_dti.nii.gz \
             bval_dti bvec_dti -t $params.dwi_shell_tolerance
         scil_compute_dti_metrics.py dwi_dti.nii.gz bval_dti bvec_dti --mask $mask\
             --not_all --fa fa.nii.gz --force_b0_threshold
@@ -1021,11 +1028,11 @@ process Extract_DTI_Shell {
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
 
-        shells=\$(cut -d ' ' --output-delimiter=\$'\n' -f 1- $bval | \
-                awk -F' ' '{v=int(\$1)}{if(v<=$params.maximum_dti_shell_value)print v}' | uniq)
+        shells=\$(cut -d ' ' --output-delimiter=\$'\\n' -f 1- $bval | \
+                awk -F' ' '{v=int(\$1)}{if(v<=$params.max_dti_shell_value)print v}' | uniq)
 
         scil_extract_dwi_shell.py $dwi \
-          $bval $bvec $params.dti_shells ${sid}__dwi_dti.nii.gz \
+          $bval $bvec \$shells ${sid}__dwi_dti.nii.gz \
           ${sid}__bval_dti ${sid}__bvec_dti -t $params.dwi_shell_tolerance -f
       """
 }
@@ -1125,12 +1132,12 @@ process Extract_FODF_Shell {
       export OMP_NUM_THREADS=1
       export OPENBLAS_NUM_THREADS=1
 
-      shells=\$(cut -d ' ' --output-delimiter=\$'\n' -f 1- $bval | \
-      awk -F' ' '{v=int(\$1)}{if(v>=$params.minimum_fodf_shell_value|| \
+      shells=\$(cut -d ' ' --output-delimiter=\$'\\n' -f 1- $bval | \
+      awk -F' ' '{v=int(\$1)}{if(v>=$params.min_fodf_shell_value|| \
       v<=$params.b0_thr_extract_b0)print v}' | uniq)
 
       scil_extract_dwi_shell.py $dwi \
-        $bval $bvec $params.fodf_shells ${sid}__dwi_fodf.nii.gz \
+        $bval $bvec \$shells ${sid}__dwi_fodf.nii.gz \
         ${sid}__bval_fodf ${sid}__bvec_fodf -t $params.dwi_shell_tolerance -f
       """
 }
