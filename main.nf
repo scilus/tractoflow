@@ -36,6 +36,8 @@ if(params.help) {
                 "run_resample_dwi":"$params.run_resample_dwi",
                 "dwi_resolution":"$params.dwi_resolution",
                 "dwi_interpolation":"$params.dwi_interpolation",
+                "max_dti_shell_value":"$params.max_dti_shell_value",
+                "min_fodf_shell_value":"$params.min_fodf_shell_value",
                 "run_t1_denoising":"$params.run_t1_denoising",
                 "run_resample_t1":"$params.run_resample_t1",
                 "t1_resolution":"$params.t1_resolution",
@@ -109,6 +111,20 @@ workflow.onComplete {
     log.info "Pipeline completed at: $workflow.complete"
     log.info "Execution status: ${ workflow.success ? 'OK' : 'failed' }"
     log.info "Execution duration: $workflow.duration"
+}
+
+if (params.dti_shells){
+    log.info "DTI shells extracted: $params.dti_shells"
+}
+else{
+  log.info "Max DTI shell extracted: $params.max_dti_shell_value"
+}
+
+if (params.fodf_shells){
+    log.info "DTI shells extracted: $params.fodf_shells"
+}
+else{
+  log.info "Min FODF shell extracted: $params.min_fodf_shell_value"
 }
 
 
@@ -247,10 +263,6 @@ else {
 }
 
 in_data_print.println()
-
-if (!params.dti_shells || !params.fodf_shells){
-    error "Error ~ Please set the DTI and fODF shells to use."
-}
 
 if (params.sh_fitting && !params.sh_fitting_shells){
     error "Error ~ Please set the SH fitting shell to use."
@@ -846,19 +858,38 @@ process Normalize_DWI {
     file "${sid}_fa_wm_mask.nii.gz"
 
     script:
-    """
-    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
-    export OMP_NUM_THREADS=1
-    export OPENBLAS_NUM_THREADS=1
-    scil_extract_dwi_shell.py $dwi \
-        $bval $bvec $params.dti_shells dwi_dti.nii.gz \
-        bval_dti bvec_dti -t $params.dwi_shell_tolerance
-    scil_compute_dti_metrics.py dwi_dti.nii.gz bval_dti bvec_dti --mask $mask\
-        --not_all --fa fa.nii.gz --force_b0_threshold
-    mrthreshold fa.nii.gz ${sid}_fa_wm_mask.nii.gz -abs $params.fa_mask_threshold -nthreads 1
-    dwinormalise $dwi ${sid}_fa_wm_mask.nii.gz ${sid}__dwi_normalized.nii.gz\
-        -fslgrad $bvec $bval -nthreads 1
-    """
+    if (params.dti_shells)
+      """
+      export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+      export OMP_NUM_THREADS=1
+      export OPENBLAS_NUM_THREADS=1
+      scil_extract_dwi_shell.py $dwi \
+          $bval $bvec $params.dti_shells dwi_dti.nii.gz \
+          bval_dti bvec_dti -t $params.dwi_shell_tolerance
+      scil_compute_dti_metrics.py dwi_dti.nii.gz bval_dti bvec_dti --mask $mask\
+          --not_all --fa fa.nii.gz --force_b0_threshold
+      mrthreshold fa.nii.gz ${sid}_fa_wm_mask.nii.gz -abs $params.fa_mask_threshold -nthreads 1
+      dwinormalise $dwi ${sid}_fa_wm_mask.nii.gz ${sid}__dwi_normalized.nii.gz\
+          -fslgrad $bvec $bval -nthreads 1
+      """
+    else
+      """
+        export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+        export OMP_NUM_THREADS=1
+        export OPENBLAS_NUM_THREADS=1
+
+        shells=\$(cut -d ' ' --output-delimiter=\$'\\n' -f 1- $bval | awk -F' ' '{v=int(\$1)}{if(v<=$params.max_dti_shell_value)print v}' | uniq)
+
+        scil_extract_dwi_shell.py $dwi \
+            $bval $bvec \$shells dwi_dti.nii.gz \
+            bval_dti bvec_dti -t $params.dwi_shell_tolerance
+        scil_compute_dti_metrics.py dwi_dti.nii.gz bval_dti bvec_dti --mask $mask\
+            --not_all --fa fa.nii.gz --force_b0_threshold
+        mrthreshold fa.nii.gz ${sid}_fa_wm_mask.nii.gz -abs $params.fa_mask_threshold -nthreads 1
+        dwinormalise $dwi ${sid}_fa_wm_mask.nii.gz ${sid}__dwi_normalized.nii.gz\
+            -fslgrad $bvec $bval -nthreads 1
+      """
+
 }
 
 dwi_for_resample
@@ -1002,14 +1033,28 @@ process Extract_DTI_Shell {
         dwi_and_grad_for_rf
 
     script:
-    """
-    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
-    export OMP_NUM_THREADS=1
-    export OPENBLAS_NUM_THREADS=1
-    scil_extract_dwi_shell.py $dwi \
-        $bval $bvec $params.dti_shells ${sid}__dwi_dti.nii.gz \
-        ${sid}__bval_dti ${sid}__bvec_dti -t $params.dwi_shell_tolerance -f
-    """
+    if (params.dti_shells)
+      """
+        export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+        export OMP_NUM_THREADS=1
+        export OPENBLAS_NUM_THREADS=1
+        scil_extract_dwi_shell.py $dwi \
+          $bval $bvec $params.dti_shells ${sid}__dwi_dti.nii.gz \
+          ${sid}__bval_dti ${sid}__bvec_dti -t $params.dwi_shell_tolerance -f
+      """
+    else
+      """
+        export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+        export OMP_NUM_THREADS=1
+        export OPENBLAS_NUM_THREADS=1
+
+        shells=\$(cut -d ' ' --output-delimiter=\$'\\n' -f 1- $bval | \
+                awk -F' ' '{v=int(\$1)}{if(v<=$params.max_dti_shell_value)print v}' | uniq)
+
+        scil_extract_dwi_shell.py $dwi \
+          $bval $bvec \$shells ${sid}__dwi_dti.nii.gz \
+          ${sid}__bval_dti ${sid}__bvec_dti -t $params.dwi_shell_tolerance -f
+      """
 }
 
 dwi_and_grad_for_dti_metrics
@@ -1092,14 +1137,29 @@ process Extract_FODF_Shell {
         dwi_and_grad_for_fodf
 
     script:
-    """
-    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
-    export OMP_NUM_THREADS=1
-    export OPENBLAS_NUM_THREADS=1
-    scil_extract_dwi_shell.py $dwi \
-        $bval $bvec $params.fodf_shells ${sid}__dwi_fodf.nii.gz \
+    if (params.fodf_shells)
+      """
+        export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+        export OMP_NUM_THREADS=1
+        export OPENBLAS_NUM_THREADS=1
+        scil_extract_dwi_shell.py $dwi \
+          $bval $bvec $params.fodf_shells ${sid}__dwi_fodf.nii.gz \
+          ${sid}__bval_fodf ${sid}__bvec_fodf -t $params.dwi_shell_tolerance -f
+      """
+    else
+      """
+      export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+      export OMP_NUM_THREADS=1
+      export OPENBLAS_NUM_THREADS=1
+
+      shells=\$(cut -d ' ' --output-delimiter=\$'\\n' -f 1- $bval | \
+      awk -F' ' '{v=int(\$1)}{if(v>=$params.min_fodf_shell_value|| \
+      v<=$params.b0_thr_extract_b0)print v}' | uniq)
+
+      scil_extract_dwi_shell.py $dwi \
+        $bval $bvec \$shells ${sid}__dwi_fodf.nii.gz \
         ${sid}__bval_fodf ${sid}__bvec_fodf -t $params.dwi_shell_tolerance -f
-    """
+      """
 }
 
 t1_and_mask_for_reg
