@@ -218,21 +218,35 @@ else if (params.bids || params.bids_config){
                    file(item.t1), item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
             ch_in_data.bind(sub)
 
-            if(item.rev_b0) {
-                sub_rev_b0 = [sid, file(item.rev_b0)]
-                ch_rev_b0.bind(sub_rev_b0)}
-        }
+            if(item.rev_topup) {
+                if(item.topup) {
+                  sub_rev_b0 = [sid, file(item.rev_topup), file(item.topup), item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
+                }
+                else{
+                  sub_rev_b0 = [sid, file(item.rev_topup)]
+                }
+                ch_rev_b0.bind(sub_rev_b0)
+            }
 
+            if(item.rev_dwi){
+              ch_rev_in_data = [sid, file(item.rev_bval), file(item.rev_bvec), file(item.rev_dwi)]
+              ch_in_data.bind(ch_rev_in_data)
+            }
+        }
         ch_in_data.close()
         ch_rev_b0.close()
     }
 
-    ch_in_data.into{in_data; check_subjects_number}
+
+    ch_in_data.into{in_data; check_subjects_number; in_data_print}
+
     ch_rev_b0.into{rev_b0; check_rev_b0}
 }
 else {
     error "Error ~ Please use --input, --bids or --bids_config for the input data."
 }
+
+in_data_print.println()
 
 if (!params.dti_shells || !params.fodf_shells){
     error "Error ~ Please set the DTI and fODF shells to use."
