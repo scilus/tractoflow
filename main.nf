@@ -152,7 +152,7 @@ if (params.input && !(params.bids && params.bids_config)){
     .fromPath("$root/**/*rev_b0.nii.gz",
                     maxDepth:1)
     .map{[it.parent.name, it]}
-    .into{rev_b0; check_rev_b0}
+    .into{rev_b0_for_prepare_topup; check_simple_rev_b0}
 }
 else if (params.bids || params.bids_config){
     if (!params.bids_config) {
