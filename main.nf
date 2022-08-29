@@ -162,6 +162,11 @@ else if (params.bids || params.bids_config){
             participant_cleaned = workflow.commandLine.substring(start, workflow.commandLine.indexOf("--", start) == -1 ? workflow.commandLine.length() : workflow.commandLine.indexOf("--", start)).replace("=", "").replace("\'", "")
             log.info "Participants: $participant_cleaned"
         }
+        if (params.fs) {
+            Integer start = workflow.commandLine.indexOf("fs") + "fs".length();
+            freesurfer_path = workflow.commandLine.substring(start, workflow.commandLine.indexOf("--", start) == -1 ? workflow.commandLine.length() : workflow.commandLine.indexOf("--", start)).replace("=", "").replace("\'", "")
+            log.info "Freesurfer path: $freesurfer_path"
+        }
         log.info "Clean_bids: $params.clean_bids"
         log.info ""
 
@@ -183,12 +188,14 @@ else if (params.bids || params.bids_config){
             script:
             participants_flag =\
             params.participants_label ? '--participants_label ' + participant_cleaned : ""
+            fs_flag =\
+            params.fs ? '--fs ' + freesurfer_path : ""
 
             clean_flag = params.clean_bids ? '--clean ' : ''
 
             """
             scil_validate_bids.py $bids_folder tractoflow_bids_struct.json\
-                --readout $params.readout $participants_flag $clean_flag
+                --readout $params.readout $participants_flag $clean_flag $fs_flag
             """
         }
     }
@@ -203,6 +210,7 @@ else if (params.bids || params.bids_config){
     ch_sid_rev_dwi = Channel.create()
     ch_complex_rev_b0 = Channel.create()
     ch_simple_rev_b0 = Channel.create()
+    labels_for_reg = Channel.create()
 
     bids_struct.map{it ->
     jsonSlurper = new JsonSlurper()
@@ -248,6 +256,10 @@ else if (params.bids || params.bids_config){
                 }
             }
 
+            if(item.wmparc) {
+                labels_for_reg = [sid, file(item.aparc_aseg), file(item.wmparc)]
+            }
+
             if(item.rev_dwi){
               ch_rev_in_data = [sid, file(item.rev_bval), file(item.rev_bvec), file(item.rev_dwi), "_rev_",
                                 file(item.t1), item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
@@ -259,6 +271,7 @@ else if (params.bids || params.bids_config){
         ch_in_data.close()
         ch_simple_rev_b0.close()
         ch_complex_rev_b0.close()
+        labels_for_reg.close()
     }
 
     ch_sid_rev_dwi.into{sid_rev_dwi_included; sid_rev_dwi_excluded; check_rev_number}
@@ -572,7 +585,7 @@ dwi_for_eddy_topup.into{complex_dwi_for_eddy_topup;simple_dwi_for_eddy_topup}
 complex_dwi_for_eddy_topup.combine(sid_rev_dwi_included.collect().toList())
         .filter{ (it[0] in it[3]) }
         .map{it -> [it[0], it[1]]}
-        .into{dwi_for_prepare_for_eddy}
+        .set{dwi_for_prepare_for_eddy}
 
 // DATA DO NOT CONCATENATE
 expl1 = Channel.value(0)
@@ -588,7 +601,7 @@ simple_dwi_for_eddy_topup.combine(sid_rev_dwi_excluded.collect().toList())
 dwi_for_prepare_for_eddy.join(gradients_for_prepare_dwi_for_eddy)
   .groupTuple(by:[0])
   .map{it.flatten().toList()}
-  .into{dwi_rev_dwi_gradients_for_prepare_dwi_for_eddy}
+  .set{dwi_rev_dwi_gradients_for_prepare_dwi_for_eddy}
 
 
 process Prepare_dwi_for_eddy {
