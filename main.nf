@@ -3,6 +3,7 @@
 import groovy.json.*
 
 params.input = false
+params.fs = false
 params.bids = false
 params.bids_config = false
 params.help = false
@@ -322,7 +323,7 @@ if (params.run_pft_tracking && workflow.profile.contains("ABS")){
     error "Error ~ PFT tracking cannot be run with Atlas Based Segmentation (ABS) profile"
 }
 
-if (params.bids && workflow.profile.contains("ABS")){
+if (params.bids && workflow.profile.contains("ABS") && !params.fs){
     error "Error ~ --bids parameter cannot be run with Atlas Based Segmentation (ABS) profile"
 }
 
