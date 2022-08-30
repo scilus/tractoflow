@@ -596,7 +596,7 @@ simple_dwi_for_eddy_topup.combine(sid_rev_dwi_excluded.collect().toList())
         .filter{ !(it[0] in it[2]) }
         .map{it -> [it[0], it[1]]}
         .join(gradients_for_eddy_topup)
-	.merge(expl1)
+        .merge(expl1)
         .set{simple_dwi_gradients_for_eddy}
 
 
@@ -629,7 +629,7 @@ process Prepare_dwi_for_eddy {
   """
 }
 
-simple_dwi_gradients_for_eddy.mix(concatenated_dwi_for_eddy)
+concatenated_dwi_for_eddy
     .join(topup_files_for_eddy_topup)
     .join(readout_encoding_for_eddy_topup)
     .set{dwi_gradients_mask_topup_files_for_eddy_topup}
