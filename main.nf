@@ -488,7 +488,7 @@ process Denoise_DWI {
 dwi_for_test_denoise
     .map{it -> if(!params.run_dwi_denoising){it}}
     .mix(dwi_denoised_for_mix)
-    .into{dwi_for_gibbs; dwi_for_merge_dwi; dwi_for_eddy; dwi_for_topup; dwi_for_eddy_topup; dwi_for_test_gibbs}
+    .into{dwi_for_gibbs; dwi_for_test_gibbs}
 
 process Gibbs_correction {
     cpus params.processes_denoise_dwi
@@ -515,7 +515,7 @@ process Gibbs_correction {
 dwi_for_test_gibbs
     .map{it -> if(!params.run_gibbs_correction){it}}
     .mix(dwi_gibbs_for_mix)
-    .into{dwi_for_merge_dwi; dwi_for_eddy; dwi_for_topup; dwi_for_eddy_topup; dwi_for_test_eddy_topup}
+    .into{dwi_for_eddy; dwi_for_topup; dwi_for_eddy_topup; dwi_for_test_eddy_topup}
 
 dwi_for_topup
     .join(gradients_for_prepare_topup)
