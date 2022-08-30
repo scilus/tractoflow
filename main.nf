@@ -258,7 +258,8 @@ else if (params.bids || params.bids_config){
             }
 
             if(item.wmparc) {
-                labels_for_reg = [sid, file(item.aparc_aseg), file(item.wmparc)]
+                sub_labels_for_reg = [sid, file(item.aparc_aseg), file(item.wmparc)]
+                labels_for_reg.bind(sub_labels_for_reg)
             }
 
             if(item.rev_dwi){
@@ -372,7 +373,7 @@ number_subj_for_compare
           "Please be sure to have the same acquisitions for all subjects."}
 }
 
-dwi.into{dwi_for_prelim_bet; dwi_for_denoise; dwi_for_test_denoise; dwi_for_eddy_topup}
+dwi.into{dwi_for_prelim_bet; dwi_for_denoise; dwi_for_test_denoise}
 
 if (params.pft_random_seed instanceof String){
     pft_random_seed = params.pft_random_seed?.tokenize(',')
