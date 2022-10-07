@@ -602,9 +602,10 @@ simple_dwi_for_eddy_topup.combine(sid_rev_dwi_excluded.collect().toList())
 
 dwi_for_prepare_for_eddy.join(gradients_for_prepare_dwi_for_eddy)
   .groupTuple(by:[0])
-  .map{it.flatten().toList()}
+  .map{[it[0], it[1].sort { a, b -> a.getBaseName() <=> b.getBaseName() }, it[2], it[3]].flatten().toList()}
   .set{dwi_rev_dwi_gradients_for_prepare_dwi_for_eddy}
 
+// DOES NOT WORK FOR EVERYTHING BECAUSE AP PA which one is rev, LR RL same question
 
 process Prepare_dwi_for_eddy {
   cpus 2
@@ -636,6 +637,7 @@ concatenated_dwi_for_eddy
 
 process Eddy_Topup {
     cpus params.processes_eddy
+    memory '200 GB'
 
     input:
     set sid, file(dwi), file(bval), file(bvec), val(number_rev_dwi), file(b0s_corrected),
@@ -671,12 +673,12 @@ process Eddy_Topup {
             --b0_thr $params.b0_thr_extract_b0\
             --encoding_direction $encoding\
             --readout $readout --out_script --fix_seed\
-	    --n_reverse ${number_rev_dwi}\
+            --n_reverse ${number_rev_dwi}\
+            --lsr_resampling\
             $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
-        mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
-        mv $bval ${sid}__bval_eddy
+	scil_extract_gradients_eddy.py dwi_eddy_corrected.eddy_rotated_bvecs $bval ${number_rev_dwi} ${sid}__dwi_eddy_corrected.bvec ${sid}__bval_eddy	scil_extract_gradients_eddy.py dwi_eddy_corrected.eddy_rotated_bvecs $bval ${number_rev_dwi} ${sid}__dwi_eddy_corrected.bvec ${sid}__bval_eddy
         """
 }
 
