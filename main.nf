@@ -678,7 +678,7 @@ process Eddy_Topup {
             $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
-	scil_extract_gradients_eddy.py dwi_eddy_corrected.eddy_rotated_bvecs $bval ${number_rev_dwi} ${sid}__dwi_eddy_corrected.bvec ${sid}__bval_eddy	scil_extract_gradients_eddy.py dwi_eddy_corrected.eddy_rotated_bvecs $bval ${number_rev_dwi} ${sid}__dwi_eddy_corrected.bvec ${sid}__bval_eddy
+	      scil_validate_and_correct_eddy_gradients.py dwi_eddy_corrected.eddy_rotated_bvecs $bval ${number_rev_dwi} ${sid}__dwi_eddy_corrected.bvec ${sid}__bval_eddy
         """
 }
 
