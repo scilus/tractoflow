@@ -387,7 +387,7 @@ process Bet_Prelim_DWI {
     file "${sid}__b0_bet_mask.nii.gz"
 
     when:
-    rev_b0_count == 0 || (!params.run_topup && params.run_eddy)
+    params.run_eddy
 
     script:
     """
