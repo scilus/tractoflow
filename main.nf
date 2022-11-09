@@ -46,6 +46,7 @@ if(params.help) {
                 "number_of_tissues":"$params.number_of_tissues",
                 "fa":"$params.fa",
                 "min_fa":"$params.min_fa",
+                "min_nvox":"$params.min_nvox",
                 "roi_radius":"$params.roi_radius",
                 "set_frf":"$params.set_frf",
                 "manual_frf":"$params.manual_frf",
