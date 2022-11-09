@@ -111,7 +111,7 @@ OPTIONAL ARGUMENTS (current value)
 
 --fa                                        Initial FA threshold to compute the frf ($fa).
 --min_fa                                    Minimum FA threshold to compute the frf ($min_fa).
---min_nvox                                  Minimum number of voxel to compute the frf ($min_nvox).
+--min_nvox                                  Minimum number of voxels to compute the frf ($min_nvox).
 --roi_radius                                Region of interest radius to compute the frf ($roi_radius).
 --set_frf                                   Set manually the frf ($set_frf).
 --manual_frf                                FRF set manually (--manual_frf "$manual_frf").
