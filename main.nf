@@ -1558,7 +1558,8 @@ process PFT_Tracking {
             --particles $params.pft_particles --back $params.pft_back\
             --forward $params.pft_front $compress --sh_basis $params.basis
         scil_remove_invalid_streamlines.py tmp.trk\
-            ${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}_seed_${curr_seed}.trk
+            ${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}_seed_${curr_seed}.trk\
+            --remove_single_point
         """
 }
 
@@ -1656,6 +1657,7 @@ process Local_Tracking {
             --sfthres $params.local_sfthres --min_length $params.local_min_len\
             --max_length $params.local_max_len $compress --sh_basis $params.basis
         scil_remove_invalid_streamlines.py tmp.trk\
-            ${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask_seed_${curr_seed}.trk
+            ${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask_seed_${curr_seed}.trk\
+            --remove_single_point
         """
 }
