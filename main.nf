@@ -166,7 +166,7 @@ else if (params.bids || params.bids_config){
         }
         if (params.fs) {
             Integer start = workflow.commandLine.indexOf("fs") + "fs".length();
-            freesurfer_path = workflow.commandLine.substring(start, workflow.commandLine.indexOf("--", start) == -1 ? workflow.commandLine.length() : workflow.commandLine.indexOf("--", start)).replace("=", "").replace("\'", "")
+            freesurfer_path = workflow.commandLine.substring(start, workflow.commandLine.indexOf("--", start) == -1 ? workflow.commandLine.length() : workflow.commandLine.indexOf("--", start)).replace("=", "").replace("\'", "").split('-')[0]
             log.info "Freesurfer path: $freesurfer_path"
         }
         log.info "Clean_bids: $params.clean_bids"
@@ -197,7 +197,7 @@ else if (params.bids || params.bids_config){
 
             """
             scil_validate_bids.py $bids_folder tractoflow_bids_struct.json\
-                --readout $params.readout $participants_flag $clean_flag $fs_flag
+                --readout $params.readout $participants_flag $clean_flag $fs_flag -v
             """
         }
     }
