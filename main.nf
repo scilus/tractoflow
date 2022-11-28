@@ -154,7 +154,7 @@ if (params.input && !(params.bids && params.bids_config)){
     .fromPath("$root/**/*rev_b0.nii.gz",
                     maxDepth:1)
     .map{[it.parent.name, it]}
-    .into{rev_b0_for_prepare_topup; check_simple_rev_b0}
+    .into{rev_b0_for_topup; check_simple_rev_b0}
 }
 else if (params.bids || params.bids_config){
     if (!params.bids_config) {
@@ -210,6 +210,7 @@ else if (params.bids || params.bids_config){
 
     ch_in_data = Channel.create()
     ch_sid_rev_dwi = Channel.create()
+    ch_sid_rev_b0 = Channel.create()
     ch_complex_rev_b0 = Channel.create()
     ch_simple_rev_b0 = Channel.create()
     labels_for_reg = Channel.create()
@@ -248,6 +249,7 @@ else if (params.bids || params.bids_config){
             ch_in_data.bind(sub)
 
             if(item.rev_topup) {
+                ch_sid_rev_b0.bind([sid])
                 if(item.topup) {
                   sub_complex_rev_b0 = [sid, file(item.rev_topup), file(item.topup)]
                   ch_complex_rev_b0.bind(sub_complex_rev_b0)
@@ -257,30 +259,31 @@ else if (params.bids || params.bids_config){
                   ch_simple_rev_b0.bind(sub_simple_rev_b0)
                 }
             }
+            else if(item.rev_dwi){
+                ch_rev_in_data = [sid, file(item.rev_bval), file(item.rev_bvec), file(item.rev_dwi), "_rev_",
+                                    file(item.t1), item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
+                ch_sid_rev_dwi.bind([sid])
+                ch_in_data.bind(ch_rev_in_data)
+            }
 
             if(item.wmparc) {
                 sub_labels_for_reg = [sid, file(item.aparc_aseg), file(item.wmparc)]
                 labels_for_reg.bind(sub_labels_for_reg)
             }
-
-            if(item.rev_dwi){
-              ch_rev_in_data = [sid, file(item.rev_bval), file(item.rev_bvec), file(item.rev_dwi), "_rev_",
-                                file(item.t1), item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
-              ch_sid_rev_dwi.bind([sid])
-              ch_in_data.bind(ch_rev_in_data)
-            }
         }
         ch_sid_rev_dwi.close()
+        ch_sid_rev_b0.close()
         ch_in_data.close()
         ch_simple_rev_b0.close()
         ch_complex_rev_b0.close()
         labels_for_reg.close()
     }
 
-    ch_sid_rev_dwi.into{sid_rev_dwi_included; sid_rev_dwi_excluded; check_rev_number}
+    ch_sid_rev_dwi.into{sid_rev_dwi_included; sid_rev_dwi_included_for_topup; sid_rev_dwi_excluded; check_rev_number}
+    ch_sid_rev_b0.into{sid_rev_b0_included; sid_rev_b0_included_for_eddy_topup}
     ch_in_data.into{in_data; check_subjects_number}
 
-    ch_simple_rev_b0.into{rev_b0_for_prepare_topup; check_simple_rev_b0}
+    ch_simple_rev_b0.into{rev_b0_for_topup; check_simple_rev_b0}
     ch_complex_rev_b0.into{complex_rev_b0_for_topup; check_complex_rev_b0}
 }
 else {
@@ -330,8 +333,8 @@ if (params.bids && workflow.profile.contains("ABS") && !params.fs){
 }
 
 (dwi, gradients, t1, readout_encoding) = in_data
-    .map{sid, bvals, bvecs, dwi, rev, t1, readout, encoding -> [tuple(sid, dwi, rev),
-                                        tuple(sid, bvals, bvecs),
+    .map{sid, bvals, bvecs, dwi, rev_flag, t1, readout, encoding -> [tuple(sid, dwi, rev_flag),
+                                        tuple(sid, bvals, bvecs, rev_flag),
                                         tuple(sid, t1),
                                         tuple(sid, readout, encoding)]}
     .separate(4)
@@ -341,9 +344,9 @@ t1.unique()
 
 check_complex_rev_b0.concat(check_simple_rev_b0).count().into{rev_b0_counter; number_rev_b0_for_compare}
 
-unique_subjects_number.count().into{ number_subj_for_null_check; number_subj_for_compare}
+unique_subjects_number.count().into{number_subj_for_null_check; number_subj_for_compare}
 
-check_rev_number.count().set{number_rev_dwi}
+check_rev_number.count().into{number_rev_dwi; rev_dwi_counter}
 
 if (params.eddy_cmd == "eddy_openmp"){
 number_rev_dwi
@@ -400,10 +403,6 @@ readout_encoding
     .into{readout_encoding_for_topup; readout_encoding_for_eddy;
           readout_encoding_for_eddy_topup}
 
-dwi_for_prelim_bet
-    .join(gradients_for_prelim_bet)
-    .set{dwi_gradient_for_prelim_bet}
-
 process README {
     cpus 1
     publishDir = params.Readme_Publish_Dir
@@ -427,6 +426,12 @@ process README {
     echo "$list_options" >> readme.txt
     """
 }
+
+dwi_for_prelim_bet
+    .map{ [it[0] + it[2]] + it }
+    .join(gradients_for_prelim_bet.map{ [it[0] + it[3], it[1], it[2]] })
+    .map{ it[1..-1] }
+    .set{dwi_gradient_for_prelim_bet}
 
 process Bet_Prelim_DWI {
     cpus 2
@@ -518,34 +523,47 @@ dwi_for_test_gibbs
     .mix(dwi_gibbs_for_mix)
     .into{dwi_for_eddy; dwi_for_topup; dwi_for_eddy_topup; dwi_for_test_eddy_topup}
 
-dwi_for_topup
-    .join(gradients_for_prepare_topup)
-    .join(rev_b0_for_prepare_topup)
+sid_rev_b0_included
+    .mix(sid_rev_dwi_included_for_topup)
+    .combine(dwi_for_topup, by: 0)
+    .map{ [it[0] + it[2]] + it }
+    .join(gradients_for_prepare_topup.map{ [it[0] + it[3], it[1], it[2]] })
+    .map{ it[1..-1] }
     .set{dwi_gradients_rev_b0_for_prepare_topup}
 
 process Prepare_for_Topup {
   cpus 2
 
   input:
-    set sid, file(dwi), val(rev), file(bval), file(bvec), file(rev_b0)\
+    set sid, file(dwi), val(rev), file(bval), file(bvec)\
       from dwi_gradients_rev_b0_for_prepare_topup
 
   output:
-    set sid, "${rev_b0}", "${sid}__b0_mean.nii.gz" into simple_rev_b0_for_topup
+    set sid, "${sid}_${rev}b0_mean.nii.gz", val(rev) into simple_b0_for_topup
 
   when:
     params.run_topup && params.run_eddy
 
   script:
   """
-    scil_extract_b0.py $dwi $bval $bvec ${sid}__b0_mean.nii.gz --mean\
+    scil_extract_b0.py $dwi $bval $bvec ${sid}_${rev}b0_mean.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0 --force_b0_threshold
   """
 }
 
-simple_rev_b0_for_topup.mix(complex_rev_b0_for_topup).set{rev_b0_for_topup}
+simple_b0_for_topup
+  .branch{
+    forward_b0: it[2] == "_"
+        return it[0..1]
+    reverse_b0: it[2] == "_rev_"
+        return it[0..1]
+  }
+  .set{branch_b0_for_topup}
 
-rev_b0_for_topup
+branch_b0_for_topup.reverse_b0
+  .mix(rev_b0_for_topup)
+  .join(branch_b0_for_topup.forward_b0)
+  .mix(complex_rev_b0_for_topup)
   .join(readout_encoding_for_topup)
   .set{rev_b0_with_readout_encoding_for_topup}
 
@@ -584,27 +602,42 @@ process Topup {
 
 dwi_for_eddy_topup.into{complex_dwi_for_eddy_topup;simple_dwi_for_eddy_topup}
 
-// DATA FOR CONCATENATE
-complex_dwi_for_eddy_topup.combine(sid_rev_dwi_included.collect().toList())
-        .filter{ (it[0] in it[3]) }
-        .map{it -> [it[0], it[1]]}
-        .set{dwi_for_prepare_for_eddy}
+// Extract subjects with reverse DWI for Prepare_dwi_for_eddy
+complex_dwi_for_eddy_topup
+    .map{ [it[0] + it[2]] + it }
+    .join(gradients_for_prepare_dwi_for_eddy.map{ [it[0] + it[3], it[1], it[2]] })
+    .map{ it[1..-1] }
+    .set{dwi_gradient_for_prepare_dwi_for_eddy}
 
-// DATA DO NOT CONCATENATE
+sid_rev_dwi_included
+    .combine(dwi_gradient_for_prepare_dwi_for_eddy, by: 0)
+    .branch{
+        forward_dwi: it[2] == "_"
+            return it[0..1] + it[3..-1]
+        reverse_dwi: it[2] == "_rev_"
+            return it[0..1] + it[3..-1]
+    }
+    .set{branch_dwi_gradient_for_prepare_dwi_for_eddy}
+
+branch_dwi_gradient_for_prepare_dwi_for_eddy.forward_dwi
+    .join(branch_dwi_gradient_for_prepare_dwi_for_eddy.reverse_dwi)
+    .set{dwi_rev_gradient_for_prepare_dwi_for_eddy}
+
+// Extract subjects with reverse b0 images for Eddy
 expl1 = Channel.value(0)
 
-simple_dwi_for_eddy_topup.combine(sid_rev_dwi_excluded.collect().toList())
-        .filter{ !(it[0] in it[2]) }
-        .map{it -> [it[0], it[1]]}
-        .join(gradients_for_eddy_topup)
-        .merge(expl1)
-        .set{simple_dwi_gradients_for_eddy}
+gradients_for_eddy_topup
+    .filter{ it[3] == "_" }
+    .map{ it[0..2] }
+    .set{simple_gradients_for_eddy_topup}
 
-
-dwi_for_prepare_for_eddy.join(gradients_for_prepare_dwi_for_eddy)
-  .groupTuple(by:[0])
-  .map{[it[0], it[1].sort { a, b -> a.getBaseName() <=> b.getBaseName() }, it[2], it[3]].flatten().toList()}
-  .set{dwi_rev_dwi_gradients_for_prepare_dwi_for_eddy}
+sid_rev_b0_included_for_eddy_topup
+    .combine(simple_dwi_for_eddy_topup, by: 0)
+    .filter{ it[2] == "_" }
+    .map{ it[0..1] }
+    .join(simple_gradients_for_eddy_topup)
+    .merge(expl1)
+    .set{simple_dwi_gradients_for_eddy_topup}
 
 // DOES NOT WORK FOR EVERYTHING BECAUSE AP PA which one is rev, LR RL same question
 
@@ -612,8 +645,8 @@ process Prepare_dwi_for_eddy {
   cpus 2
 
   input:
-    set sid, file(dwi), file(rev_dwi), file(bval), file(rev_bval), file(bvec), \
-        file(rev_bvec) from dwi_rev_dwi_gradients_for_prepare_dwi_for_eddy
+    set sid, file(dwi), file(bval), file(bvec), file(rev_dwi), file(rev_bval), \
+        file(rev_bvec) from dwi_rev_gradient_for_prepare_dwi_for_eddy
 
   output:
     set sid, "${sid}__concatenated_dwi.nii.gz", "${sid}__concatenated_dwi.bval", "${sid}__concatenated_dwi.bvec", env(rev_number_dir) into concatenated_dwi_for_eddy
@@ -632,19 +665,21 @@ process Prepare_dwi_for_eddy {
 }
 
 concatenated_dwi_for_eddy
+    .mix(simple_dwi_gradients_for_eddy_topup)
     .join(topup_files_for_eddy_topup)
     .join(readout_encoding_for_eddy_topup)
     .set{dwi_gradients_mask_topup_files_for_eddy_topup}
 
 process Eddy_Topup {
     cpus params.processes_eddy
-    memory '200 GB'
+    memory '50 GB'
 
     input:
     set sid, file(dwi), file(bval), file(bvec), val(number_rev_dwi), file(b0s_corrected),
         file(field), file(movpar), readout, encoding\
         from dwi_gradients_mask_topup_files_for_eddy_topup
     val(rev_b0_count) from rev_b0_counter
+    val(rev_dwi_count) from rev_dwi_counter
 
     output:
     set sid, "${sid}__dwi_corrected.nii.gz" into\
@@ -654,7 +689,7 @@ process Eddy_Topup {
     file "${sid}__b0_bet_mask.nii.gz"
 
     when:
-    rev_b0_count > 0 && params.run_topup && params.run_eddy
+    (rev_b0_count > 0 || rev_dwi_count > 0) && params.run_topup && params.run_eddy
 
     // Corrected DWI is clipped to ensure there are no negative values
     // introduced by Eddy.
@@ -679,12 +714,22 @@ process Eddy_Topup {
             $slice_drop_flag
         sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
-	      scil_validate_and_correct_eddy_gradients.py dwi_eddy_corrected.eddy_rotated_bvecs $bval ${number_rev_dwi} ${sid}__dwi_eddy_corrected.bvec ${sid}__bval_eddy
-        """
+        
+	if [[ $number_rev_dwi -eq 0 ]]
+	then
+	   mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
+           mv $bval ${sid}__bval_eddy
+	else
+	   scil_validate_and_correct_eddy_gradients.py dwi_eddy_corrected.eddy_rotated_bvecs $bval ${number_rev_dwi} ${sid}__dwi_eddy_corrected.bvec ${sid}__bval_eddy
+	fi
+	"""
 }
 
 dwi_for_eddy
-    .join(gradients_for_eddy)
+    .map{ [it[0] + it[2]] + it }
+    .join(gradients_for_eddy.map{ [it[0] + it[3], it[1], it[2]] })
+    .filter{ it[3] == "_" }
+    .map{ it[1..2] + it[4..-1] }
     .join(b0_mask_for_eddy)
     .join(readout_encoding_for_eddy)
     .set{dwi_gradients_mask_topup_files_for_eddy}
@@ -696,6 +741,7 @@ process Eddy {
     set sid, file(dwi), file(bval), file(bvec), file(mask), readout, encoding\
         from dwi_gradients_mask_topup_files_for_eddy
     val(rev_b0_count) from rev_b0_counter
+    val(rev_dwi_count) from rev_dwi_counter
 
     output:
     set sid, "${sid}__dwi_corrected.nii.gz" into\
@@ -704,7 +750,7 @@ process Eddy {
         gradients_from_eddy
 
     when:
-    (rev_b0_count == 0 && params.run_eddy) || (!params.run_topup && params.run_eddy)
+    (rev_b0_count == 0 && rev_dwi_count == 0 && params.run_eddy) || (!params.run_topup && params.run_eddy)
 
     // Corrected DWI is clipped to 0 since Eddy can introduce negative values.
     script:
@@ -729,8 +775,17 @@ process Eddy {
 }
 
 
-dwi_for_test_eddy_topup.map{it -> if(!params.run_eddy){it}}.set{dwi_for_skip_eddy_topup}
-gradients_for_test_eddy_topup.map{it -> if(!params.run_eddy){it}}.set{gradients_for_skip_eddy_topup}
+dwi_for_test_eddy_topup
+    .map{it -> if(!params.run_eddy){it}}
+    .filter{ it[2] == "_" }
+    .map{ it[0..1] }
+    .set{dwi_for_skip_eddy_topup}
+
+gradients_for_test_eddy_topup
+    .map{it -> if(!params.run_eddy){it}}
+    .filter{ it[3] == "_" }
+    .map{ it[0..2] }
+    .set{gradients_for_skip_eddy_topup}
 
 dwi_from_eddy
     .mix(dwi_from_eddy_topup)
