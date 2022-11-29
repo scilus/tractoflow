@@ -1563,9 +1563,9 @@ process PFT_Tracking {
             --forward $params.pft_front $compress --sh_basis $params.basis
         scil_remove_invalid_streamlines.py tmp.trk\
             ${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}_seed_${curr_seed}.trk\
-            --remove_single_point \
-            $pft_remove_overlapping_points \
-            $pft_cut_invalid \
+            --remove_single_point\
+            $pft_remove_overlapping_points\
+            $pft_cut_invalid\
             --threshold $params.pft_max_distance_points_overlapping
         """
 }
@@ -1669,9 +1669,9 @@ process Local_Tracking {
             --max_length $params.local_max_len $compress --sh_basis $params.basis
         scil_remove_invalid_streamlines.py tmp.trk\
             ${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask_seed_${curr_seed}.trk\
-            --remove_single_point \
-            $local_remove_overlapping_points \
-            $local_cut_invalid \
+            --remove_single_point\
+            $local_remove_overlapping_points\
+            $local_cut_invalid\
             --threshold $params.local_max_distance_points_overlapping
         """
 }
