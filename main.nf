@@ -141,32 +141,24 @@ if (params.input && !(params.bids && params.bids_config)){
                        flat: true) {it.parent.name}
 
     labels_for_reg = Channel
-            .fromFilePairs("$root/**/*{aparc+aseg.nii.gz,wmparc.nii.gz}",
-                           size: 2,
-                           maxDepth:1,
-                           flat: true) {it.parent.name}
+        .fromFilePairs("$root/**/*{aparc+aseg.nii.gz,wmparc.nii.gz}",
+                        size: 2,
+                        maxDepth:1,
+                        flat: true) {it.parent.name}
 
-    data
-        .map{[it, "_", params.readout, params.encoding_direction].flatten()}
+    data.map{[it[0..3], "_", it[4], params.readout, params.encoding_direction].flatten()}
         .into{in_data; check_subjects_number}
 
     Channel
-    .fromPath("$root/**/*rev_b0.nii.gz",
-                    maxDepth:1)
-    .map{[it.parent.name, it]}
-    .into{rev_b0_for_topup; check_simple_rev_b0}
+        .fromPath("$root/**/*rev_b0.nii.gz",
+                        maxDepth:1)
+        .map{[it.parent.name, it]}
+        .tap{rev_b0_for_topup; check_simple_rev_b0}
+        .map{ [it[0]] }
+        .into{sid_rev_b0_included; sid_rev_b0_included_for_eddy_topup}
 
-    Channel
-    .fromPath("$root/**/*rev_b0.nii.gz",
-                    maxDepth:1)
-    .map{[it.parent.name]}
-    .into{sid_rev_b0_included; sid_rev_b0_included_for_eddy_topup}
-
-    check_complex_rev_b0 = Channel.empty()
-    check_rev_number = Channel.empty()
-    sid_rev_dwi_included_for_topup = Channel.empty()
-    complex_rev_b0_for_topup = Channel.empty()
-    sid_rev_dwi_included = Channel.empty()
+    Channel.empty().into{sid_rev_dwi_included; sid_rev_dwi_included_for_topup; sid_rev_dwi_excluded; check_rev_number}
+    Channel.empty().into{complex_rev_b0_for_topup; check_complex_rev_b0}
 }
 else if (params.bids || params.bids_config){
     if (!params.bids_config) {
@@ -256,8 +248,8 @@ else if (params.bids || params.bids_config){
                     "using --bids."
                 }
             }
-            sub = [sid, file(item.bval), file(item.bvec), file(item.dwi),
-                   file(item.t1), "_", item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
+            sub = [sid, file(item.bval), file(item.bvec), file(item.dwi), "_",
+                   file(item.t1), item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
             ch_in_data.bind(sub)
 
             if(item.rev_topup) {
@@ -272,8 +264,8 @@ else if (params.bids || params.bids_config){
                 }
             }
             else if(item.rev_dwi){
-                ch_rev_in_data = [sid, file(item.rev_bval), file(item.rev_bvec), file(item.rev_dwi),
-                                    file(item.t1), "_rev_", item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
+                ch_rev_in_data = [sid, file(item.rev_bval), file(item.rev_bvec), file(item.rev_dwi), "_rev_",
+                                    file(item.t1), item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
                 ch_sid_rev_dwi.bind([sid])
                 ch_in_data.bind(ch_rev_in_data)
             }
@@ -345,7 +337,7 @@ if (params.bids && workflow.profile.contains("ABS") && !params.fs){
 }
 
 (dwi, gradients, t1, readout_encoding) = in_data
-    .map{sid, bvals, bvecs, dwi, t1, rev_flag, readout, encoding -> [tuple(sid, dwi, rev_flag),
+    .map{sid, bvals, bvecs, dwi, rev_flag, t1, readout, encoding -> [tuple(sid, dwi, rev_flag),
                                         tuple(sid, bvals, bvecs, rev_flag),
                                         tuple(sid, t1),
                                         tuple(sid, readout, encoding)]}
@@ -443,13 +435,13 @@ dwi_for_prelim_bet
     .map{ [it[0] + it[2]] + it }
     .join(gradients_for_prelim_bet.map{ [it[0] + it[3], it[1], it[2]] })
     .map{ it[1..-1] }
-    .set{dwi_gradient_for_prelim_bet}
+    .into{dwi_gradient_for_prelim_bet;toto}
 
 process Bet_Prelim_DWI {
     cpus 2
 
     input:
-    set sid, file(dwi), val(rev), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
+    set ésid, file(dwi), val(rev), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
     val(rev_b0_count) from rev_b0_counter
 
     output:
@@ -726,12 +718,12 @@ process Eddy_Topup {
             $slice_drop_flag
 	echo "--very_verbose" >> eddy.sh
 	sh eddy.sh
-	fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
-
+        fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
+        
 	if [[ $number_rev_dwi -eq 0 ]]
 	then
 	   mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
-	   mv $bval ${sid}__bval_eddy
+          mv $bval ${sid}__bval_eddy
 	else
 	   scil_validate_and_correct_eddy_gradients.py dwi_eddy_corrected.eddy_rotated_bvecs $bval ${number_rev_dwi} ${sid}__dwi_eddy_corrected.bvec ${sid}__bval_eddy
 	fi
