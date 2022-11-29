@@ -441,9 +441,10 @@ process Bet_Prelim_DWI {
     cpus 2
 
     input:
-    set ésid, file(dwi), val(rev), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
+    set sid, file(dwi), val(rev), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
     val(rev_b0_count) from rev_b0_counter
-
+    val(rev_dwi_count) from rev_dwi_counter
+    
     output:
     set sid, "${sid}__b0_bet_mask_dilated.nii.gz" into\
         b0_mask_for_eddy
