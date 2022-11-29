@@ -1546,9 +1546,9 @@ process PFT_Tracking {
     compress =\
         params.pft_compress_streamlines ? '--compress ' + params.pft_compress_value : ''
     remove_overlapping_points =\
-        params.pft_remove_overlapping_points ? '--remove_overlapping_points'
+        params.pft_remove_overlapping_points ? '--remove_overlapping_points' : ''
     cut_invalid =\
-        params.pft_cut_invalid ? '--cut_invalid'
+        params.pft_cut_invalid ? '--cut_invalid' : ''
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
@@ -1654,9 +1654,9 @@ process Local_Tracking {
     compress =\
         params.local_compress_streamlines ? '--compress ' + params.local_compress_value : ''
     remove_overlapping_points =\
-        params.local_remove_overlapping_points ? '--remove_overlapping_points'
+        params.local_remove_overlapping_points ? '--remove_overlapping_points' : ''
     cut_invalid =\
-        params.local_cut_invalid ? '--cut_invalid'
+        params.local_cut_invalid ? '--cut_invalid' : ''
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
