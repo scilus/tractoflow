@@ -447,7 +447,7 @@ process Bet_Prelim_DWI {
     file "${sid}__b0_bet_mask.nii.gz"
 
     when:
-    params.run_eddy
+    (rev_b0_count == 0 && rev_dwi_count == 0 && params.run_eddy) || (!params.run_topup && params.run_eddy)
 
     script:
     """
@@ -712,7 +712,8 @@ process Eddy_Topup {
             --n_reverse ${number_rev_dwi}\
             --lsr_resampling\
             $slice_drop_flag
-        sh eddy.sh
+	echo "--very_verbose" >> eddy.sh
+	sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
         
 	if [[ $number_rev_dwi -eq 0 ]]
