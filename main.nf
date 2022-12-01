@@ -1550,13 +1550,16 @@ process PFT_Tracking {
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
         scil_compute_pft.py $fodf $seed $include $exclude\
-            ${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}_seed_${curr_seed}.trk\
+            tmp.trk\
             --algo $params.pft_algo --$params.pft_seeding $params.pft_nbr_seeds\
             --seed $curr_seed --step $params.pft_step --theta $params.pft_theta\
             --sfthres $params.pft_sfthres --sfthres_init $params.pft_sfthres_init\
             --min_length $params.pft_min_len --max_length $params.pft_max_len\
             --particles $params.pft_particles --back $params.pft_back\
             --forward $params.pft_front $compress --sh_basis $params.basis
+        scil_remove_invalid_streamlines.py tmp.trk\
+            ${sid}__pft_tracking_${params.pft_algo}_${params.pft_seeding_mask_type}_seed_${curr_seed}.trk\
+            --remove_single_point
         """
 }
 
@@ -1648,10 +1651,13 @@ process Local_Tracking {
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
         scil_compute_local_tracking.py $fodf $seed $tracking_mask\
-            ${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask_seed_${curr_seed}.trk\
+            tmp.trk\
             --algo $params.local_algo --$params.local_seeding $params.local_nbr_seeds\
             --seed $curr_seed --step $params.local_step --theta $params.local_theta\
             --sfthres $params.local_sfthres --min_length $params.local_min_len\
             --max_length $params.local_max_len $compress --sh_basis $params.basis
+        scil_remove_invalid_streamlines.py tmp.trk\
+            ${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask_seed_${curr_seed}.trk\
+            --remove_single_point
         """
 }
