@@ -444,7 +444,7 @@ process Bet_Prelim_DWI {
     set sid, file(dwi), val(rev), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
     val(rev_b0_count) from rev_b0_counter
     val(rev_dwi_count) from rev_dwi_counter
-    
+
     output:
     set sid, "${sid}__b0_bet_mask_dilated.nii.gz" into\
         b0_mask_for_eddy
@@ -677,7 +677,7 @@ concatenated_dwi_for_eddy
 
 process Eddy_Topup {
     cpus params.processes_eddy
-    memory '50 GB'
+    memory { 5.GB * task.attempt }
 
     input:
     set sid, file(dwi), file(bval), file(bvec), val(number_rev_dwi), file(b0s_corrected),
@@ -720,7 +720,7 @@ process Eddy_Topup {
 	echo "--very_verbose" >> eddy.sh
 	sh eddy.sh
         fslmaths dwi_eddy_corrected.nii.gz -thr 0 ${sid}__dwi_corrected.nii.gz
-        
+
 	if [[ $number_rev_dwi -eq 0 ]]
 	then
 	   mv dwi_eddy_corrected.eddy_rotated_bvecs ${sid}__dwi_eddy_corrected.bvec
