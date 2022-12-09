@@ -131,6 +131,7 @@ else{
 
 
 labels_for_reg = Channel.empty()
+freesurfer_path = Channel.empty()
 if (params.input && !(params.bids && params.bids_config)){
     log.info "Input: $params.input"
     root = file(params.input)
@@ -169,9 +170,8 @@ else if (params.bids || params.bids_config){
             log.info "Participants: $participant_cleaned"
         }
         if (params.fs) {
-            Integer start = workflow.commandLine.indexOf("fs") + "fs".length();
-            freesurfer_path = workflow.commandLine.substring(start, workflow.commandLine.indexOf("--", start) == -1 ? workflow.commandLine.length() : workflow.commandLine.indexOf("--", start)).replace("=", "").replace("\'", "").split('-')[0]
-            log.info "Freesurfer path: $freesurfer_path"
+	    freesurfer_path = file(params.fs)
+            log.info "Freesurfer path: $params.fs"
         }
         log.info "Clean_bids: $params.clean_bids"
         log.info ""
@@ -187,6 +187,7 @@ else if (params.bids || params.bids_config){
 
             input:
             file(bids_folder) from bids
+	    file(fs_folder) from freesurfer_path
 
             output:
             file "tractoflow_bids_struct.json" into bids_struct
@@ -194,14 +195,12 @@ else if (params.bids || params.bids_config){
             script:
             participants_flag =\
             params.participants_label ? '--participants_label ' + participant_cleaned : ""
-            fs_flag =\
-            params.fs ? '--fs ' + freesurfer_path : ""
 
             clean_flag = params.clean_bids ? '--clean ' : ''
 
             """
             scil_validate_bids.py $bids_folder tractoflow_bids_struct.json\
-                --readout $params.readout $participants_flag $clean_flag $fs_flag -v
+                --readout $params.readout $participants_flag $clean_flag ${!fs_folder.empty() ? "--fs $params.fs" : ""} -v
             """
         }
     }
