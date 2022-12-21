@@ -4,6 +4,7 @@ import groovy.json.*
 
 params.input = false
 params.fs = false
+params.bidsignore = false
 params.bids = false
 params.bids_config = false
 params.help = false
@@ -131,7 +132,8 @@ else{
 
 
 labels_for_reg = Channel.empty()
-freesurfer_path = Channel.empty()
+freesurfer_path = Channel.from("")
+bidsignore_path = Channel.from("")
 if (params.input && !(params.bids && params.bids_config)){
     log.info "Input: $params.input"
     root = file(params.input)
@@ -164,14 +166,13 @@ if (params.input && !(params.bids && params.bids_config)){
 else if (params.bids || params.bids_config){
     if (!params.bids_config) {
         log.info "Input BIDS: $params.bids"
-        if (params.participants_label) {
-            Integer start = workflow.commandLine.indexOf("participants_label") + "participants_label".length();
-            participant_cleaned = workflow.commandLine.substring(start, workflow.commandLine.indexOf("--", start) == -1 ? workflow.commandLine.length() : workflow.commandLine.indexOf("--", start)).replace("=", "").replace("\'", "")
-            log.info "Participants: $participant_cleaned"
-        }
         if (params.fs) {
-	    freesurfer_path = file(params.fs)
+            freesurfer_path = file(params.fs)
             log.info "Freesurfer path: $params.fs"
+        }
+        if (params.bidsignore) {
+            bidsignore_path = file(params.bidsignore)
+            log.info "BIDSignore path: $params.bidsignore"
         }
         log.info "Clean_bids: $params.clean_bids"
         log.info ""
@@ -187,20 +188,18 @@ else if (params.bids || params.bids_config){
 
             input:
             file(bids_folder) from bids
-	    file(fs_folder) from freesurfer_path
+            file(fs_folder) from freesurfer_path
+            file(bidsignore) from bidsignore_path
 
             output:
             file "tractoflow_bids_struct.json" into bids_struct
 
             script:
-            participants_flag =\
-            params.participants_label ? '--participants_label ' + participant_cleaned : ""
-
             clean_flag = params.clean_bids ? '--clean ' : ''
 
             """
             scil_validate_bids.py $bids_folder tractoflow_bids_struct.json\
-                --readout $params.readout $participants_flag $clean_flag ${!fs_folder.empty() ? "--fs $params.fs" : ""} -v
+                --readout $params.readout $clean_flag ${!fs_folder.empty() ? "--fs $params.fs" : ""} ${!bidsignore.empty() ? "--bids_ignore $params.bidsignore" : ""} -v
             """
         }
     }
@@ -235,7 +234,7 @@ else if (params.bids || params.bids_config){
                 if(item[key] == 'todo'){
                     error "Error ~ Please look at your tractoflow_bids_struct.json " +
                     "in Read_BIDS folder.\nPlease fix todo fields and give " +
-                    "this file in input using --bids_config option instead of" +
+                    "this file in input using --bids_config option instead of " +
                     "using --bids."
                 }
                 else if (item[key] == 'error_readout'){
@@ -243,7 +242,7 @@ else if (params.bids || params.bids_config){
                     "in Read_BIDS folder.\nPlease fix error_readout fields. "+
                     "This error indicate that readout time looks wrong.\n"+
                     "Please correct the value or remove the subject in the json and " +
-                    "give the updated file in input using --bids_config option instead of" +
+                    "give the updated file in input using --bids_config option instead of " +
                     "using --bids."
                 }
             }
