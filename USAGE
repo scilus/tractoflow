@@ -44,13 +44,11 @@ DESCRIPTION
 
 Files should be compressed Nifti files (.nii.gz)
 
-
-OPTIONAL INPUT ARGUMENTS
-
---fs=/path/to/[fs]                  Freesurfer output folder. One freesurfer folder per subject.
-                                    Please use -profile ABS
-
 OPTIONAL BIDS ARGUMENTS (current value)
+
+--fs=/path/to/[fs]                          Freesurfer output folder. One freesurfer folder per subject.
+                                            If you want to run Tractoflow-ABS (Atlas Based Segmentation) combined
+                                            with a BIDS structure input you need to have this argument.
 
 --bidsignore                                If you want to ignore some subjects or some files, you can provide an extra bidsignore file.
                                             Check: https://github.com/bids-standard/bids-validator#bidsignore
