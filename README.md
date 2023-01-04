@@ -39,7 +39,7 @@ If you are on Linux, we recommend using the Singularity container to run TractoF
 
 Prebuild Singularity images are available here:
 
-[http://scil.usherbrooke.ca/en/containers_list/](http://scil.usherbrooke.ca/en/containers_list/)
+[https://scil.usherbrooke.ca/pages/containers/](https://scil.usherbrooke.ca/pages/containers/)
 
 FOR DEVELOPERS: The containers repository is available here:
 [containers-scilus](https://github.com/scilus/containers-scilus)
@@ -50,7 +50,7 @@ If you are on MacOS or Windows, we recommend using the Docker container to run T
 
 Prebuilt Docker images are available here:
 
-[http://scil.usherbrooke.ca/en/containers_list/](http://scil.usherbrooke.ca/en/containers_list/)
+[https://hub.docker.com/r/scilus/scilus](https://hub.docker.com/r/scilus/scilus)
 
 FOR DEVELOPERS: The containers repository is available here:
 [containers-scilus](https://github.com/scilus/containers-scilus)
