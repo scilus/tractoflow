@@ -200,8 +200,8 @@ else if (params.bids || params.bids_config){
             """
             scil_validate_bids.py $bids_folder tractoflow_bids_struct.json\
                 --readout $params.readout $clean_flag\
-                ${!fs_folder.empty() ? "--fs $params.fs" : ""}\
-                ${!bidsignore.empty() ? "--bids_ignore $params.bidsignore" : ""}\
+                ${!fs_folder.empty() ? "--fs $fs_folder" : ""}\
+                ${!bidsignore.empty() ? "--bids_ignore $bidsignore" : ""}\
                 -v
             """
         }
