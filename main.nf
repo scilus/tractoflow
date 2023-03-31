@@ -124,7 +124,7 @@ else{
 }
 
 if (params.fodf_shells){
-    log.info "DTI shells extracted: $params.fodf_shells"
+    log.info "FODF shells extracted: $params.fodf_shells"
 }
 else{
   log.info "Min FODF shell extracted: $params.min_fodf_shell_value"
