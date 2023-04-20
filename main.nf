@@ -264,7 +264,8 @@ else if (params.bids || params.bids_config){
                   ch_simple_rev_b0.bind(sub_simple_rev_b0)
                 }
             }
-            else if(item.rev_dwi){
+            
+            if(item.rev_dwi){
                 ch_rev_in_data = [sid, file(item.rev_bval), file(item.rev_bvec), file(item.rev_dwi), "_rev_",
                                     file(item.t1), item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
                 ch_sid_rev_dwi.bind([sid])
@@ -353,7 +354,7 @@ unique_subjects_number.count().into{number_subj_for_null_check; number_subj_for_
 
 check_rev_number.count().into{number_rev_dwi; rev_dwi_counter}
 
-if (params.eddy_cmd == "eddy_openmp"){
+if (params.eddy_cmd == "eddy_cpu"){
 number_rev_dwi
     .subscribe{a -> if (a>0)
     error "Error ~ You have some subjects with a reverse encoding DWI. You MUST add -profile use_cuda with a GPU environnement to be able to analyse these data."}
@@ -548,7 +549,7 @@ process Prepare_for_Topup {
     set sid, "${sid}_${rev}b0_mean.nii.gz", val(rev) into simple_b0_for_topup
 
   when:
-    params.run_topup && params.run_eddy
+    params.run_topup && params.run_eddy && number_rev_dwi == 0
 
   script:
   """
