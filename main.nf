@@ -295,7 +295,6 @@ else if (params.bids || params.bids_config){
 else {
     error "Error ~ Please use --input, --bids or --bids_config for the input data."
 }
-
 check_subjects_number.map{[it[0]]}.unique().set{unique_subjects_number}
 
 if (params.sh_fitting && !params.sh_fitting_shells){
@@ -437,7 +436,7 @@ dwi_for_prelim_bet
     .map{ [it[0] + it[2]] + it }
     .join(gradients_for_prelim_bet.map{ [it[0] + it[3], it[1], it[2]] })
     .map{ it[1..-1] }
-    .into{dwi_gradient_for_prelim_bet;toto}
+    .into{dwi_gradient_for_prelim_bet}
 
 process Bet_Prelim_DWI {
     cpus 2
@@ -549,7 +548,7 @@ process Prepare_for_Topup {
     set sid, "${sid}_${rev}b0_mean.nii.gz", val(rev) into simple_b0_for_topup
 
   when:
-    params.run_topup && params.run_eddy && number_rev_dwi == 0
+    params.run_topup && params.run_eddy
 
   script:
   """

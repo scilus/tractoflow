@@ -53,6 +53,7 @@ OPTIONAL BIDS ARGUMENTS (current value)
 --bidsignore                                If you want to ignore some subjects or some files, you can provide an extra bidsignore file.
                                             Check: https://github.com/bids-standard/bids-validator#bidsignore
 
+--clean_bids                                If set, it will remove all the participants that are missing any information.
 
 OPTIONAL ARGUMENTS (current value)
 
