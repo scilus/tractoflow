@@ -1636,7 +1636,8 @@ process FODF_Metrics {
         --fa_t $params.max_fa_in_ventricle --md_t $params.min_md_in_ventricle\
         -f
 
-    a_threshold=\$(echo $params.fodf_metrics_a_factor*\$(cat ventricles_fodf_max_value.txt)|bc)
+    v_max=\$(sed -E 's/([+-]?[0-9.]+)[eE]\+?(-?)([0-9]+)/(\1*10^\2\3)/g' <<<"\$(cat ventricles_fodf_max_value.txt)")
+    a_threshold=\$(echo "scale=10 $params.fodf_metrics_a_factor*\$v_max" | bc)
 
     scil_compute_fodf_metrics.py ${sid}__fodf.nii.gz\
         --mask $b0_mask --sh_basis $params.basis\
