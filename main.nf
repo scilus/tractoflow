@@ -1638,7 +1638,7 @@ process FODF_Metrics {
 
     v_max=\$(sed -E 's/([+-]?[0-9.]+)[eE]\\+?(-?)([0-9]+)/(\\1*10^\\2\\3)/g' <<<"\$(cat ventricles_fodf_max_value.txt)")
     a_threshold=\$(echo "scale=10; $params.fodf_metrics_a_factor*\$v_max" | bc)
-    if (( $(echo "\$a_threshold < 0" | bc -l) )); then
+    if (( \$(echo "\$a_threshold < 0" | bc -l) )); then
         a_threshold=0
     fi
 
