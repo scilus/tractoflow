@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        nxf_ver: ['19.04.0', '20.04.1']
+        nxf_ver: ['19.04.0', '20.04.1', '21.10.6']
     steps:
       - uses: actions/checkout@v2
       - name: Install Nextflow
@@ -18,7 +18,7 @@ jobs:
           sudo mv nextflow /usr/local/bin/
       - name: Pull docker image
         run: |
-          docker pull scilus/docker-tractoflow:latest
+          docker pull scilus/scilus:latest
       - name: Run pipeline
         run: |
-          nextflow run ${GITHUB_WORKSPACE} --help -with-docker scilus/docker-tractoflow:latest
+          nextflow run ${GITHUB_WORKSPACE} --help -with-docker scilus/scilus:latest
