@@ -354,7 +354,7 @@ unique_subjects_number.count().into{number_subj_for_null_check; number_subj_for_
 
 check_rev_number.count().into{number_rev_dwi; rev_dwi_counter}
 
-if (params.eddy_cmd == "eddy_openmp"){
+if (params.eddy_cmd == "eddy_cpu"){
 number_rev_dwi
     .subscribe{a -> if (a>0)
     error "Error ~ You have some subjects with a reverse encoding DWI. You MUST add -profile use_cuda with a GPU environnement to be able to analyse these data."}
@@ -437,7 +437,7 @@ dwi_for_prelim_bet
     .map{ [it[0] + it[2]] + it }
     .join(gradients_for_prelim_bet.map{ [it[0] + it[3], it[1], it[2]] })
     .map{ it[1..-1] }
-    .into{dwi_gradient_for_prelim_bet;toto}
+    .into{dwi_gradient_for_prelim_bet}
 
 process Bet_Prelim_DWI {
     cpus 2
