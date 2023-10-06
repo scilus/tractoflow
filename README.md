@@ -3,9 +3,11 @@ TractoFlow pipeline
 
 [![DOI](https://img.shields.io/badge/DOI-10.1016%2Fj.neuroimage.2020.116889-blue)](https://doi.org/10.1016/j.neuroimage.2020.116889)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/scilus/tractoflow)](https://github.com/scilus/tractoflow/releases)
-[![Nextflow](https://img.shields.io/badge/nextflow-19.04.0-brightgreen.svg)](https://www.nextflow.io/)
+[![Nextflow](https://img.shields.io/badge/nextflow-21.10.6-brightgreen.svg)](https://www.nextflow.io/)
 ![TractoFlow CI](https://github.com/scilus/tractoflow/workflows/TractoFlow%20CI/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/tractoflow-documentation/badge/?version=latest)](https://tractoflow-documentation.readthedocs.io/en/latest/?badge=latest)
+
+[![Docker container badge](https://img.shields.io/docker/v/scilus/scilus?label=docker&logo=docker&logoColor=white)](https://hub.docker.com/r/scilus/scilus)
 
 <img src="https://tractoflow-documentation.readthedocs.io/en/latest/logo_bg.png" width="250" height="250">
 
