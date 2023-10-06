@@ -176,6 +176,7 @@ OPTIONAL ARGUMENTS (current value)
 --local_compress_value                      [LOCAL] Compression error threshold ($local_compress_value).
 --local_random_seed                         [LOCAL] List of random seed numbers for the random number generator ($local_random_seed).
                                             Please write them as list separated using commat WITHOUT SPACE e.g. (--local_random_seed 0,1,2)
+--local_batch_size_gpu                      [LOCAL-GPU] Approximate size of GPU batches (number of streamlines to track in parallel) ($local_batch_size_gpu).
 
 --template_t1                               Path to the template T1 directory for antsBrainExtraction.
                                             The folder must contain t1_template.nii.gz and t1_brain_probability_map.nii.gz.

@@ -88,6 +88,7 @@ if(params.help) {
                 "local_max_len":"$params.local_max_len",
                 "local_compress_value":"$params.local_compress_value",
                 "local_random_seed":"$params.local_random_seed",
+                "local_batch_size_gpu":"$params.local_batch_size_gpu",
                 "cpu_count":"$cpu_count",
                 "template_t1":"$params.template_t1",
                 "processes_brain_extraction_t1":"$params.processes_brain_extraction_t1",
@@ -1835,16 +1836,21 @@ process Local_Tracking {
     script:
     compress =\
         params.local_compress_streamlines ? '--compress ' + params.local_compress_value : ''
+    use_gpu =\    
+        params.local_tracking_gpu ? '--use_gpu' : ''
+    batch_size_gpu =\    
+        params.local_batch_size_gpu ? '--batch_size' + params.local_batch_size_gpu : ''
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
-        ${params.local_tracking_cmd} $fodf $seed $tracking_mask\
+        scil_compute_local_tracking $fodf $seed $tracking_mask\
             tmp.trk\
-            $params.local_if_algo $params.local_algo --$params.local_seeding $params.local_nbr_seeds\
-            $params.local.rng_seed $curr_seed --step $params.local_step --theta $params.local_theta\
+            --algo $params.local_algo --$params.local_seeding $params.local_nbr_seeds\
+            --seed $curr_seed --step $params.local_step --theta $params.local_theta\
             --sf $params.local_sfthres --min_length $params.local_min_len\
-            --max_length $params.local_max_len $compress --sh_basis $params.basis
+            --max_length $params.local_max_len $compress--sh_basis $params.basis\
+            $use_gpu $batch_size_gpu 
 
         scil_remove_invalid_streamlines.py tmp.trk\
             ${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask_seed_${curr_seed}.trk\
