@@ -437,7 +437,7 @@ dwi_for_prelim_bet
     .map{ [it[0] + it[2]] + it }
     .join(gradients_for_prelim_bet.map{ [it[0] + it[3], it[1], it[2]] })
     .map{ it[1..-1] }
-    .into{dwi_gradient_for_prelim_bet}
+    .set{dwi_gradient_for_prelim_bet}
 
 process Bet_Prelim_DWI {
     cpus 2
