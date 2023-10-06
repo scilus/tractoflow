@@ -1836,9 +1836,9 @@ process Local_Tracking {
     script:
     compress =\
         params.local_compress_streamlines ? '--compress ' + params.local_compress_value : ''
-    use_gpu =\    
+    use_gpu =\
         params.local_tracking_gpu ? '--use_gpu' : ''
-    batch_size_gpu =\    
+    batch_size_gpu =\
         params.local_batch_size_gpu ? '--batch_size' + params.local_batch_size_gpu : ''
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
