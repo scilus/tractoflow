@@ -556,7 +556,7 @@ ch_sid_b0
   .map {[it[0]]}
   .join(sid_rev_b0_for_prepare_topup_dwi)
   .map {[it, "_"]}
-  .into{sid_dwi_for_prepare_topup}
+  .set{sid_dwi_for_prepare_topup}
 
 sid_rev_b0_included
   .mix(sid_rev_dwi_included)
@@ -573,13 +573,13 @@ sid_rev_b0_included
   .map {[it[0]]}
   .join(sid_rev_dwi_included_for_topup)
   .map{[it, "_rev_"]}
-  .into{sid_rev_dwi_for_prepare_topup}
+  .set{sid_rev_dwi_for_prepare_topup}
 
 dwi_for_topup
-    .combine(sid_dwi_for_prepare_topup.concat(sid_rev_dwi_for_prepare_topup), by: [0,1])
-    .join(gradients_for_prepare_topup)
-    .map{ [it[0], it[1], it[2], it[4], it[5]] }
-    .into{dwi_gradients_rev_b0_for_prepare_topup}
+  .combine(sid_dwi_for_prepare_topup.concat(sid_rev_dwi_for_prepare_topup), by: [0,1])
+  .join(gradients_for_prepare_topup)
+  .map{ [it[0], it[1], it[2], it[4], it[5]] }
+  .set{dwi_gradients_rev_b0_for_prepare_topup}
 
 process Prepare_for_Topup {
   cpus 2
