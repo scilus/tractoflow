@@ -137,11 +137,14 @@ bidsignore_path = Channel.from("")
 if (params.input && !(params.bids && params.bids_config)){
     log.info "Input: $params.input"
     root = file(params.input)
-    data = Channel
+    Channel
         .fromFilePairs("$root/**/*{bval,bvec,dwi.nii.gz,t1.nii.gz}",
                        size: 4,
                        maxDepth:1,
                        flat: true) {it.parent.name}
+        .into{data; data_for_sid}
+    
+    data_for_sid.map{[it[0]]}.set{ch_sid_dwi}
 
     labels_for_reg = Channel
         .fromFilePairs("$root/**/*{aparc+aseg.nii.gz,wmparc.nii.gz}",
@@ -149,7 +152,7 @@ if (params.input && !(params.bids && params.bids_config)){
                         maxDepth:1,
                         flat: true) {it.parent.name}
 
-    data.map{[it[0..3], "_", it[4], params.readout, params.encoding_direction].flatten()}
+    data.map{[it[0], "_", it[1..3], it[4], params.readout, params.encoding_direction].flatten()}
         .into{in_data; check_subjects_number}
 
     Channel
@@ -158,10 +161,10 @@ if (params.input && !(params.bids && params.bids_config)){
         .map{[it.parent.name, it]}
         .tap{rev_b0_for_topup; check_simple_rev_b0}
         .map{ [it[0]] }
-        .into{sid_rev_b0_included; sid_rev_b0_included_for_eddy_topup}
+        .into{sid_rev_b0_included; sid_rev_b0_included_for_eddy_topup; sid_rev_b0_for_prepare_topup_dwi}
 
-    Channel.empty().into{sid_rev_dwi_included; sid_rev_dwi_included_for_topup; sid_rev_dwi_excluded; check_rev_number}
-    Channel.empty().into{complex_rev_b0_for_topup; check_complex_rev_b0}
+    Channel.empty().into{sid_rev_dwi_included; sid_rev_dwi_included_for_eddy; sid_rev_dwi_included_for_topup; check_rev_number}
+    Channel.empty().into{ch_sid_b0; complex_rev_b0_for_topup; check_complex_rev_b0}
 }
 else if (params.bids || params.bids_config){
     if (!params.bids_config) {
@@ -216,6 +219,8 @@ else if (params.bids || params.bids_config){
     ch_in_data = Channel.create()
     ch_sid_rev_dwi = Channel.create()
     ch_sid_rev_b0 = Channel.create()
+    ch_sid_dwi = Channel.create()
+    ch_sid_b0 = Channel.create()
     ch_complex_rev_b0 = Channel.create()
     ch_simple_rev_b0 = Channel.create()
     labels_for_reg = Channel.create()
@@ -249,13 +254,14 @@ else if (params.bids || params.bids_config){
                     "using --bids."
                 }
             }
-            sub = [sid, file(item.bval), file(item.bvec), file(item.dwi), "_",
+            sub = [sid, "_", file(item.bval), file(item.bvec), file(item.dwi),
                    file(item.t1), item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
             ch_in_data.bind(sub)
-
+            ch_sid_dwi.bind([sid])
             if(item.rev_topup) {
                 ch_sid_rev_b0.bind([sid])
                 if(item.topup) {
+                  ch_sid_b0.bind([sid])
                   sub_complex_rev_b0 = [sid, file(item.rev_topup), file(item.topup)]
                   ch_complex_rev_b0.bind(sub_complex_rev_b0)
                 }
@@ -266,7 +272,7 @@ else if (params.bids || params.bids_config){
             }
             
             if(item.rev_dwi){
-                ch_rev_in_data = [sid, file(item.rev_bval), file(item.rev_bvec), file(item.rev_dwi), "_rev_",
+                ch_rev_in_data = [sid, "_rev_", file(item.rev_bval), file(item.rev_bvec), file(item.rev_dwi),
                                     file(item.t1), item.TotalReadoutTime, item.DWIPhaseEncodingDir[0]]
                 ch_sid_rev_dwi.bind([sid])
                 ch_in_data.bind(ch_rev_in_data)
@@ -279,14 +285,17 @@ else if (params.bids || params.bids_config){
         }
         ch_sid_rev_dwi.close()
         ch_sid_rev_b0.close()
+        ch_sid_dwi.close()
+        ch_sid_b0.close()
         ch_in_data.close()
         ch_simple_rev_b0.close()
         ch_complex_rev_b0.close()
         labels_for_reg.close()
     }
 
-    ch_sid_rev_dwi.into{sid_rev_dwi_included; sid_rev_dwi_included_for_topup; sid_rev_dwi_excluded; check_rev_number}
-    ch_sid_rev_b0.into{sid_rev_b0_included; sid_rev_b0_included_for_eddy_topup}
+    Channel.empty().into{sid_rev_dwi_included; sid_rev_b0_for_prepare_topup_dwi; sid_rev_dwi_included_for_topup; check_rev_number}
+    ch_sid_rev_dwi.into{sid_rev_dwi_included; sid_rev_dwi_included_for_topup; sid_rev_dwi_included_for_eddy; check_rev_number}
+    ch_sid_rev_b0.into{sid_rev_b0_included; sid_rev_b0_included_for_eddy_topup; sid_rev_b0_for_prepare_topup_dwi}
     ch_in_data.into{in_data; check_subjects_number}
 
     ch_simple_rev_b0.into{rev_b0_for_topup; check_simple_rev_b0}
@@ -338,8 +347,8 @@ if (params.bids && workflow.profile.contains("ABS") && !params.fs){
 }
 
 (dwi, gradients, t1, readout_encoding) = in_data
-    .map{sid, bvals, bvecs, dwi, rev_flag, t1, readout, encoding -> [tuple(sid, dwi, rev_flag),
-                                        tuple(sid, bvals, bvecs, rev_flag),
+    .map{sid, rev_flag, bvals, bvecs, dwi, t1, readout, encoding -> [tuple(sid, rev_flag, dwi),
+                                        tuple(sid, rev_flag, bvals, bvecs),
                                         tuple(sid, t1),
                                         tuple(sid, readout, encoding)]}
     .separate(4)
@@ -382,7 +391,7 @@ number_subj_for_compare
           "Please be sure to have the same acquisitions for all subjects."}
 }
 
-dwi.into{dwi_for_prelim_bet; dwi_for_denoise; dwi_for_test_denoise}
+dwi.into{dwi_for_prelim_bet; dwi_for_denoise; dwi_for_test_denoise;truc}
 
 if (params.pft_random_seed instanceof String){
     pft_random_seed = params.pft_random_seed?.tokenize(',')
@@ -407,6 +416,10 @@ gradients
 readout_encoding
     .into{readout_encoding_for_topup; readout_encoding_for_eddy;
           readout_encoding_for_eddy_topup}
+
+ch_sid_dwi
+    .into{ch_sid_dwi_for_rev; ch_sid_dwi_for_dwi}
+
 
 process README {
     cpus 1
@@ -433,16 +446,14 @@ process README {
 }
 
 dwi_for_prelim_bet
-    .map{ [it[0] + it[2]] + it }
-    .join(gradients_for_prelim_bet.map{ [it[0] + it[3], it[1], it[2]] })
-    .map{ it[1..-1] }
-    .into{dwi_gradient_for_prelim_bet}
+    .combine(gradients_for_prelim_bet, by: [0,1])
+    .set{dwi_gradient_for_prelim_bet}
 
 process Bet_Prelim_DWI {
     cpus 2
 
     input:
-    set sid, file(dwi), val(rev), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
+    set sid, val(rev), file(dwi), file(bval), file(bvec) from dwi_gradient_for_prelim_bet
     val(rev_b0_count) from rev_b0_counter
     val(rev_dwi_count) from rev_dwi_counter
 
@@ -471,15 +482,16 @@ process Bet_Prelim_DWI {
     """
 }
 
+
 process Denoise_DWI {
     cpus params.processes_denoise_dwi
     label 'big_mem'
 
     input:
-    set sid, file(dwi), val(rev) from dwi_for_denoise
+    set sid, val(rev), file(dwi) from dwi_for_denoise
 
     output:
-    set sid, "${sid}_${rev}dwi_denoised.nii.gz", val(rev) into\
+    set sid, val(rev), "${sid}_${rev}dwi_denoised.nii.gz" into\
         dwi_denoised_for_mix
 
     when:
@@ -506,10 +518,10 @@ process Gibbs_correction {
     cpus params.processes_denoise_dwi
 
     input:
-    set sid, file(dwi), val(rev) from dwi_for_gibbs
+    set sid, val(rev), file(dwi)  from dwi_for_gibbs
 
     output:
-    set sid, "${sid}_${rev}dwi_gibbs_corrected.nii.gz", val(rev) into\
+    set sid, val(rev), "${sid}_${rev}dwi_gibbs_corrected.nii.gz" into\
         dwi_gibbs_for_mix
 
     when:
@@ -529,19 +541,51 @@ dwi_for_test_gibbs
     .mix(dwi_gibbs_for_mix)
     .into{dwi_for_eddy; dwi_for_topup; dwi_for_eddy_topup; dwi_for_test_eddy_topup}
 
+ch_sid_b0
+  .mix(ch_sid_dwi_for_dwi)
+  .collect()
+  .map { it
+          // Group by sid
+          .groupBy { it }
+          // Check size
+          .collect { key, values -> [key, values.size()] }
+          // Take only the sid appearing one time (they don't have a b0)
+          .findAll { it[1] == 1}
+  }
+  .flatMap()
+  .map {[it[0]]}
+  .join(sid_rev_b0_for_prepare_topup_dwi)
+  .map {[it, "_"]}
+  .into{sid_dwi_for_prepare_topup}
+
 sid_rev_b0_included
-    .mix(sid_rev_dwi_included_for_topup)
-    .combine(dwi_for_topup, by: 0)
-    .map{ [it[0] + it[2]] + it }
-    .join(gradients_for_prepare_topup.map{ [it[0] + it[3], it[1], it[2]] })
-    .map{ it[1..-1] }
-    .set{dwi_gradients_rev_b0_for_prepare_topup}
+  .mix(sid_rev_dwi_included)
+  .collect()
+  .map { it
+          // Group by sid
+          .groupBy { it }
+          // Check size
+          .collect { key, values -> [key, values.size()] }
+          // Take only the sid appearing one time (they don't have a b0)
+          .findAll { it[1] == 1 }
+  }
+  .flatMap()
+  .map {[it[0]]}
+  .join(sid_rev_dwi_included_for_topup)
+  .map{[it, "_rev_"]}
+  .into{sid_rev_dwi_for_prepare_topup}
+
+dwi_for_topup
+    .combine(sid_dwi_for_prepare_topup.concat(sid_rev_dwi_for_prepare_topup), by: [0,1])
+    .join(gradients_for_prepare_topup)
+    .map{ [it[0], it[1], it[2], it[4], it[5]] }
+    .into{dwi_gradients_rev_b0_for_prepare_topup}
 
 process Prepare_for_Topup {
   cpus 2
 
   input:
-    set sid, file(dwi), val(rev), file(bval), file(bvec)\
+    set sid, val(rev), file(dwi), file(bval), file(bvec)\
       from dwi_gradients_rev_b0_for_prepare_topup
 
   output:
@@ -606,46 +650,27 @@ process Topup {
     """
 }
 
-dwi_for_eddy_topup.into{complex_dwi_for_eddy_topup;simple_dwi_for_eddy_topup}
+dwi_for_eddy_topup.into{complex_dwi_for_eddy_topup; simple_dwi_for_eddy_topup}
 
 // Extract subjects with reverse DWI for Prepare_dwi_for_eddy
 complex_dwi_for_eddy_topup
-    .map{ [it[0] + it[2]] + it }
-    .join(gradients_for_prepare_dwi_for_eddy.map{ [it[0] + it[3], it[1], it[2]] })
-    .map{ it[1..-1] }
+    .join(gradients_for_prepare_dwi_for_eddy)
+    .map{[it[0], it[1], it[2], it[4], it[5]]}
     .set{dwi_gradient_for_prepare_dwi_for_eddy}
 
-sid_rev_dwi_included
+sid_rev_dwi_included_for_eddy
     .combine(dwi_gradient_for_prepare_dwi_for_eddy, by: 0)
     .branch{
-        forward_dwi: it[2] == "_"
-            return it[0..1] + it[3..-1]
-        reverse_dwi: it[2] == "_rev_"
-            return it[0..1] + it[3..-1]
+          forward_dwi: it[1] == "_"
+              return [it[0]] + it[2..-1]
+          reverse_dwi: it[1] == "_rev_"
+              return [it[0]] + it[2..-1]
     }
     .set{branch_dwi_gradient_for_prepare_dwi_for_eddy}
 
 branch_dwi_gradient_for_prepare_dwi_for_eddy.forward_dwi
-    .join(branch_dwi_gradient_for_prepare_dwi_for_eddy.reverse_dwi)
-    .set{dwi_rev_gradient_for_prepare_dwi_for_eddy}
-
-// Extract subjects with reverse b0 images for Eddy
-expl1 = Channel.value(0)
-
-gradients_for_eddy_topup
-    .filter{ it[3] == "_" }
-    .map{ it[0..2] }
-    .set{simple_gradients_for_eddy_topup}
-
-sid_rev_b0_included_for_eddy_topup
-    .combine(simple_dwi_for_eddy_topup, by: 0)
-    .filter{ it[2] == "_" }
-    .map{ it[0..1] }
-    .join(simple_gradients_for_eddy_topup)
-    .merge(expl1)
-    .set{simple_dwi_gradients_for_eddy_topup}
-
-// DOES NOT WORK FOR EVERYTHING BECAUSE AP PA which one is rev, LR RL same question
+     .join(branch_dwi_gradient_for_prepare_dwi_for_eddy.reverse_dwi)
+     .set{dwi_rev_gradient_for_prepare_dwi_for_eddy}
 
 process Prepare_dwi_for_eddy {
   cpus 2
@@ -670,8 +695,25 @@ process Prepare_dwi_for_eddy {
   """
 }
 
+
+// Extract subjects with reverse b0 images for Eddy
+expl1 = Channel.value(0)
+
+gradients_for_eddy_topup
+    .filter{ it[1] == "_" }
+    .set{simple_gradients_for_eddy_topup}
+
+sid_rev_b0_included_for_eddy_topup
+    .combine(simple_dwi_for_eddy_topup, by: 0)
+    .filter{ it[1] == "_" }
+    .join(simple_gradients_for_eddy_topup)
+    .merge(expl1)
+    .set{simple_dwi_gradients_for_eddy_topup}
+
+
 concatenated_dwi_for_eddy
     .mix(simple_dwi_gradients_for_eddy_topup)
+    .map{ [it[0], it[2], it[4], it[5], it[6]] }
     .join(topup_files_for_eddy_topup)
     .join(readout_encoding_for_eddy_topup)
     .set{dwi_gradients_mask_topup_files_for_eddy_topup}
@@ -733,10 +775,9 @@ process Eddy_Topup {
 }
 
 dwi_for_eddy
-    .map{ [it[0] + it[2]] + it }
-    .join(gradients_for_eddy.map{ [it[0] + it[3], it[1], it[2]] })
-    .filter{ it[3] == "_" }
-    .map{ it[1..2] + it[4..-1] }
+    .combine(gradients_for_eddy, by: [0,1])
+    .filter{ it[1] == "_" }
+    .map{ [it[0], it[2], it[3], it[4]] }
     .join(b0_mask_for_eddy)
     .join(readout_encoding_for_eddy)
     .set{dwi_gradients_mask_topup_files_for_eddy}
@@ -781,17 +822,16 @@ process Eddy {
         """
 }
 
-
 dwi_for_test_eddy_topup
     .map{it -> if(!params.run_eddy){it}}
-    .filter{ it[2] == "_" }
-    .map{ it[0..1] }
+    .filter{ it[1] == "_" }
+    .map{ [it[0], it[2]] }
     .set{dwi_for_skip_eddy_topup}
 
 gradients_for_test_eddy_topup
     .map{it -> if(!params.run_eddy){it}}
-    .filter{ it[3] == "_" }
-    .map{ it[0..2] }
+    .filter{ it[1] == "_" }
+    .map{ [it[0], it[2..-1]] }
     .set{gradients_for_skip_eddy_topup}
 
 dwi_from_eddy
