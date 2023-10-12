@@ -708,8 +708,8 @@ sid_rev_b0_included_for_eddy_topup
     .filter{ it[1] == "_" }
     .join(simple_gradients_for_eddy_topup)
     .merge(expl1)
+    .map{[it[0], it[2], it[4], it[5], it[6]]}
     .set{simple_dwi_gradients_for_eddy_topup}
-
 
 concatenated_dwi_for_eddy
     .mix(simple_dwi_gradients_for_eddy_topup)
