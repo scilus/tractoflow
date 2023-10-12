@@ -713,7 +713,7 @@ sid_rev_b0_included_for_eddy_topup
 
 concatenated_dwi_for_eddy
     .mix(simple_dwi_gradients_for_eddy_topup)
-    .map{ [it[0], it[2], it[4], it[5], it[6]] }
+    .map{ [it[0], it[1], it[2], it[3], it[4]] }
     .join(topup_files_for_eddy_topup)
     .join(readout_encoding_for_eddy_topup)
     .set{dwi_gradients_mask_topup_files_for_eddy_topup}
