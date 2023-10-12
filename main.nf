@@ -163,7 +163,7 @@ if (params.input && !(params.bids && params.bids_config)){
         .map{ [it[0]] }
         .into{sid_rev_b0_included; sid_rev_b0_included_for_eddy_topup; sid_rev_b0_for_prepare_topup_dwi}
 
-    Channel.empty().into{sid_rev_dwi_included; sid_rev_dwi_included_for_eddy; sid_rev_dwi_included_for_topup; check_rev_number}
+    Channel.empty().into{sid_rev_dwi_included; sid_rev_dwi_included_for_eddy; sid_rev_dwi_for_prepare_topup_for_dwi; sid_rev_dwi_included_for_topup; sid_rev_dwi_for_topup; check_rev_number}
     Channel.empty().into{ch_sid_b0; complex_rev_b0_for_topup; check_complex_rev_b0}
 }
 else if (params.bids || params.bids_config){
@@ -294,8 +294,8 @@ else if (params.bids || params.bids_config){
     }
 
     Channel.empty().into{sid_rev_dwi_included; sid_rev_b0_for_prepare_topup_dwi; sid_rev_dwi_included_for_topup; check_rev_number}
-    ch_sid_rev_dwi.into{sid_rev_dwi_included; sid_rev_dwi_included_for_topup; sid_rev_dwi_included_for_eddy; check_rev_number}
-    ch_sid_rev_b0.into{sid_rev_b0_included; sid_rev_b0_included_for_eddy_topup; sid_rev_b0_for_prepare_topup_dwi}
+    ch_sid_rev_dwi.into{sid_rev_dwi_included; sid_rev_dwi_included_for_topup; sid_rev_dwi_for_prepare_topup_for_dwi; sid_rev_dwi_included_for_eddy; check_rev_number}
+    ch_sid_rev_b0.into{sid_rev_b0_included; sid_rev_dwi_for_topup; sid_rev_b0_included_for_eddy_topup; sid_rev_b0_for_prepare_topup_dwi}
     ch_in_data.into{in_data; check_subjects_number}
 
     ch_simple_rev_b0.into{rev_b0_for_topup; check_simple_rev_b0}
@@ -554,7 +554,7 @@ ch_sid_b0
   }
   .flatMap()
   .map {[it[0]]}
-  .join(sid_rev_b0_for_prepare_topup_dwi)
+  .join(sid_rev_b0_for_prepare_topup_dwi.concat(sid_rev_dwi_for_prepare_topup_for_dwi))
   .map {[it, "_"]}
   .set{sid_dwi_for_prepare_topup}
 
