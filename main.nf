@@ -89,6 +89,7 @@ if(params.help) {
                 "local_compress_value":"$params.local_compress_value",
                 "local_random_seed":"$params.local_random_seed",
                 "local_batch_size_gpu":"$params.local_batch_size_gpu",
+                "local_tracking_gpu":"$params.local_tracking_gpu",
                 "cpu_count":"$cpu_count",
                 "template_t1":"$params.template_t1",
                 "processes_brain_extraction_t1":"$params.processes_brain_extraction_t1",
@@ -1879,11 +1880,11 @@ process Local_Tracking {
 
     script:
     compress =\
-        params.local_compress_streamlines ? '--compress ' + params.local_compress_value : ''
+        params.local_compress_streamlines ? ' --compress ' + params.local_compress_value : ''
     use_gpu =\
-        params.local_tracking_gpu ? '--use_gpu' : ''
+        params.local_tracking_gpu ? ' --use_gpu' : ''
     batch_size_gpu =\
-        params.local_batch_size_gpu ? '--batch_size ' + params.local_batch_size_gpu : ''
+        params.local_batch_size_gpu ? ' --batch_size ' + params.local_batch_size_gpu : ''
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
