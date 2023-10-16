@@ -1883,12 +1883,12 @@ process Local_Tracking {
     use_gpu =\
         params.local_tracking_gpu ? '--use_gpu' : ''
     batch_size_gpu =\
-        params.local_batch_size_gpu ? '--batch_size' + params.local_batch_size_gpu : ''
+        params.local_batch_size_gpu ? '--batch_size ' + params.local_batch_size_gpu : ''
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
         export OPENBLAS_NUM_THREADS=1
-        scil_compute_local_tracking $fodf $seed $tracking_mask\
+        scil_compute_local_tracking.py $fodf $seed $tracking_mask\
             tmp.trk\
             --algo $params.local_algo --$params.local_seeding $params.local_nbr_seeds\
             --seed $curr_seed --step $params.local_step --theta $params.local_theta\
