@@ -116,6 +116,13 @@ workflow.onComplete {
     log.info "Execution duration: $workflow.duration"
 }
 
+if( (!nextflow.version.matches('>=19.04.2'))) {
+    error "This workflow requires Nextflow (>=19.04.2, <=21.12.1) -- You are running version $nextflow.version"
+}
+if( (nextflow.version.matches('>21.12.1.edge'))) {
+    error "This workflow requires Nextflow (>=19.04.2, <=21.12.1) -- You are running version $nextflow.version"
+}
+
 if (params.dti_shells){
     log.info "DTI shells extracted: $params.dti_shells"
 }
