@@ -647,7 +647,8 @@ process Topup {
       export OPENBLAS_NUM_THREADS=1
       export ANTS_RANDOM_SEED=1234
 
-      scil_image_math.py mean $rev_b0 ${sid}__rev_b0_mean.nii.gz
+      scil_image_math.py concatenate $rev_b0 $rev_b0 ${sid}__concatenated_rev_b0.nii.gz
+      scil_image_math.py mean ${sid}__concatenated_rev_b0.nii.gz ${sid}__rev_b0_mean.nii.gz
       antsRegistrationSyNQuick.sh -d 3 -f $b0 -m ${sid}__rev_b0_mean.nii.gz -o output -t r -e 1
       mv outputWarped.nii.gz ${sid}__rev_b0_warped.nii.gz
       scil_prepare_topup_command.py $b0 ${sid}__rev_b0_warped.nii.gz\
