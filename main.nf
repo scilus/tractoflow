@@ -842,7 +842,7 @@ dwi_for_test_eddy_topup
 gradients_for_test_eddy_topup
     .map{it -> if(!params.run_eddy){it}}
     .filter{ it[1] == "_" }
-    .map{ [it[0], it[2..-1]] }
+    .map{ [it[0], it[2], it[3]] }
     .set{gradients_for_skip_eddy_topup}
 
 dwi_from_eddy
