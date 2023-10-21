@@ -369,10 +369,13 @@ unique_subjects_number.count().into{number_subj_for_null_check; number_subj_for_
 
 check_rev_number.count().into{number_rev_dwi; rev_dwi_counter}
 
-if (params.eddy_cmd == "eddy_cpu"){
+if (params.eddy_cmd == "eddy_cpu" && params.processes_eddy == 1 && params.run_eddy == true){
 number_rev_dwi
     .subscribe{a -> if (a>0)
-    error "Error ~ You have some subjects with a reverse encoding DWI. You MUST add -profile use_cuda with a GPU environnement to be able to analyse these data."}
+    error "Error ~ You have some subjects with a reverse encoding DWI.\n" + 
+          "Eddy will take forever to run with this configuration. \nPlease add " +
+          "-profile use_cuda with a GPU environnement OR increase the number of processes " + 
+          "for this task (--processes_eddy) to be able to analyse this data."}
 }
 
 if (!params.run_topup || !params.run_eddy){
