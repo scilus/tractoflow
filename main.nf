@@ -355,6 +355,10 @@ if (params.bids && workflow.profile.contains("ABS") && !params.fs){
     error "Error ~ --bids parameter cannot be run with Atlas Based Segmentation (ABS) profile"
 }
 
+if (workflow.profile.containes("use_gpu")){
+    warning ""
+}
+
 (dwi, gradients, t1, readout_encoding) = in_data
     .map{sid, rev_flag, bvals, bvecs, dwi, t1, readout, encoding -> [tuple(sid, rev_flag, dwi),
                                         tuple(sid, rev_flag, bvals, bvecs),
@@ -375,9 +379,9 @@ if (params.eddy_cmd == "eddy_cpu" && params.processes_eddy == 1 && params.run_ed
 number_rev_dwi
     .subscribe{a -> if (a>0)
     error "Error ~ You have some subjects with a reverse encoding DWI.\n" + 
-          "Eddy will take forever to run with this configuration. \nPlease add " +
-          "-profile use_cuda with a GPU environnement OR increase the number of processes " + 
-          "for this task (--processes_eddy) to be able to analyse this data."}
+          "Eddy will take forever to run with this configuration. \nPlease add " + 
+          "-profile use_gpu with a GPU environnement (GPU NVIDIA with cuda) OR increase the number " + 
+          "of processes for this task (--processes_eddy) to be able to analyse this data."}
 }
 
 if (!params.run_topup || !params.run_eddy){
