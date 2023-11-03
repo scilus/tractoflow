@@ -118,6 +118,13 @@ workflow.onComplete {
     log.info "Execution duration: $workflow.duration"
 }
 
+if( (!nextflow.version.matches('>=19.04.2'))) {
+    error "This workflow requires Nextflow (>=19.04.2, <=21.12.1) -- You are running version $nextflow.version"
+}
+if( (nextflow.version.matches('>21.12.1.edge'))) {
+    error "This workflow requires Nextflow (>=19.04.2, <=21.12.1) -- You are running version $nextflow.version"
+}
+
 if (params.dti_shells){
     log.info "DTI shells extracted: $params.dti_shells"
 }
@@ -364,10 +371,13 @@ unique_subjects_number.count().into{number_subj_for_null_check; number_subj_for_
 
 check_rev_number.count().into{number_rev_dwi; rev_dwi_counter}
 
-if (params.eddy_cmd == "eddy_cpu"){
+if (params.eddy_cmd == "eddy_cpu" && params.processes_eddy == 1 && params.run_eddy == true){
 number_rev_dwi
     .subscribe{a -> if (a>0)
-    error "Error ~ You have some subjects with a reverse encoding DWI. You MUST add -profile use_cuda with a GPU environnement to be able to analyse these data."}
+    error "Error ~ You have some subjects with a reverse encoding DWI.\n" + 
+          "Eddy will take forever to run with this configuration. \nPlease add " +
+          "-profile use_cuda with a GPU environnement OR increase the number of processes " + 
+          "for this task (--processes_eddy) to be able to analyse this data."}
 }
 
 if (!params.run_topup || !params.run_eddy){
@@ -630,6 +640,7 @@ process Topup {
       set sid, "${sid}__corrected_b0s.nii.gz", "${params.prefix_topup}_fieldcoef.nii.gz",
       "${params.prefix_topup}_movpar.txt" into topup_files_for_eddy_topup
       file "${sid}__rev_b0_warped.nii.gz"
+      file "${sid}__rev_b0_mean.nii.gz"
 
     when:
       params.run_topup && params.run_eddy
@@ -640,7 +651,10 @@ process Topup {
       export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
       export OPENBLAS_NUM_THREADS=1
       export ANTS_RANDOM_SEED=1234
-      antsRegistrationSyNQuick.sh -d 3 -f $b0 -m $rev_b0 -o output -t r -e 1
+
+      scil_image_math.py concatenate $rev_b0 $rev_b0 ${sid}__concatenated_rev_b0.nii.gz
+      scil_image_math.py mean ${sid}__concatenated_rev_b0.nii.gz ${sid}__rev_b0_mean.nii.gz
+      antsRegistrationSyNQuick.sh -d 3 -f $b0 -m ${sid}__rev_b0_mean.nii.gz -o output -t r -e 1
       mv outputWarped.nii.gz ${sid}__rev_b0_warped.nii.gz
       scil_prepare_topup_command.py $b0 ${sid}__rev_b0_warped.nii.gz\
           --config $params.config_topup\
@@ -833,7 +847,7 @@ dwi_for_test_eddy_topup
 gradients_for_test_eddy_topup
     .map{it -> if(!params.run_eddy){it}}
     .filter{ it[1] == "_" }
-    .map{ [it[0], it[2..-1]] }
+    .map{ [it[0], it[2], it[3]] }
     .set{gradients_for_skip_eddy_topup}
 
 dwi_from_eddy
