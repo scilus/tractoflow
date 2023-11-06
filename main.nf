@@ -355,10 +355,6 @@ if (params.bids && workflow.profile.contains("ABS") && !params.fs){
     error "Error ~ --bids parameter cannot be run with Atlas Based Segmentation (ABS) profile"
 }
 
-if (workflow.profile.containes("use_gpu") && workflow.profile.containes("fully_reproducible")){
-    error "Error ~ use_gpu and fully_reproducible are two profiles incompatible"
-}
-
 (dwi, gradients, t1, readout_encoding) = in_data
     .map{sid, rev_flag, bvals, bvecs, dwi, t1, readout, encoding -> [tuple(sid, rev_flag, dwi),
                                         tuple(sid, rev_flag, bvals, bvecs),
