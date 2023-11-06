@@ -175,6 +175,7 @@ OPTIONAL ARGUMENTS (current value)
 --local_compress_value                      [LOCAL] Compression error threshold ($local_compress_value).
 --local_random_seed                         [LOCAL] List of random seed numbers for the random number generator ($local_random_seed).
                                             Please write them as list separated using commat WITHOUT SPACE e.g. (--local_random_seed 0,1,2)
+--local_batch_size_gpu                      [LOCAL-GPU] Approximate size of GPU batches (number of streamlines to track in parallel) ($local_batch_size_gpu).
 
 --template_t1                               Path to the template T1 directory for antsBrainExtraction.
                                             The folder must contain t1_template.nii.gz and t1_brain_probability_map.nii.gz.
@@ -193,11 +194,12 @@ OPTIONAL ARGUMENTS (current value)
 --processes                                 The number of parallel processes to launch ($cpu_count).
                                             Only affects the local scheduler.
 
-AVAILABLE PROFILES (using -profile option (e.g. -profile use_cuda,fully_reproducible))
+AVAILABLE PROFILES (using -profile option (e.g. -profile use_gpu,fully_reproducible))
 
 macos                                       When this profile is used, TractoFlow will modify a parameter (scratch) for MacOS users.
 
-use_cuda                                    When this profile is used, TractoFlow will use eddy_cuda for Eddy process.
+use_gpu                                     When this profile is used, TractoFlow will use eddy_cuda for Eddy process.
+                                            If local tracking is also enabled, Tractoflow will use the gpu implementation of scil_compute_local_tracking.py.
                                             This feature is available with NVidia GPUs only. Without this profile, TractoFlow will run eddy_openmp.
 
 fully_reproducible                          When this profile is used, all the parameters will be set to have 100% reproducible results.
