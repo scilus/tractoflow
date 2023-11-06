@@ -7,7 +7,7 @@ TractoFlow pipeline
 ![TractoFlow CI](https://github.com/scilus/tractoflow/workflows/TractoFlow%20CI/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/tractoflow-documentation/badge/?version=latest)](https://tractoflow-documentation.readthedocs.io/en/latest/?badge=latest)
 
-[![Docker container badge](https://img.shields.io/docker/v/scilus/scilus?label=docker&logo=docker&logoColor=white)](https://hub.docker.com/r/scilus/scilus)
+[![Docker container badge](https://img.shields.io/docker/v/scilus/scilus?label=docker&logo=docker&logoColor=white)](https://hub.docker.com/r/scilus/scilus/1.6.0)
 
 <img src="https://tractoflow-documentation.readthedocs.io/en/latest/logo_bg.png" width="250" height="250">
 
