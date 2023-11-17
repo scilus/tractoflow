@@ -97,7 +97,8 @@ if(params.help) {
                 "processes_denoise_t1":"$params.processes_denoise_t1",
                 "processes_eddy":"$params.processes_eddy",
                 "processes_fodf":"$params.processes_fodf",
-                "processes_registration":"$params.processes_registration"]
+                "processes_registration":"$params.processes_registration",
+                "processes_local_tracking":"$params.processes_local_tracking"]
 
     engine = new groovy.text.SimpleTemplateEngine()
     template = engine.createTemplate(usage.text).make(bindings)
@@ -735,7 +736,7 @@ concatenated_dwi_for_eddy
     .set{dwi_gradients_mask_topup_files_for_eddy_topup}
 
 process Eddy_Topup {
-    cpus params.processes_eddy
+    cpus { params.processes_eddy * task.attempt }
     memory { 5.GB * task.attempt }
 
     input:
@@ -799,7 +800,8 @@ dwi_for_eddy
     .set{dwi_gradients_mask_topup_files_for_eddy}
 
 process Eddy {
-    cpus params.processes_eddy
+    cpus { params.processes_eddy * task.attempt }
+    memory { 5.GB * task.attempt }
 
     input:
     set sid, file(dwi), file(bval), file(bvec), file(mask), readout, encoding\
@@ -1879,7 +1881,8 @@ fodf_for_local_tracking
     .set{fodf_maps_for_local_tracking}
 
 process Local_Tracking {
-    cpus 2
+    cpus { params.processes_local_tracking * task.attempt }
+    memory { 5.GB * task.attempt }
 
     input:
     set sid, file(fodf), file(tracking_mask), file(seed)\
