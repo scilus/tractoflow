@@ -484,7 +484,7 @@ process Bet_Prelim_DWI {
     export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
     export OMP_NUM_THREADS=1
     export OPENBLAS_NUM_THREADS=1
-    scil_image_math.py convert $dwi $dwi --data_type float32 --force 
+    scil_image_math.py convert $dwi $dwi --data_type float32 -f
     scil_extract_b0.py $dwi $bval $bvec ${sid}__b0.nii.gz --mean\
         --b0_thr $params.b0_thr_extract_b0 --force_b0_threshold
     bet ${sid}__b0.nii.gz ${sid}__b0_bet.nii.gz -m -R -f $params.bet_prelim_f
@@ -654,8 +654,8 @@ process Topup {
       export OPENBLAS_NUM_THREADS=1
       export ANTS_RANDOM_SEED=1234
 
-      scil_image_math.py convert $rev_b0 $rev_b0 --force --data_type float32
-      scil_image_math.py convert $b0 $b0 --force --data_type float32
+      scil_image_math.py convert $rev_b0 $rev_b0 -f --data_type float32
+      scil_image_math.py convert $b0 $b0 -f --data_type float32
       scil_image_math.py concatenate $rev_b0 $rev_b0 ${sid}__concatenated_rev_b0.nii.gz
       scil_image_math.py mean ${sid}__concatenated_rev_b0.nii.gz ${sid}__rev_b0_mean.nii.gz
       antsRegistrationSyNQuick.sh -d 3 -f $b0 -m ${sid}__rev_b0_mean.nii.gz -o output -t r -e 1
