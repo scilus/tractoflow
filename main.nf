@@ -1899,9 +1899,8 @@ process Local_Tracking {
     compress =\
         params.local_compress_streamlines ? '--compress ' + params.local_compress_value : ''
     use_gpu =\
-        params.local_tracking_gpu ? '--use_gpu' : ''
-    batch_size_gpu =\
-        params.local_batch_size_gpu ? '--batch_size ' + params.local_batch_size_gpu : ''
+        params.local_tracking_gpu ? '--use_gpu --batch_size ' + params.local_batch_size_gpu : ''
+
         """
         export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
         export OMP_NUM_THREADS=1
@@ -1912,7 +1911,7 @@ process Local_Tracking {
             --seed $curr_seed --step $params.local_step --theta $params.local_theta\
             --sf $params.local_sfthres --min_length $params.local_min_len\
             --max_length $params.local_max_len $compress --sh_basis $params.basis\
-            $use_gpu $batch_size_gpu 
+            $use_gpu 
 
         scil_remove_invalid_streamlines.py tmp.trk\
             ${sid}__local_tracking_${params.local_algo}_${params.local_seeding_mask_type}_seeding_${params.local_tracking_mask_type}_mask_seed_${curr_seed}.trk\
