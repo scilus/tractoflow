@@ -1724,7 +1724,7 @@ process PFT_Tracking_Maps {
     set sid, "${sid}__interface.nii.gz" into interface_for_pft_seeding_mask
 
     when:
-        params.run_pft_tracking
+        params.run_pft_tracking || params.run_pft_mask
 
     script:
     """
@@ -1752,7 +1752,7 @@ process PFT_Seeding_Mask {
     set sid, "${sid}__pft_seeding_mask.nii.gz" into seeding_mask_for_pft
 
     when:
-        params.run_pft_tracking
+        params.run_pft_tracking || params.run_pft_mask
 
     script:
     if (params.pft_seeding_mask_type == "wm")
@@ -1831,7 +1831,7 @@ process Local_Tracking_Mask {
     set sid, "${sid}__local_tracking_mask.nii.gz" into tracking_mask_for_local
 
     when:
-        params.run_local_tracking
+        params.run_local_tracking || params.run_local_mask
 
     script:
     if (params.local_tracking_mask_type == "wm")
@@ -1862,7 +1862,7 @@ process Local_Seeding_Mask {
     set sid, "${sid}__local_seeding_mask.nii.gz" into tracking_seeding_mask_for_local
 
     when:
-        params.run_local_tracking
+        params.run_local_tracking || params.run_local_mask
 
     script:
     if (params.local_seeding_mask_type == "wm")
